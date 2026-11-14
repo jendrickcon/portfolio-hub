@@ -15,7 +15,7 @@
 
   /* Snippet interactive state controller */
   const snippetData = {
-    'udm-radar': { tag: 'UDM-RADAR // STUDENT PORTAL', href: '#udm-radar', caption: 'Reconstructed from the student dashboard; sample content.' },
+    'udm-radar': { tag: 'UDM-RADAR // STUDENT PORTAL', href: '#udm-radar', caption: 'Adapted from UDM-RADAR portal components; synthetic example.' },
     'studyquest': { tag: 'STUDYQUEST // LEARNING PATH', href: '#studyquest', caption: 'Reconstructed from the course interface; sample content.' },
     'mini-pcs': { tag: 'MINI PCS // BATCH WORKFLOW', href: '#mini-pcs', caption: 'Reconstructed from the batch interface; sample content.' }
   };
@@ -54,6 +54,24 @@
   mtabs.forEach(b => {
     b.addEventListener('click', () => setSnippet(b.dataset.tab));
   });
+
+  const radarNav = document.querySelector('.radar-nav');
+  const radarFallback = document.querySelector('.radar-nav-static');
+  if (radarNav && radarFallback) {
+    radarNav.hidden = false;
+    radarFallback.hidden = true;
+    radarNav.querySelectorAll('[data-radar-target]').forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.radarTarget;
+        radarNav.querySelectorAll('[data-radar-target]').forEach(item => {
+          item.setAttribute('aria-pressed', String(item === button));
+        });
+        document.querySelectorAll('[data-radar-view]').forEach(view => {
+          view.hidden = view.dataset.radarView !== target;
+        });
+      });
+    });
+  }
 
   /* Math & Track Geometry */
   let maxX = 1, panelStarts = [], footerVisible = false;

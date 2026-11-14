@@ -176,9 +176,39 @@
 
         <div class="snippet-body">
          <div class="snippet-view active recon recon-radar" id="view-udm-radar">
-          <div class="recon-top"><strong>UDM-RADAR</strong><span>Student portal</span></div>
-          <div class="recon-nav">Dashboard &nbsp; · &nbsp; Performance Trend &nbsp; · &nbsp; Grades</div>
-          <div class="recon-content"><small>ACADEMIC OVERVIEW</small><strong>Analytics Dashboard</strong><div class="recon-card"><b>Projected Semester GWA</b><span>Estimate · advisory only</span></div><div class="recon-note">Academic guidance is reviewed by faculty. Sample interface; no student records.</div></div>
+          <div class="radar-shell">
+           <aside class="radar-sidebar" aria-label="UDM-RADAR preview navigation">
+            <img class="radar-logo" src="assets/evidence/udm-radar/logo-sidebar.png" alt="UDM-RADAR" width="1024" height="1024" loading="lazy">
+            <div class="radar-nav-static" aria-hidden="true"><span>Home</span><b>Dashboard</b><span>Grades &amp; History</span><span>Performance Trend</span><span>Feedback &amp; Support</span></div>
+            <div class="radar-nav" aria-label="Explore student portal preview" hidden>
+             <button type="button" class="radar-nav-button" data-radar-target="dashboard" aria-pressed="true">Dashboard</button>
+             <button type="button" class="radar-nav-button" data-radar-target="trend" aria-pressed="false">Performance Trend</button>
+             <button type="button" class="radar-nav-button" data-radar-target="grades" aria-pressed="false">Grades &amp; History</button>
+            </div>
+            <span class="radar-sidebar-note">Prototype · synthetic data</span>
+           </aside>
+           <div class="radar-main">
+            <div class="radar-view" data-radar-view="dashboard">
+             <div class="radar-heading"><strong>Analytics Dashboard</strong><span>Student portal</span></div>
+             <p class="radar-subtitle">Decision-support center and academic estimation.</p>
+             <div class="radar-advisory"><b>ⓘ &nbsp; Decision-Support Advisory Notice</b><span>Estimates support planning and are not final grades.</span></div>
+             <div class="radar-stats"><div><small>CUMULATIVE GWA</small><b>—</b></div><div><small>PROJECTED SEMESTER GWA</small><b>—</b></div><div><small>OVERALL ACADEMIC RISK</small><b>—</b></div></div>
+             <div class="radar-card"><b>Current Subjects &amp; Predictions</b><span>Sample subject <em>Current progress</em></span></div>
+            </div>
+            <div class="radar-view" data-radar-view="trend" hidden>
+             <div class="radar-heading"><strong>Performance Trend</strong><span>Student portal</span></div>
+             <p class="radar-subtitle">Completed results, current progress, and estimated GWA.</p>
+             <div class="radar-stats"><div><small>LATEST COMPLETED TERM</small><b>—</b></div><div><small>CURRENT TERM PROGRESS</small><b>—</b></div><div><small>ESTIMATED GWA</small><b>—</b></div></div>
+             <div class="radar-card radar-trend"><b>Your performance over time</b><span>Recorded &nbsp; · &nbsp; Current progress &nbsp; · &nbsp; Estimated</span><svg viewBox="0 0 300 55" preserveAspectRatio="none" aria-label="Illustrative trend, no real results"><path d="M2 42 L54 30 L110 36 L164 19 L220 26" fill="none" stroke="#6c8eef" stroke-width="3"/><path d="M220 26 L295 15" fill="none" stroke="#6c8eef" stroke-width="2" stroke-dasharray="5 5"/></svg></div>
+            </div>
+            <div class="radar-view" data-radar-view="grades" hidden>
+             <div class="radar-heading"><strong>Grades &amp; Academic History</strong><span>Student portal</span></div>
+             <p class="radar-subtitle">Review current semester grades and academic history.</p>
+             <div class="radar-card radar-grades"><b>Current Semester Grades</b><span>SUBJECT &nbsp; &nbsp; PRELIM &nbsp; &nbsp; MIDTERM &nbsp; &nbsp; FINAL</span><span>Sample subject &nbsp; &nbsp; — &nbsp; &nbsp; — &nbsp; &nbsp; —</span></div>
+             <div class="radar-card"><b>Academic History</b><span>Completed term records</span></div>
+            </div>
+           </div>
+          </div>
          </div>
          <div class="snippet-view recon recon-study" id="view-studyquest">
           <div class="recon-top"><strong>StudyQuest</strong><span>Dashboard &nbsp; · &nbsp; My courses</span></div>
@@ -191,7 +221,7 @@
         </div>
 
         <div class="snippet-foot">
-         <span class="snippet-caption">Reconstructed from the UDM-RADAR student dashboard; sample content.</span>
+         <span class="snippet-caption">Adapted from UDM-RADAR portal components; synthetic example.</span>
          <a class="snippet-jump" id="snippet-jump-link" href="#udm-radar">Chapter Details →</a>
         </div>
        </div>
@@ -239,7 +269,7 @@
    <!-- ==============================================
         PANEL 01: UDM-RADAR
         ============================================== -->
-   <article class="panel" id="udm-radar" data-panel><div class="wrap pgrid"><div><p class="mono kick">01 / Featured · Project Leader</p><h2>UDM-RADAR</h2><p class="lead">An academic analytics prototype for students, faculty and administrators: review records, examine projections and support human-led guidance.</p><div class="evg e1"><div class="ev big evidence-image"><span class="mono">REAL SCREENSHOT · TEAM PROJECT</span><a href="assets/evidence/udm-radar/academic-guide-mobile.png"><img src="assets/evidence/udm-radar/academic-guide-mobile.png" width="390" height="844" loading="lazy" alt="UDM-RADAR academic guide explaining projected and cumulative GWA"></a><p>Mobile academic guide explaining estimates and their advisory scope. Open image for detail.</p></div><div class="ev"><span class="mono">Review</span><strong>Role-based portals</strong></div><div class="ev"><span class="mono">Boundary</span><strong>Human-reviewed estimates</strong></div></div></div><div><dl class="f"><div><dt>Role</dt><dd>Project Leader · academic team project</dd></div><div><dt>Contribution</dt><dd>I planned scope, coordinated work, directed workflows and reviewed and tested implementation.</dd></div><div><dt>Decision</dt><dd>Present projections as decision support, with human review rather than automatic academic decisions.</dd></div><div><dt>AI use</dt><dd>I structured prompts and reviewed and refined AI-assisted implementation.</dd></div><div><dt>Limit</dt><dd>Prototype using mock data; institutional adoption and outcomes are not established.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Academic capstone</dd></div><div><dt>Stack</dt><dd>PHP · MySQL · Python</dd></div><div><dt>Status</dt><dd>Prototype</dd></div><div class="pfn"><a href="#studyquest">Next: StudyQuest →</a></div></dl><a class="act" href="https://github.com/jendrickcon/udm-radar">View repository ↗</a> <a class="act" href="https://github.com/jendrickcon/udm-radar/commit/f6693afa79f64e4ba352204f488f7c82814e703a">View interface change ↗</a><details class="case-more"><summary>Explore the project</summary><div class="case-copy"><p><strong>Workflow:</strong> Students review records and performance trends; faculty and administrators review academic information and support workflows.</p><p><strong>My work:</strong> I led planning and feature scope, directed portal and interface decisions, structured prompts, reviewed AI-assisted implementation and checked workflows with the team.</p><p><strong>Why it matters:</strong> Estimates are advisory; human reviewers retain responsibility. Mock data protects student privacy.</p><p><strong>Takeaway:</strong> Clear labels and role-specific screens make analytical information easier to interpret. The repository and public interface change document the team project; institutional use and real-world outcomes remain unverified.</p></div></details></div></div></article>
+   <article class="panel" id="udm-radar" data-panel><div class="wrap pgrid"><div><p class="mono kick">01 / Featured · Project Leader</p><h2>UDM-RADAR</h2><p class="lead">An academic analytics prototype for students, faculty and administrators: review records, examine projections and support human-led guidance.</p><div class="evg e1"><div class="ev big evidence-image"><span class="mono">REAL SCREENSHOT · TEAM PROJECT</span><a href="assets/evidence/udm-radar/academic-guide-mobile.png"><img src="assets/evidence/udm-radar/academic-guide-mobile.png" width="390" height="844" loading="lazy" alt="UDM-RADAR academic guide explaining projected and cumulative GWA"></a><p>Mobile academic guide explaining estimates and their advisory scope. Open image for detail.</p></div><div class="ev"><span class="mono">Review</span><strong>Role-based portals</strong></div><div class="ev"><span class="mono">Boundary</span><strong>Human-reviewed estimates</strong></div></div></div><div><dl class="f"><div><dt>Role</dt><dd>Project Leader · academic team project</dd></div><div><dt>Contribution</dt><dd>I planned scope, coordinated work, directed workflows and reviewed and tested implementation.</dd></div><div><dt>Decision</dt><dd>Present projections as decision support, with human review rather than automatic academic decisions.</dd></div><div><dt>AI use</dt><dd>I structured prompts and reviewed and refined AI-assisted implementation.</dd></div><div><dt>Limit</dt><dd>Prototype using mock data; institutional adoption and outcomes are not established.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Academic capstone</dd></div><div><dt>Stack</dt><dd>PHP · MySQL · Python</dd></div><div><dt>Status</dt><dd>Prototype</dd></div><div class="pfn"><a href="#studyquest">Next: StudyQuest →</a></div></dl><a class="act" href="https://github.com/jendrickcon/udm-radar">View repository ↗</a> <a class="act" href="https://github.com/jendrickcon/udm-radar/commit/f6693afa79f64e4ba352204f488f7c82814e703a">View interface change ↗</a><details class="case-more"><summary>Explore the project</summary><div class="case-copy"><p><strong>Workflow:</strong> A branded sign-in leads to role-based portals. Students review grades, performance trends and estimates; faculty and administrators review academic information and support workflows.</p><p><strong>My work:</strong> I led planning and feature scope, directed portal and interface decisions, structured prompts, reviewed AI-assisted implementation and checked workflows with the team.</p><p><strong>Why it matters:</strong> The performance-trend interface separates completed results, current progress and estimates, with an evidence table. Estimates are advisory and mock data protects student privacy.</p><p><strong>Takeaway:</strong> Clear labels and role-specific screens make analytical information easier to interpret. The repository and public interface change document the team project; institutional use and real-world outcomes remain unverified.</p></div></details></div></div></article>
 
    <!-- ==============================================
         PANEL 02: STUDYQUEST

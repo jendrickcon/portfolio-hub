@@ -1,0 +1,252 @@
+
+(() => {
+  const $$ = s => [...document.querySelectorAll(s)];
+  const html = document.documentElement, hdr = document.getElementById('hdr');
+  const run = document.getElementById('story'), track = run.querySelector('.track');
+  const stage = run.querySelector('.stage');
+  const footer = document.querySelector('footer');
+  const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
+  const secs = ['about','work','capabilities','journey','contact'].map(id => document.getElementById(id));
+  const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');
+  const clamp = v => Math.max(0, Math.min(1, v));
+  const smooth = (from, to, value) => { const t = clamp((value - from) / (to - from)); return t * t * (3 - 2 * t); };
+  const top = el => el.getBoundingClientRect().top + scrollY;
+  let enh = false, queued = false;
+
+  /* Snippet interactive state controller */
+  const snippetData = {
+    'udm-radar': { tag: 'UDM-RADAR // DECISION SUPPORT', href: '#udm-radar' },
+    'studyquest': { tag: 'STUDYQUEST // GAMIFIED LEARNING', href: '#studyquest' },
+    'mini-pcs': { tag: 'MINI PCS // AIRTABLE WORKFLOW', href: '#mini-pcs' }
+  };
+  const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
+  document.querySelector('.mobile-tabs').hidden = false;
+  const snippetTag = document.getElementById('snippet-tag');
+  const snippetJump = document.getElementById('snippet-jump-link');
+
+  function setSnippet(key) {
+    if (!snippetData[key]) return;
+    frows.forEach(r => {
+      const match = r.dataset.target === key;
+      r.classList.toggle('active', match);
+      const stateEl = r.querySelector('.state');
+      if (stateEl) stateEl.textContent = match ? 'Previewing snippet' : 'Hover to inspect';
+    });
+    mtabs.forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === key);
+      b.setAttribute('aria-pressed', String(b.dataset.tab === key));
+    });
+    views.forEach(v => {
+      v.classList.toggle('active', v.id === 'view-' + key);
+    });
+    if (snippetTag) snippetTag.textContent = snippetData[key].tag;
+    if (snippetJump) snippetJump.setAttribute('href', snippetData[key].href);
+  }
+
+  // Pointer hover and keyboard focus
+  frows.forEach(r => {
+    r.addEventListener('mouseenter', () => setSnippet(r.dataset.target));
+    r.addEventListener('focus', () => setSnippet(r.dataset.target));
+  });
+
+  // Mobile quick tab buttons
+  mtabs.forEach(b => {
+    b.addEventListener('click', () => setSnippet(b.dataset.tab));
+  });
+
+  /* Math & Track Geometry */
+  let maxX = 1, panelStarts = [], footerVisible = false;
+  const END_TOLERANCE = 4;
+  const islandWrap = document.getElementById('work-island-wrap');
+  const workRuler = document.getElementById('work-ruler');
+  const workTicks = $$('[data-work-tick]');
+  const ovEdge = document.getElementById('ov-trans-edge');
+
+  function layout() {
+    const hh = hdr.offsetHeight;
+    html.style.setProperty('--hh', hh + 'px');
+    enh = mq.matches;
+    html.classList.toggle('enh', enh);
+
+    if (enh) {
+      // Use actual panel positions, including after zoom/resize, for travel,
+      // clickable destinations, and the single ruler's chapter ticks.
+      const trackLeft = track.getBoundingClientRect().left;
+      panelStarts = panels.map(p => p.getBoundingClientRect().left - trackLeft);
+      maxX = Math.max(1, track.scrollWidth - stage.clientWidth);
+      workTicks.forEach((tick, i) => {
+        tick.style.setProperty('--tick', (panelStarts[i] / maxX * 100).toFixed(3) + '%');
+      });
+
+      // Height safety: if content inside any panel overflows stage, fall back to vertical
+      const stageH = innerHeight - hh;
+      const overflows = panels.some(p => {
+        const wrap = p.querySelector('.wrap');
+        return wrap && wrap.scrollHeight > stageH - 20;
+      });
+      if (overflows) {
+        enh = false;
+        html.classList.remove('enh');
+      }
+    }
+
+    // Direct, responsive travel ratio: verticalTravel = horizontalTravel * 1.0
+    const vertTravel = Math.round(maxX * 1.0);
+    run.style.height = enh ? (innerHeight - hdr.offsetHeight + vertTravel) + 'px' : '';
+    track.style.transform = '';
+    update();
+  }
+
+  const span = () => Math.max(1, run.offsetHeight - (innerHeight - hdr.offsetHeight));
+
+  // CurX: continuous mapping directly from vertical scroll position
+  function curX() {
+    if (!enh) return 0;
+    const scrollStart = top(run) - hdr.offsetHeight;
+    const p = clamp((scrollY - scrollStart) / span());
+    return p * maxX;
+  }
+
+  // Target scroll position to center panel i
+  function dest(i) {
+    if (!enh) return top(panels[i]) - hdr.offsetHeight - 8;
+    const scrollStart = top(run) - hdr.offsetHeight;
+    const t = panelStarts[i] / maxX;
+    return scrollStart + t * span();
+  }
+
+  function update() {
+    queued = false;
+    const hh = hdr.offsetHeight;
+    const line = scrollY + hh + 20;
+    const remaining = Math.max(0, html.scrollHeight - innerHeight - scrollY);
+    const footerBottom = footer ? footer.getBoundingClientRect().bottom : Infinity;
+    // Document end is primary; a visible footer supports an 8px rounding
+    // allowance. Merely seeing the footer is not enough to mark completion.
+    const atEnd = remaining <= END_TOLERANCE ||
+      (footerVisible && footerBottom <= innerHeight + 8 && remaining <= 8);
+    const contact = secs[secs.length - 1];
+    const contactEntry = Math.max(0, top(contact) - (innerHeight - hh));
+    const lastScroll = Math.max(0, html.scrollHeight - innerHeight);
+    // The final section cannot travel all the way past the header. Use its
+    // reachable entry-to-document-end range instead of leaving a stalled line.
+    const contactProgress = clamp((scrollY - contactEntry) / Math.max(1, lastScroll - contactEntry));
+
+    // Top global navigation progress
+    let a = 0;
+    secs.forEach((s, i) => { if (top(s) <= line) a = i; });
+    if (atEnd || (footerVisible && contact.getBoundingClientRect().top < innerHeight - hh)) a = secs.length - 1;
+    links.forEach((l, i) => {
+      const s = secs[i];
+      const p = i === secs.length - 1 && atEnd ? 1 :
+        i === secs.length - 1 && i === a ? contactProgress :
+        i === a ? clamp((line - top(s)) / s.offsetHeight) : i < a ? 1 : 0;
+      l.style.setProperty('--p', (p * 100).toFixed(1) + '%');
+      l.classList.toggle('past', i < a);
+      l.classList.toggle('at-end', i === secs.length - 1 && atEnd);
+      if (i === a) l.setAttribute('aria-current', 'location');
+      else l.removeAttribute('aria-current');
+    });
+
+    // Work horizontal translation & active marker update
+    let cur = 0;
+    if (enh) {
+      const x = curX();
+      track.style.transform = 'translate3d(' + (-x).toFixed(1) + 'px,0,0)';
+
+      cur = panelStarts.reduce((nearest, start, i) =>
+        Math.abs(start - x) < Math.abs(panelStarts[nearest] - x) ? i : nearest, 0);
+      const workProgress = clamp(x / maxX);
+      workRuler.style.setProperty('--work-p', workProgress.toFixed(5));
+
+
+
+      // Control Floating Work Navigator visibility (only visible during Work stage)
+      const scrollStart = top(run) - hh;
+      const isWorkActive = scrollY >= scrollStart - 16 && scrollY < scrollStart + span() + 20;
+      if (islandWrap) {
+        islandWrap.classList.toggle('visible', isWorkActive);
+        islandWrap.setAttribute('aria-hidden', isWorkActive ? 'false' : 'true');
+      }
+
+      // A bell-shaped local transition: gently enter and widen, then recede.
+      // At the first project's exact destination the blend is fully absent.
+      if (ovEdge) {
+        const t = clamp(x / Math.max(1, panelStarts[1]));
+        const edgeOpacity = smooth(0, .22, t) * (1 - smooth(.62, 1, t));
+        const baseWidth = Math.max(96, Math.min(180, stage.clientWidth * .11));
+        // Fade the blend's extent, not its opaque Ink join: fading the whole
+        // layer exposes Paper at the chapter boundary and creates a pale seam.
+        const blendWidth = baseWidth * (.8 + .42 * Math.sin(Math.PI * t)) * edgeOpacity;
+        ovEdge.style.opacity = t > 0 && t < 1 ? '1' : '0';
+        ovEdge.style.setProperty('--blend-width', blendWidth.toFixed(1) + 'px');
+      }
+    } else {
+      workRuler.style.setProperty('--work-p', '0');
+
+      if (ovEdge) ovEdge.style.opacity = '0';
+      if (islandWrap) {
+        islandWrap.classList.remove('visible');
+        islandWrap.setAttribute('aria-hidden', 'true');
+      }
+      panels.forEach((p, i) => {
+        if (top(p) <= scrollY + hh + innerHeight * 0.35) cur = i;
+      });
+      if (top(run) > scrollY + hh + innerHeight * 0.35) cur = -1;
+    }
+
+    marks.forEach((m, i) => {
+      m.classList.toggle('past', cur >= 0 && i < cur);
+      if (i === cur) m.setAttribute('aria-current', 'step');
+      else m.removeAttribute('aria-current');
+    });
+  }
+
+  const sched = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+
+  if (footer && 'IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      footerVisible = entries[0].isIntersecting;
+      sched();
+    }, { threshold: [0, 1] }).observe(footer);
+  }
+
+  function go(id, push) {
+    const i = panels.findIndex(p => p.id === id);
+    if (i < 0) return false;
+    scrollTo(0, dest(i));
+    if (push) history.replaceState(null, '', '#' + id);
+    return true;
+  }
+
+  // Intercept hash clicks targeting panels
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || !enh) return;
+    const targetId = a.getAttribute('href').slice(1);
+    if (go(targetId, true)) e.preventDefault();
+  });
+
+  // Keep stage scrollLeft at 0 to avoid native container focus shift
+  stage.addEventListener('scroll', () => {
+    if (enh && stage.scrollLeft !== 0) stage.scrollLeft = 0;
+  });
+
+  // Keyboard accessibility: tabbing into an offscreen panel centers it
+  track.addEventListener('focusin', e => {
+    if (!enh) return;
+    const p = e.target.closest('[data-panel]');
+    if (!p) return;
+    if (stage.scrollLeft !== 0) stage.scrollLeft = 0;
+    const idx = panels.indexOf(p);
+    const targetY = dest(idx);
+    if (Math.abs(scrollY - targetY) > 16) scrollTo(0, targetY);
+  });
+
+  addEventListener('scroll', sched, { passive: true });
+  addEventListener('resize', layout);
+  addEventListener('hashchange', () => { if (enh && location.hash) go(location.hash.slice(1), false); });
+  mq.addEventListener('change', layout);
+  layout();
+  if (location.hash) requestAnimationFrame(() => go(location.hash.slice(1), false));
+})();

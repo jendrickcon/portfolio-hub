@@ -57,9 +57,33 @@ Following the introductory **About** section, the future Professional Portfolio 
 
 ---
 
+## 3b. Concept V2 (prototype revision)
+
+> **Status**: Prototype only. Not production. `concept-v1.html` is unchanged.
+
+[`concept-v2.html`](./concept-v2.html) tests the owner-approved direction with revised live snippets and track geometry:
+
+- **Ink and Paper Palette**: Dark ink background (`#0F1319`), warm paper surfaces (`#F2EEE6`), restrained blue accents (`#7FA6FF` / `#1F4FB8`), and system serif/sans font fallbacks.
+- **Redesigned Overview (Panel 00)**:
+  - 54/46 desktop grid featuring an interactive Featured Projects index on the left (`01 UDM-RADAR`, `02 StudyQuest`, `03 Mini PCS`).
+  - Right-side **Live Conceptual Interface Snippet Frame**: Renders cropped, interactive conceptual interfaces in HTML/CSS for each project with visible `CONCEPTUAL INTERFACE PREVIEW` accessibility badges.
+  - Interactive triggers: pointer hover, keyboard focus, and mobile tab buttons.
+  - Compact secondary cards for Other Projects (`Audiary`, `LAYA`, `Waffle’s Nine Lives`) at the bottom.
+- **Overview-Local Transition**:
+  - Global edge masks (`.edge.l`, `.edge.r`) have been removed.
+  - A local right-edge Paper-to-Ink gradient is attached strictly to the Overview panel, blending into UDM-RADAR as the track scrolls and disappearing once Overview exits.
+- **Strict Track Geometry**:
+  - Each panel is sized to `100vw` with `gap: 0`, ensuring exactly one active panel fills the usable stage.
+  - Mathematical horizontal translation prevents adjacent panel fragments (e.g. cream strips or clipped next chapters) from being visibly exposed.
+  - Bounded horizontal mode activates only at `min-width: 1024px`, `min-height: 700px`, and `prefers-reduced-motion: no-preference`.
+- **Responsive & Accessible Fallback**:
+  - Falls back to a clean vertical document with stacked snippets and chapters on mobile viewports (<960px), short screens (<700px), or when reduced motion is preferred.
+  - Fully accessible keyboard tabbing and marker navigation.
+- **Provisional Content**: Owner-confirmed roles are used; specific evidence, metrics, and secondary project details remain provisional placeholders.
+
 ## 4. Local Preview
 
-To preview this prototype locally using any standard static HTTP server:
+To preview the prototypes locally using any standard static HTTP server:
 
 ```bash
 # From the repository root:
@@ -67,8 +91,7 @@ python -m http.server 8000
 ```
 
 Then navigate in your browser to:
-```text
-http://localhost:8000/prototypes/professional-portfolio/concept-v1.html
-```
+- Concept V1: `http://localhost:8000/prototypes/professional-portfolio/concept-v1.html`
+- Concept V2: `http://localhost:8000/prototypes/professional-portfolio/concept-v2.html`
 
-*This prototype is completely self-contained (vanilla HTML, embedded CSS, vanilla JS) and requires no build tools, Node.js runtime, or external host wrappers.*
+*Both prototypes are completely self-contained (vanilla HTML, embedded CSS, vanilla JS) and require no build tools, Node.js runtime, or external host wrappers.*

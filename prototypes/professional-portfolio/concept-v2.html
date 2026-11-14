@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Jendrick Coniconde — Professional Portfolio · Concept V2 (prototype)</title>
+<style>
+/* CONCEPT V2 — prototype only. Fonts: Newsreader / IBM Plex system fallbacks until self-hosted WOFF2 files are licensed. */
+:root{--ink:#0F1319;--paper:#F2EEE6;--tink:#ECE6DA;--blue-i:#7FA6FF;--blue-p:#1F4FB8;--line-i:#2A2F37;--line-p:#CFC8BA;--mute-i:#A9AEB6;--mute-p:#4A4F57;--hh:72px;
+--serif:"Newsreader","Iowan Old Style","Palatino Linotype",Georgia,serif;--sans:"IBM Plex Sans","Segoe UI",system-ui,Arial,sans-serif;--mono:"IBM Plex Mono",Consolas,"Courier New",monospace}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(var(--hh) + 12px)}
+body{margin:0;background:var(--ink);color:var(--tink);font:16px/1.6 var(--sans)}
+h1,h2,h3,h4,p,dl,dd,ul{margin:0}ul{padding:0;list-style:none}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:-.02em;line-height:1.08}
+a{color:inherit}
+.ink{--fg:var(--tink);--mute:var(--mute-i);--ac:var(--blue-i);--ln:var(--line-i);background:var(--ink);color:var(--fg)}
+.paper{--fg:var(--ink);--mute:var(--mute-p);--ac:var(--blue-p);--ln:var(--line-p);background:var(--paper);color:var(--fg)}
+:focus-visible{outline:3px solid var(--ac,var(--blue-i));outline-offset:3px}
+.skip{position:absolute;left:12px;top:-80px;z-index:50;background:var(--paper);color:var(--ink);padding:10px 16px}.skip:focus{top:12px}
+.mono{font:12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.kick{color:var(--ac);font-weight:600}.mute{color:var(--mute)}
+.wrap{width:min(1240px,92vw);margin:auto}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:40;height:72px;background:var(--ink);border-bottom:1px solid var(--line-i)}
+.hdr .wrap{height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px}
+.brand{text-decoration:none;font-weight:600;white-space:nowrap}.brand span{color:var(--blue-i);font:12px var(--mono);margin-left:8px}
+.nav{display:flex;gap:clamp(14px,2vw,28px);overflow-x:auto}
+.nl{position:relative;flex:none;text-decoration:none;color:var(--mute-i);padding:26px 0 18px;min-height:44px}
+.nl[aria-current]{color:var(--tink);font-weight:700}
+.nl .rule{position:absolute;left:0;right:0;bottom:8px;height:3px;background:var(--line-i);opacity:0}
+.nl[aria-current] .rule,.nl.done .rule{opacity:1}
+.nl .rule i{display:block;height:100%;width:var(--p,0%);background:var(--blue-i)}
+.nl.done{color:var(--tink)}.nl.done::after{content:" ✓";color:var(--blue-i)}
+.res{justify-self:end;text-decoration:none;font-weight:600;border-bottom:2px solid var(--blue-i);padding:4px 0;white-space:nowrap}
+
+/* about */
+.about{padding:clamp(56px,9vw,120px) 0 clamp(48px,7vw,90px)}
+.about h1{font-size:clamp(46px,7vw,104px);max-width:12em;margin:22px 0 24px}
+.about h1 em{color:var(--blue-i)}
+.about .intro{max-width:40rem;font-size:18px;color:var(--mute-i)}
+.acts{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin-top:30px}
+.btn{display:inline-flex;align-items:center;min-height:46px;padding:10px 20px;background:var(--blue-i);color:var(--ink);font-weight:700;text-decoration:none}
+.lnk{font-weight:600;color:var(--tink)}
+.foot{margin-top:56px;padding-top:14px;border-top:1px solid var(--line-i);display:flex;justify-content:space-between;gap:12px;color:var(--mute-i)}
+
+/* work runway & stage */
+.wk{padding:0}
+.stage-head{padding:20px 0 0}
+.markers{display:flex;flex-wrap:wrap;gap:6px 22px;padding:12px 0;border-bottom:1px solid var(--line-i)}
+.mk{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 2px;color:var(--mute-i);text-decoration:none;border-bottom:3px solid transparent}
+.mk::before{content:"";width:12px;height:12px;border:2px solid var(--blue-i);border-radius:50%}
+.mk.done::before{background:var(--blue-i);content:"✓";color:var(--ink);font:700 9px/8px var(--mono);text-align:center}
+.mk.done{color:var(--tink)}
+.mk[aria-current]{color:var(--tink);font-weight:700;border-bottom-color:var(--blue-i)}
+.mk[aria-current]::before{background:var(--blue-i)}
+
+/* base panels (vertical fallback) */
+.panel{padding:clamp(40px,5vw,70px) 0;border-top:1px solid var(--line-i);position:relative}
+.panel h2{font-size:clamp(36px,4.4vw,60px);margin:8px 0 12px}
+.lead{color:var(--mute-i);max-width:34rem;margin-bottom:14px}
+.pgrid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:clamp(24px,4vw,56px);align-items:start}
+
+/* evidence & facts inside detailed panels */
+.evg{display:grid;gap:12px}
+.ev{background:var(--paper);color:var(--ink);border:1px solid var(--line-p);padding:18px;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;background-image:repeating-linear-gradient(135deg,transparent 0 11px,rgba(31,79,184,.06) 11px 12px)}
+.ev .mono{color:var(--blue-p);font-size:11px}
+.ev strong{font:400 clamp(20px,2.4vh,28px)/1.15 var(--serif)}
+.ev p{font-size:13px;color:var(--mute-p)}
+.e1{grid-template-columns:1.6fr 1fr}.e1 .big{grid-row:span 2}
+.e2{grid-template-columns:1fr 1fr}.e2 .big{grid-column:span 2}
+.e3{grid-template-columns:1fr 1fr}
+
+dl.f{margin-top:4px}
+dl.f div{display:grid;grid-template-columns:105px 1fr;gap:14px;padding:8px 0;border-bottom:1px solid var(--line-i);font-size:13px}
+dl.f dt{color:var(--blue-i);font:11px/1.6 var(--mono);text-transform:uppercase;letter-spacing:.08em}
+dd{margin:0}
+.pf{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-i)}
+.pf div{font-size:13px}.pf dt{color:var(--blue-i);font:11px var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.pf .pfn{grid-column:span 2}.pf a{color:var(--blue-i);font-weight:600;text-decoration:none}
+.pf a:hover{text-decoration:underline}
+.act{display:inline-block;margin-top:14px;color:var(--blue-i);font-weight:600;font-size:13px;text-decoration:none}
+.act:hover{text-decoration:underline}
+.next{display:inline-block;margin-top:14px;font-weight:600;color:var(--blue-i);padding:10px 0;text-decoration:none}
+
+/* other projects panel */
+.oplist{display:grid;gap:12px}
+.oplist li{padding:16px;border:1px solid var(--line-i);background:rgba(255,255,255,.02)}
+.oplist h3{font-size:24px;margin-bottom:4px}
+.oplist p{font-size:14px;color:var(--mute-i)}
+.oplist .mono{color:var(--blue-i);margin-top:6px}
+
+/* =======================================================
+   OVERVIEW PANEL (Panel 00) — Redesigned with Live Snippets
+   ======================================================= */
+.ovp{background:var(--paper);color:var(--ink);position:relative}
+.ov-wrap{width:100%;display:flex;flex-direction:column;gap:16px}
+.ov-topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;border-bottom:1px solid var(--line-p);padding-bottom:12px}
+.ov-topbar h2{font-size:clamp(32px,4vh,48px)}
+.ov-cue{font-size:11px;color:var(--mute-p)}
+
+/* mobile snippet quick tabs */
+.mobile-tabs{display:none;gap:8px;overflow-x:auto;padding-bottom:6px}
+.mtab{padding:7px 12px;font:11px var(--mono);background:rgba(0,0,0,.06);border:1px solid var(--line-p);color:var(--ink);cursor:pointer;white-space:nowrap}
+.mtab.active{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:700}
+
+/* overview main layout: 54% index / 46% snippet */
+.ov-main{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(20px,3.2vw,44px);align-items:stretch}
+.ov-index{display:flex;flex-direction:column;gap:8px}
+.ov-subhead{display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--line-p)}
+.ov-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+
+/* featured project interactive row */
+.frow{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:12px 14px;border:1px solid transparent;background:rgba(255,255,255,.4);border-radius:4px;cursor:pointer;text-decoration:none;color:inherit;transition:background .15s ease,border-color .15s ease}
+.frow:hover,.frow:focus-visible{background:#fff;border-color:var(--line-p)}
+.frow.active{background:#fff;border-color:var(--blue-p);box-shadow:0 3px 12px rgba(31,79,184,.1)}
+.frow .num{font:14px var(--mono);color:var(--blue-p);font-weight:700;padding-top:2px}
+.frow-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.frow h3{font-size:clamp(22px,2.4vh,30px);letter-spacing:-.01em}
+.frow-tag{font:11px var(--mono);color:var(--mute-p);background:rgba(0,0,0,.06);padding:2px 6px;border-radius:2px}
+.frow-meta{display:flex;gap:12px;margin:4px 0 6px;color:var(--blue-p);font-size:11px;font-weight:600}
+.frow-desc{font-size:13.5px;color:var(--mute-p);line-height:1.45}
+.frow-act{margin-top:6px;display:flex;justify-content:space-between;align-items:center}
+.frow-act .state{font:10px var(--mono);color:var(--mute-p);letter-spacing:.05em}
+.frow.active .frow-act .state{color:var(--blue-p);font-weight:700}
+.frow-act .jump{font:11px var(--mono);color:var(--blue-p);text-decoration:none;font-weight:700}
+.frow-act .jump:hover{text-decoration:underline}
+
+/* live conceptual snippet frame */
+.snippet-stage{display:flex;flex-direction:column;min-height:0}
+.snippet-frame{background:#11151D;color:#ECE6DA;border:1px solid #282E3B;border-radius:6px;display:flex;flex-direction:column;flex:1;min-height:0;box-shadow:0 12px 28px rgba(0,0,0,.22);overflow:hidden}
+.snippet-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#181E29;border-bottom:1px solid #282E3B}
+.snippet-badge{display:inline-flex;align-items:center;gap:7px;font:11px var(--mono);color:#9FB4DB;font-weight:600;letter-spacing:.09em}
+.badge-dot{width:7px;height:7px;border-radius:50%;background:#7FA6FF;box-shadow:0 0 8px #7FA6FF}
+.snippet-proj-label{font:11px var(--mono);color:#7E8592;letter-spacing:.08em}
+
+/* snippet viewport & individual panels */
+.snippet-body{padding:14px;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:12px;overflow:hidden}
+.snippet-view{display:none;flex-direction:column;gap:10px}
+.snippet-view.active{display:flex}
+
+/* snippet inner UI styling */
+.sn-context{font:11px var(--mono);color:#7FA6FF;letter-spacing:.08em;padding-bottom:4px;border-bottom:1px solid #262D3B}
+.sn-card{background:#181F2C;border:1px solid #283142;padding:9px 12px;border-radius:4px}
+.sn-row{display:grid;grid-template-columns:1.2fr 1fr auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.sn-row:last-child{border-bottom:0}
+.sn-row .name{font-weight:600;color:#F2EEE6}
+.sn-row .sub{color:#9097A3;font-size:11px}
+.sn-pill{font:10px/1 var(--mono);padding:3px 6px;border-radius:3px;text-align:center}
+.sn-pill.ok{background:rgba(127,166,255,.15);color:#7FA6FF;border:1px solid rgba(127,166,255,.3)}
+.sn-pill.att{background:rgba(235,160,80,.15);color:#FFB668;border:1px solid rgba(235,160,80,.3)}
+.sn-pill.neu{background:rgba(255,255,255,.08);color:#C8CED8}
+.sn-trend{font:11px var(--mono);color:#9FB4DB;text-align:right}
+.sn-detail{background:#151B26;border-left:3px solid #7FA6FF;padding:7px 10px;font-size:11.5px;color:#C7CED9;line-height:1.4}
+.sn-stat-bar{display:flex;justify-content:space-between;padding:6px 10px;background:rgba(127,166,255,.08);border:1px solid rgba(127,166,255,.2);border-radius:3px;font:11px var(--mono);color:#C7D8FF}
+
+.snippet-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#151A24;border-top:1px solid #282E3B;font-size:11px}
+.snippet-caption{color:#8A92A0;font-size:11px}
+.snippet-jump{color:#7FA6FF;text-decoration:none;font:11px var(--mono);font-weight:700}
+.snippet-jump:hover{text-decoration:underline}
+
+/* compact secondary other projects row */
+.ov-other{border-top:1px solid var(--line-p);padding-top:10px;margin-top:4px}
+.ov-other-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.ov-other-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.oc{display:grid;grid-template-columns:32px 1fr;gap:8px;padding:8px 10px;border:1px solid var(--line-p);background:rgba(255,255,255,.5);border-radius:3px;text-decoration:none;color:inherit;transition:background .15s}
+.oc:hover,.oc:focus-visible{background:#fff;border-color:var(--blue-p)}
+.oc .oc-num{font:11px var(--mono);color:var(--blue-p);padding-top:2px}
+.oc h4{font-size:15px;margin-bottom:2px}
+.oc p{font-size:11.5px;color:var(--mute-p);line-height:1.35}
+.oc .oc-tag{font:10px var(--mono);color:var(--mute-p);display:block;margin-top:3px}
+
+/* Overview-local right-edge transition gradient (Paper into Ink) */
+.ov-trans-edge{position:absolute;top:0;right:0;bottom:0;width:clamp(80px,10vw,160px);background:linear-gradient(90deg,transparent 0%,rgba(15,19,25,.35) 45%,var(--ink) 100%);pointer-events:none;z-index:3}
+
+/* =======================================================
+   ENHANCED HORIZONTAL DESKTOP STAGE (Strict 100vw math)
+   ======================================================= */
+.enh .runway{position:relative}
+.enh .stage{position:sticky;top:var(--hh);height:calc(100svh - var(--hh));width:100%;overflow:hidden;display:flex;flex-direction:column;background:var(--ink)}
+.enh .track{display:flex;width:100%;height:100%;gap:0;padding:0;margin:0;will-change:transform}
+.enh .panel{flex:0 0 100vw;width:100vw;min-width:100vw;max-width:100vw;height:100%;padding:0;margin:0;border-top:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;justify-content:center}
+.enh .panel>.wrap{width:min(1240px,92vw);height:100%;max-height:calc(100svh - var(--hh) - 64px);margin:auto;display:flex;flex-direction:column;justify-content:center}
+.enh .pgrid{height:100%;grid-template-rows:1fr;align-items:stretch}
+.enh .pgrid>div{display:flex;flex-direction:column;justify-content:center;min-height:0}
+.enh .evg{flex:1;min-height:0;align-content:center}
+.enh .ev{min-height:96px;padding:12px}
+.enh .ev strong{font-size:clamp(18px,2vh,24px)}
+.enh dl.f{display:flex;flex-direction:column;justify-content:center}
+.enh dl.f div{padding:4px 0}
+.enh .ovp>.wrap{height:100%;max-height:calc(100svh - var(--hh) - 64px);display:flex;flex-direction:column;justify-content:space-between}
+.enh .ov-main{flex:1;min-height:0;align-items:stretch}
+.enh .ov-index{justify-content:space-between}
+.enh .snippet-stage{height:100%;min-height:0}
+
+/* exit transition to capabilities */
+#capabilities{position:relative}
+.cap-top-trans{height:40px;background:linear-gradient(180deg,var(--ink),transparent);position:absolute;top:0;left:0;right:0;pointer-events:none}
+
+/* standard sections */
+.sec{padding:clamp(64px,8vw,110px) 0}
+.sec h2{font-size:clamp(38px,5vw,66px);margin:10px 0 30px}
+.cap{display:grid;grid-template-columns:1fr 1fr;gap:0 6%}
+.cap li{padding:18px 0;border-top:1px solid var(--ln)}.cap h3{font:700 17px/1.3 var(--sans);letter-spacing:0}.cap p{font-size:14px;color:var(--mute)}
+.jr li{display:grid;grid-template-columns:170px 1fr;gap:24px;padding:16px 0;border-top:1px solid var(--ln)}
+.jr .mono{color:var(--ac)}
+.contact{background:#0A0D12}
+.contact .links{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:center}
+.contact a{padding:8px 0}
+.note{margin-top:28px;padding:14px 16px;border:1px dashed var(--line-i);color:var(--mute-i);font-size:14px;max-width:44rem}
+footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
+
+/* responsive breakpoints */
+@media (max-width:960px){
+ .hdr .wrap{grid-template-columns:1fr auto}.nav{grid-column:1/-1;grid-row:2}.hdr{height:auto;min-height:72px;padding-bottom:4px}
+ .nl{padding:10px 0 14px}.brand,.res{padding-top:14px}
+ .ov-main{grid-template-columns:1fr;gap:20px}
+ .mobile-tabs{display:flex}
+ .snippet-stage{min-height:240px}
+ .ov-other-grid{grid-template-columns:1fr}
+ .ov-trans-edge{display:none}
+ .pgrid,.cap{grid-template-columns:1fr}.jr li{grid-template-columns:1fr;gap:4px}
+ dl.f div{grid-template-columns:1fr;gap:2px}
+}
+@media (max-width:360px){.brand span{display:none}}
+@media (prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr" id="hdr"><div class="wrap">
+ <a class="brand" href="#about">JENDRICK<span>/ ENUHRI</span></a>
+ <nav class="nav" aria-label="Portfolio sections">
+  <a class="nl mono" data-sec="about" href="#about">About<span class="rule" aria-hidden="true"><i></i></span></a>
+  <a class="nl mono" data-sec="work" href="#work">Work<span class="rule" aria-hidden="true"><i></i></span></a>
+  <a class="nl mono" data-sec="capabilities" href="#capabilities">Capabilities<span class="rule" aria-hidden="true"><i></i></span></a>
+  <a class="nl mono" data-sec="journey" href="#journey">Journey<span class="rule" aria-hidden="true"><i></i></span></a>
+  <a class="nl mono" data-sec="contact" href="#contact">Contact<span class="rule" aria-hidden="true"><i></i></span></a>
+ </nav>
+ <a class="res" href="#resume-note">View résumé</a>
+</div></header>
+
+<main id="main">
+<section id="about" class="ink about"><div class="wrap">
+ <p class="mono kick">About / Jendrick A. Coniconde</p>
+ <h1>Making digital work <em>more human.</em></h1>
+ <p class="intro">BSIT student focused on UI design, front-end development and QA. I plan, direct and test projects, using AI assistance as part of a workflow where I decide what gets built.</p>
+ <div class="acts"><a class="btn" href="#overview">View selected work ↓</a><a class="lnk" href="#resume-note">View résumé</a><a class="lnk" href="#contact">Contact</a></div>
+ <div class="foot mono"><span>UI / Front-end / Testing</span><span>Concept V2 · prototype</span></div>
+</div></section>
+
+<div id="work">
+<section id="story" class="ink runway wk" aria-label="Work: overview and project stories">
+ <div class="stage">
+  <div class="stage-head wrap"><nav class="markers" aria-label="Jump within Work">
+   <a class="mk mono" data-mk href="#overview">00 Overview</a>
+   <a class="mk mono" data-mk href="#udm-radar">01 UDM-RADAR</a>
+   <a class="mk mono" data-mk href="#studyquest">02 StudyQuest</a>
+   <a class="mk mono" data-mk href="#mini-pcs">03 Mini PCS</a>
+   <a class="mk mono" data-mk href="#other-projects">04 Other Projects</a>
+  </nav></div>
+
+  <div class="track">
+
+   <!-- ==============================================
+        PANEL 00: OVERVIEW WITH LIVE INTERFACE SNIPPETS
+        ============================================== -->
+   <article id="overview" class="panel paper ovp" data-panel aria-labelledby="ov-t">
+    <div class="wrap ov-wrap">
+     <div class="ov-topbar">
+      <div>
+       <p class="mono kick">01 / Work</p>
+       <h2 id="ov-t">Selected Work</h2>
+      </div>
+      <p class="ov-cue mono">Interactive overview · Chapters follow horizontally →</p>
+     </div>
+
+     <!-- Mobile Quick Tab Selector -->
+     <div class="mobile-tabs" role="tablist" aria-label="Mobile preview selector">
+      <button type="button" class="mtab active" data-tab="udm-radar">01 UDM-RADAR</button>
+      <button type="button" class="mtab" data-tab="studyquest">02 StudyQuest</button>
+      <button type="button" class="mtab" data-tab="mini-pcs">03 Mini PCS</button>
+     </div>
+
+     <div class="ov-main">
+      <!-- Left: Featured Projects Index -->
+      <div class="ov-index">
+       <div class="ov-subhead">
+        <span class="mono mute">Featured Projects</span>
+        <span class="mono mute" style="font-size:10px">Hover or focus to inspect</span>
+       </div>
+       <div class="ov-list" role="tablist" aria-label="Featured projects index">
+        <!-- 01 UDM-RADAR -->
+        <a class="frow active" href="#udm-radar" data-target="udm-radar" role="tab" aria-selected="true" id="tab-udm-radar">
+         <span class="num">01</span>
+         <div>
+          <div class="frow-head">
+           <h3>UDM-RADAR</h3>
+           <span class="frow-tag">Capstone</span>
+          </div>
+          <div class="frow-meta mono"><span>Role: Project Leader</span></div>
+          <p class="frow-desc">Academic outcome analytics and decision support for a university college.</p>
+          <div class="frow-act">
+           <span class="state mono">Previewing snippet</span>
+           <span class="jump mono">Chapter 01 →</span>
+          </div>
+         </div>
+        </a>
+
+        <!-- 02 StudyQuest -->
+        <a class="frow" href="#studyquest" data-target="studyquest" role="tab" aria-selected="false" id="tab-studyquest">
+         <span class="num">02</span>
+         <div>
+          <div class="frow-head">
+           <h3>StudyQuest</h3>
+           <span class="frow-tag">Platform</span>
+          </div>
+          <div class="frow-meta mono"><span>Role: Lead Developer</span></div>
+          <p class="frow-desc">A gamified web platform that turns study material into structured courses.</p>
+          <div class="frow-act">
+           <span class="state mono">Hover to inspect</span>
+           <span class="jump mono">Chapter 02 →</span>
+          </div>
+         </div>
+        </a>
+
+        <!-- 03 Mini PCS -->
+        <a class="frow" href="#mini-pcs" data-target="mini-pcs" role="tab" aria-selected="false" id="tab-mini-pcs">
+         <span class="num">03</span>
+         <div>
+          <div class="frow-head">
+           <h3>Mini PCS</h3>
+           <span class="frow-tag">Assessment</span>
+          </div>
+          <div class="frow-meta mono"><span>Role: Assessment Developer</span></div>
+          <p class="frow-desc">A small production-control site connected to an Airtable database.</p>
+          <div class="frow-act">
+           <span class="state mono">Hover to inspect</span>
+           <span class="jump mono">Chapter 03 →</span>
+          </div>
+         </div>
+        </a>
+       </div>
+      </div>
+
+      <!-- Right: Live Conceptual Interface Snippet Frame -->
+      <div class="snippet-stage">
+       <div class="snippet-frame">
+        <div class="snippet-top">
+         <span class="snippet-badge">
+          <span class="badge-dot"></span>
+          CONCEPTUAL INTERFACE PREVIEW
+         </span>
+         <span class="snippet-proj-label mono" id="snippet-tag">UDM-RADAR // DECISION SUPPORT</span>
+        </div>
+
+        <div class="snippet-body">
+         <!-- Snippet 1: UDM-RADAR -->
+         <div class="snippet-view active" id="view-udm-radar">
+          <div class="sn-context">TERM: AY 2025–2026 // MIDTERM ADVISORY CYCLE</div>
+          <div class="sn-stat-bar">
+           <span>MONITORING: 3 MODULES EVALUATED</span>
+           <span>HUMAN REVIEW: PENDING</span>
+          </div>
+          <div class="sn-card">
+           <div class="sn-row">
+            <div><span class="name">Subject 01</span><div class="sub">Core Systems Programming</div></div>
+            <span class="sn-pill ok">STABLE</span>
+            <span class="sn-trend">▲ ON TRACK</span>
+           </div>
+           <div class="sn-row">
+            <div><span class="name">Subject 02</span><div class="sub">Database Foundations</div></div>
+            <span class="sn-pill att">NEEDS ATTN</span>
+            <span class="sn-trend">▼ FLAG</span>
+           </div>
+           <div class="sn-row">
+            <div><span class="name">Subject 03</span><div class="sub">Network Protocols</div></div>
+            <span class="sn-pill ok">STABLE</span>
+            <span class="sn-trend">▬ TARGET</span>
+           </div>
+          </div>
+          <div class="sn-detail">
+           <strong>Intervention Protocol:</strong> Advisory notice draft queued for faculty verification before release. Non-personal demonstration layout.
+          </div>
+         </div>
+
+         <!-- Snippet 2: StudyQuest -->
+         <div class="snippet-view" id="view-studyquest">
+          <div class="sn-context">MODULE: CLOUD COMPUTING // UNIT 02</div>
+          <div class="sn-stat-bar">
+           <span>SCHOLAR LEVEL 3 · 480 XP</span>
+           <span>QUEST STREAK: 3 DAYS</span>
+          </div>
+          <div class="sn-card">
+           <div class="sn-row">
+            <div><span class="name">Lesson 2.2</span><div class="sub">Distributed State Models</div></div>
+            <span class="sn-pill ok">COMPLETED</span>
+            <span class="sn-trend">✓ +50 XP</span>
+           </div>
+           <div class="sn-row">
+            <div><span class="name">Lesson 2.3</span><div class="sub">Quorum Consistency</div></div>
+            <span class="sn-pill ok">REVIEWED</span>
+            <span class="sn-trend">✓ +50 XP</span>
+           </div>
+           <div class="sn-row">
+            <div><span class="name">Mixed Assessment</span><div class="sub">10 MCQ / True-False Gates</div></div>
+            <span class="sn-pill att">UNLOCKED</span>
+            <span class="sn-trend">★ GATE</span>
+           </div>
+          </div>
+          <div class="sn-detail">
+           <strong>Curriculum Rule:</strong> Pass mixed assessment gate to unlock Unit 03 lesson progression. Gamified syllabus retention model.
+          </div>
+         </div>
+
+         <!-- Snippet 3: Mini PCS -->
+         <div class="snippet-view" id="view-mini-pcs">
+          <div class="sn-context">PRODUCTION CONTROL // AIRTABLE INTEGRATION</div>
+          <div class="sn-stat-bar">
+           <span>BASE: [PRODUCTION_LOG_V1]</span>
+           <span>STATUS: CONNECTED (REST)</span>
+          </div>
+          <div class="sn-card">
+           <div class="sn-row">
+            <div><span class="name">Batch #01-A</span><div class="sub">Component Ingestion</div></div>
+            <span class="sn-pill ok">COMPLETED</span>
+            <span class="sn-trend">SYNCED</span>
+           </div>
+           <div class="sn-row">
+            <div><span class="name">Batch #02-B</span><div class="sub">Assembly &amp; Routing</div></div>
+            <span class="sn-pill att">IN PROGRESS</span>
+            <span class="sn-trend">POLL 2m</span>
+           </div>
+           <div class="sn-row">
+            <div><span class="name">Batch #03-C</span><div class="sub">Dispatch Inspection</div></div>
+            <span class="sn-pill neu">PENDING</span>
+            <span class="sn-trend">QUEUED</span>
+           </div>
+          </div>
+          <div class="sn-detail">
+           <strong>Workflow Monitor:</strong> Batch #02-B currently active. 14 of 20 unit milestones verified via Airtable webhook polling.
+          </div>
+         </div>
+        </div>
+
+        <div class="snippet-foot">
+         <span class="snippet-caption">Conceptual structural interface preview · Non-personal mock</span>
+         <a class="snippet-jump" id="snippet-jump-link" href="#udm-radar">Chapter Details →</a>
+        </div>
+       </div>
+      </div>
+     </div>
+
+     <!-- Bottom: Compact Other Projects Row -->
+     <div class="ov-other">
+      <div class="ov-other-head">
+       <span class="mono mute" style="font-size:11px">Other Projects</span>
+       <span class="mono mute" style="font-size:10px">Provisional supporting entries</span>
+      </div>
+      <div class="ov-other-grid">
+       <a class="oc" href="#other-projects">
+        <span class="oc-num">04.1</span>
+        <div>
+         <h4>Audiary</h4>
+         <p>Audio recording and notes platform exploration.</p>
+         <span class="oc-tag">Status: to confirm</span>
+        </div>
+       </a>
+       <a class="oc" href="#other-projects">
+        <span class="oc-num">04.2</span>
+        <div>
+         <h4>LAYA</h4>
+         <p>Community and creative interface concepts.</p>
+         <span class="oc-tag">Status: to confirm</span>
+        </div>
+       </a>
+       <a class="oc" href="#other-projects">
+        <span class="oc-num">04.3</span>
+        <div>
+         <h4>Waffle’s Nine Lives</h4>
+         <p>Interactive web game and narrative prototype.</p>
+         <span class="oc-tag">Status: to confirm</span>
+        </div>
+       </a>
+      </div>
+     </div>
+    </div>
+    <!-- Local right-edge gradient (Paper to Ink transition) -->
+    <div class="ov-trans-edge" aria-hidden="true"></div>
+   </article>
+
+   <!-- ==============================================
+        PANEL 01: UDM-RADAR
+        ============================================== -->
+   <article class="panel" id="udm-radar" data-panel>
+    <div class="wrap pgrid">
+     <div>
+      <p class="mono kick">01 / Featured · Project Leader</p>
+      <h2>UDM-RADAR</h2>
+      <p class="lead">Predictive academic outcome analytics and decision support for a university college.</p>
+      <div class="evg e1">
+       <div class="ev big">
+        <span class="mono">Evidence 01 / 03 · placeholder</span>
+        <strong>Academic Review workflow</strong>
+        <p>Intended to show the main review flow. Existing preview may be a login screen only, so it is not used as proof.</p>
+       </div>
+       <div class="ev"><span class="mono">02 / 03</span><strong>Student portal interface</strong></div>
+       <div class="ev"><span class="mono">03 / 03</span><strong>Browser-test evidence</strong></div>
+      </div>
+     </div>
+     <div>
+      <dl class="f">
+       <div><dt>Role</dt><dd>Project Leader.</dd></div>
+       <div><dt>Contribution</dt><dd>Planned and coordinated the work, selected features and scope, and directed interface and workflow decisions.</dd></div>
+       <div><dt>Decision</dt><dd>To confirm with owner (one concrete scope or UI decision).</dd></div>
+       <div><dt>AI use</dt><dd>Substantial AI-assisted implementation; I structured the prompts and reviewed the output.</dd></div>
+       <div><dt>Limit</dt><dd>Team project; not sole authorship. Full system lives outside the Hub repo.</dd></div>
+      </dl>
+      <dl class="pf">
+       <div><dt>Type</dt><dd>Capstone project</dd></div>
+       <div><dt>Team context</dt><dd>Team project, I led</dd></div>
+       <div><dt>Evidence</dt><dd>Placeholders only</dd></div>
+       <div><dt>Status</dt><dd>To confirm</dd></div>
+       <div class="pfn"><a href="#studyquest">Next project: StudyQuest →</a></div>
+      </dl>
+      <a class="act" href="#resume-note">Repository / evidence: link to confirm</a>
+     </div>
+    </div>
+   </article>
+
+   <!-- ==============================================
+        PANEL 02: STUDYQUEST
+        ============================================== -->
+   <article class="panel" id="studyquest" data-panel>
+    <div class="wrap pgrid">
+     <div>
+      <p class="mono kick">02 / Featured · Lead Developer</p>
+      <h2>StudyQuest</h2>
+      <p class="lead">A gamified web platform that turns uploaded study material into courses and assessments.</p>
+      <div class="evg e2">
+       <div class="ev big">
+        <span class="mono">Evidence 01 / 03 · placeholder</span>
+        <strong>Course-generation flow</strong>
+        <p>Intended to show upload to structured course. Existing preview may be a login screen only.</p>
+       </div>
+       <div class="ev"><span class="mono">02 / 03</span><strong>Learning navigation</strong></div>
+       <div class="ev"><span class="mono">03 / 03</span><strong>QA / draft-removal evidence</strong></div>
+      </div>
+     </div>
+     <div>
+      <dl class="f">
+       <div><dt>Role</dt><dd>Lead Developer.</dd></div>
+       <div><dt>Contribution</dt><dd>Originated much of the product concept and directed the UI/UX structure and vision.</dd></div>
+       <div><dt>Decision</dt><dd>To confirm with owner.</dd></div>
+       <div><dt>AI use</dt><dd>AI-assisted implementation, directed and reviewed by me.</dd></div>
+       <div><dt>Limit</dt><dd>Detailed feature claims need verification against the project repo.</dd></div>
+      </dl>
+      <dl class="pf">
+       <div><dt>Type</dt><dd>Web platform project</dd></div>
+       <div><dt>Team context</dt><dd>Lead developer</dd></div>
+       <div><dt>Evidence</dt><dd>Placeholders only</dd></div>
+       <div><dt>Status</dt><dd>To confirm</dd></div>
+       <div class="pfn"><a href="#mini-pcs">Next project: Mini PCS →</a></div>
+      </dl>
+      <a class="act" href="#resume-note">Repository / evidence: link to confirm</a>
+     </div>
+    </div>
+   </article>
+
+   <!-- ==============================================
+        PANEL 03: MINI PCS
+        ============================================== -->
+   <article class="panel" id="mini-pcs" data-panel>
+    <div class="wrap pgrid">
+     <div>
+      <p class="mono kick">03 / Featured · Assessment</p>
+      <h2>Mini PCS</h2>
+      <p class="lead">A small production-control website built during a practical assessment.</p>
+      <div class="evg e3">
+       <div class="ev">
+        <span class="mono">Evidence 01 / 02 · placeholder</span>
+        <strong>Production-control interface</strong>
+        <p>Public sharing of assessment material is unconfirmed.</p>
+       </div>
+       <div class="ev">
+        <span class="mono">02 / 02</span>
+        <strong>Airtable integration flow</strong>
+       </div>
+      </div>
+     </div>
+     <div>
+      <dl class="f">
+       <div><dt>Role</dt><dd>Assessment Project Developer.</dd></div>
+       <div><dt>Contribution</dt><dd>Built the site and connected it to Airtable.</dd></div>
+       <div><dt>Decision</dt><dd>To confirm with owner.</dd></div>
+       <div><dt>AI use</dt><dd>The assessment permitted AI assistance.</dd></div>
+       <div><dt>Limit</dt><dd>Assessment project; no results or outcomes are claimed.</dd></div>
+      </dl>
+      <dl class="pf">
+       <div><dt>Type</dt><dd>Practical assessment</dd></div>
+       <div><dt>Integration</dt><dd>Airtable</dd></div>
+       <div><dt>Evidence</dt><dd>Public sharing unconfirmed</dd></div>
+       <div><dt>Status</dt><dd>Assessment, complete</dd></div>
+       <div class="pfn"><a href="#other-projects">Next: Other Projects →</a></div>
+      </dl>
+      <a class="act" href="#resume-note">Repository / evidence: link to confirm</a>
+     </div>
+    </div>
+   </article>
+
+   <!-- ==============================================
+        PANEL 04: OTHER PROJECTS
+        ============================================== -->
+   <article class="panel" id="other-projects" data-panel>
+    <div class="wrap pgrid">
+     <div>
+      <p class="mono kick">04 / Other Projects</p>
+      <h2>More work</h2>
+      <p class="lead">Shorter entries for supporting projects. Roles and descriptions are provisional.</p>
+      <div class="ev" style="min-height:120px">
+       <span class="mono">Repository index</span>
+       <strong>Verified links to confirm</strong>
+       <p>Verified GitHub repositories and live demos will be linked here.</p>
+      </div>
+      <a class="next" href="#capabilities">Next: Capabilities ↓</a>
+     </div>
+     <ul class="oplist">
+      <li>
+       <h3>Audiary</h3>
+       <p>Audio recording and notes platform exploration.</p>
+       <p class="mono">Role / status: to confirm</p>
+      </li>
+      <li>
+       <h3>LAYA</h3>
+       <p>Community and creative interface concepts.</p>
+       <p class="mono">Role / status: to confirm</p>
+      </li>
+      <li>
+       <h3>Waffle’s Nine Lives</h3>
+       <p>Interactive web game and narrative prototype.</p>
+       <p class="mono">Role / status: to confirm</p>
+      </li>
+     </ul>
+    </div>
+   </article>
+
+  </div>
+ </div>
+</section>
+</div>
+
+<!-- ==============================================
+     CAPABILITIES SECTION
+     ============================================== -->
+<section id="capabilities" class="paper sec">
+ <div class="cap-top-trans" aria-hidden="true"></div>
+ <div class="wrap">
+  <p class="mono kick">02 / Capabilities</p>
+  <h2>How I contribute</h2>
+  <ul class="cap">
+   <li><h3>UI &amp; interface direction</h3><p>Hierarchy, flow and the details people touch.</p></li>
+   <li><h3>Front-end implementation</h3><p>Browser interfaces, refined through iteration.</p></li>
+   <li><h3>QA &amp; browser testing</h3><p>Checking behaviour, responsiveness and edge cases.</p></li>
+   <li><h3>Systems integration</h3><p>Connecting interfaces, services and data (for example Airtable).</p></li>
+   <li><h3>Planning &amp; leadership</h3><p>Scope, priorities and task coordination.</p></li>
+   <li><h3>AI-assisted development</h3><p>Structuring prompts, reviewing results and deciding what stays.</p></li>
+  </ul>
+ </div>
+</section>
+
+<!-- ==============================================
+     JOURNEY SECTION
+     ============================================== -->
+<section id="journey" class="ink sec"><div class="wrap">
+ <p class="mono kick">03 / Journey</p>
+ <h2>Learning in practice</h2>
+ <ul class="jr">
+  <li><span class="mono">University</span><p>Universidad de Manila · BSIT, 2023 – present</p></li>
+  <li><span class="mono">Senior high</span><p>Information and Communications Technology, 2021 – 2023</p></li>
+  <li><span class="mono">Recognition</span><p>Academic distinctions, SHS 2022–2023 and college · exact awards to confirm</p></li>
+  <li><span class="mono">Certification</span><p>TESDA · Computer Systems Servicing NC II · June 2023</p></li>
+  <li><span class="mono">Course</span><p>AWS · Foundations of Prompt Engineering (completion) · October 2026</p></li>
+  <li><span class="mono">Participation</span><p>UMAK ITSO · Python · about 4 November 2026 · exact date to confirm</p></li>
+ </ul>
+</div></section>
+
+<!-- ==============================================
+     CONTACT SECTION
+     ============================================== -->
+<section id="contact" class="ink contact sec"><div class="wrap">
+ <p class="mono kick">04 / Contact</p>
+ <h2>Let’s make something useful.</h2>
+ <div class="links">
+  <a href="mailto:conicondejendrick@gmail.com">conicondejendrick@gmail.com ↗</a>
+  <a href="https://github.com/jendrickcon" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+  <a href="https://www.linkedin.com/in/jendrickcon/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+  <a class="btn" href="#resume-note">View résumé</a>
+ </div>
+ <p class="note" id="resume-note" tabindex="-1">Prototype note: the résumé action is a placeholder. A phone-free copy of Jendrick_Coniconde_OJT_Resume.pdf must be prepared and reviewed before any public release. No PDF is included in this repository.</p>
+</div></section>
+</main>
+
+<footer class="ink"><div class="wrap mono">Jendrick A. Coniconde / Enuhri · Concept V2 · content provisional</div></footer>
+
+<script>
+(() => {
+  const $$ = s => [...document.querySelectorAll(s)];
+  const html = document.documentElement, hdr = document.getElementById('hdr');
+  const run = document.getElementById('story'), track = run.querySelector('.track');
+  const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
+  const secs = ['about','work','capabilities','journey','contact'].map(id => document.getElementById(id));
+  const mq = matchMedia('(min-width:1024px) and (min-height:700px) and (prefers-reduced-motion:no-preference)');
+  const clamp = v => Math.max(0, Math.min(1, v));
+  const top = el => el.getBoundingClientRect().top + scrollY;
+  let enh = false, queued = false;
+
+  /* Snippet interactive state controller */
+  const snippetData = {
+    'udm-radar': { tag: 'UDM-RADAR // DECISION SUPPORT', href: '#udm-radar' },
+    'studyquest': { tag: 'STUDYQUEST // GAMIFIED LEARNING', href: '#studyquest' },
+    'mini-pcs': { tag: 'MINI PCS // AIRTABLE WORKFLOW', href: '#mini-pcs' }
+  };
+  const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
+  const snippetTag = document.getElementById('snippet-tag');
+  const snippetJump = document.getElementById('snippet-jump-link');
+
+  function setSnippet(key) {
+    if (!snippetData[key]) return;
+    frows.forEach(r => {
+      const match = r.dataset.target === key;
+      r.classList.toggle('active', match);
+      r.setAttribute('aria-selected', match ? 'true' : 'false');
+      const stateEl = r.querySelector('.state');
+      if (stateEl) stateEl.textContent = match ? 'Previewing snippet' : 'Hover to inspect';
+    });
+    mtabs.forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === key);
+    });
+    views.forEach(v => {
+      v.classList.toggle('active', v.id === 'view-' + key);
+    });
+    if (snippetTag) snippetTag.textContent = snippetData[key].tag;
+    if (snippetJump) snippetJump.setAttribute('href', snippetData[key].href);
+  }
+
+  // Pointer hover on featured project row
+  frows.forEach(r => {
+    r.addEventListener('mouseenter', () => setSnippet(r.dataset.target));
+    // Keyboard focus on link or row
+    r.addEventListener('focus', () => setSnippet(r.dataset.target));
+  });
+
+  // Mobile quick tab buttons
+  mtabs.forEach(b => {
+    b.addEventListener('click', () => setSnippet(b.dataset.tab));
+  });
+
+  /* Math & Track Geometry */
+  const H = 0.10; // Overview hold at start (10% of runway)
+  const E = 0.08; // Other Projects hold at end (8% of runway)
+  let maxX = 1;
+
+  function layout() {
+    const hh = hdr.offsetHeight;
+    html.style.setProperty('--hh', hh + 'px');
+    enh = mq.matches;
+    html.classList.toggle('enh', enh);
+
+    if (enh) {
+      // With flex: 0 0 100vw on each panel, total travel is exactly (panels.length - 1) * window.innerWidth
+      const stageW = innerWidth;
+      maxX = Math.max(1, (panels.length - 1) * stageW);
+
+      // Height check: if content inside any panel overflows vertically, fall back to vertical
+      const stageH = innerHeight - hh;
+      const overflows = panels.some(p => {
+        const wrap = p.querySelector('.wrap');
+        return wrap && wrap.scrollHeight > stageH + 40;
+      });
+      if (overflows) {
+        enh = false;
+        html.classList.remove('enh');
+      }
+    }
+
+    // Runway height gives ~1.6x travel distance for smooth scrolling
+    run.style.height = enh ? Math.round(innerHeight - hdr.offsetHeight + maxX * 1.35) + 'px' : '';
+    track.style.transform = '';
+    update();
+  }
+
+  const span = () => Math.max(1, run.offsetHeight - (innerHeight - hdr.offsetHeight));
+  
+  // Calculate horizontal translation X from scroll progress
+  function curX() {
+    if (!enh) return 0;
+    const scrollStart = top(run) - hdr.offsetHeight;
+    const p = clamp((scrollY - scrollStart) / span());
+    if (p <= H) return 0;
+    if (p >= 1 - E) return maxX;
+    const t = (p - H) / (1 - H - E);
+    return t * maxX;
+  }
+
+  // Target scroll position to center panel i
+  function dest(i) {
+    if (!enh) return top(panels[i]) - hdr.offsetHeight - 8;
+    const scrollStart = top(run) - hdr.offsetHeight;
+    if (i === 0) return scrollStart + (H * 0.4) * span();
+    if (i === panels.length - 1) return scrollStart + (1 - E * 0.5) * span();
+    const t = i / (panels.length - 1);
+    const p = H + t * (1 - H - E);
+    return scrollStart + p * span() + 2;
+  }
+
+  function update() {
+    queued = false;
+    const hh = hdr.offsetHeight;
+    const line = scrollY + hh + 20;
+
+    // Top global navigation progress
+    let a = 0;
+    secs.forEach((s, i) => { if (top(s) <= line) a = i; });
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) a = secs.length - 1;
+    links.forEach((l, i) => {
+      const s = secs[i];
+      const p = i === a ? clamp((line - top(s)) / s.offsetHeight) : i < a ? 1 : 0;
+      l.style.setProperty('--p', (p * 100).toFixed(1) + '%');
+      l.classList.toggle('done', i < a);
+      if (i === a) l.setAttribute('aria-current', 'location');
+      else l.removeAttribute('aria-current');
+    });
+
+    // Work horizontal translation & active marker update
+    let cur = 0;
+    if (enh) {
+      const x = curX();
+      track.style.transform = 'translate3d(' + (-x).toFixed(1) + 'px,0,0)';
+      
+      // Determine which panel is most in view (each panel is innerWidth wide)
+      const stageW = innerWidth;
+      cur = Math.round(x / stageW);
+      cur = Math.max(0, Math.min(panels.length - 1, cur));
+    } else {
+      panels.forEach((p, i) => {
+        if (top(p) <= scrollY + hh + innerHeight * 0.35) cur = i;
+      });
+      if (top(run) > scrollY + hh + innerHeight * 0.35) cur = -1;
+    }
+
+    marks.forEach((m, i) => {
+      m.classList.toggle('done', cur >= 0 && i < cur);
+      if (i === cur) m.setAttribute('aria-current', 'step');
+      else m.removeAttribute('aria-current');
+    });
+  }
+
+  const sched = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+
+  function go(id, push) {
+    const i = panels.findIndex(p => p.id === id);
+    if (i < 0) return false;
+    scrollTo(0, dest(i));
+    if (push) history.replaceState(null, '', '#' + id);
+    return true;
+  }
+
+  // Intercept hash links targeting panels in enhanced mode
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || !enh) return;
+    const targetId = a.getAttribute('href').slice(1);
+    if (go(targetId, true)) e.preventDefault();
+  });
+
+  const stage = run.querySelector('.stage');
+  stage.addEventListener('scroll', () => {
+    if (enh && stage.scrollLeft !== 0) stage.scrollLeft = 0;
+  });
+
+  // Keyboard accessibility: tabbing into an offscreen panel centers it
+  track.addEventListener('focusin', e => {
+    if (!enh) return;
+    const p = e.target.closest('[data-panel]');
+    if (!p) return;
+    if (stage.scrollLeft !== 0) stage.scrollLeft = 0;
+    const idx = panels.indexOf(p);
+    const targetY = dest(idx);
+    if (Math.abs(scrollY - targetY) > 16) scrollTo(0, targetY);
+  });
+
+  addEventListener('scroll', sched, { passive: true });
+  addEventListener('resize', layout);
+  addEventListener('hashchange', () => { if (enh && location.hash) go(location.hash.slice(1), false); });
+  mq.addEventListener('change', layout);
+  layout();
+  if (location.hash) requestAnimationFrame(() => go(location.hash.slice(1), false));
+})();
+</script>
+</body>
+</html>

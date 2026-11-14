@@ -15,9 +15,9 @@
 
   /* Snippet interactive state controller */
   const snippetData = {
-    'udm-radar': { tag: 'UDM-RADAR // STUDENT PORTAL', href: '#udm-radar', caption: 'Adapted from UDM-RADAR portal components; synthetic example.' },
-    'studyquest': { tag: 'STUDYQUEST // LEARNING PATH', href: '#studyquest', caption: 'Reconstructed from the course interface; sample content.' },
-    'mini-pcs': { tag: 'MINI PCS // BATCH WORKFLOW', href: '#mini-pcs', caption: 'Reconstructed from the batch interface; sample content.' }
+    'udm-radar': { tag: 'UDM-RADAR // STUDENT PORTAL', href: '#udm-radar', caption: 'Current CCS light-theme student interface · synthetic example.' },
+    'studyquest': { tag: 'STUDYQUEST // LEARNING PATH', href: '#studyquest', caption: 'Course, review and assessment interfaces · sample content.' },
+    'mini-pcs': { tag: 'MINI PCS // BATCH WORKFLOW', href: '#mini-pcs', caption: 'Batch and task workflow · sample records.' }
   };
   const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
   document.querySelector('.mobile-tabs').hidden = false;
@@ -55,23 +55,28 @@
     b.addEventListener('click', () => setSnippet(b.dataset.tab));
   });
 
-  const radarNav = document.querySelector('.radar-nav');
-  const radarFallback = document.querySelector('.radar-nav-static');
-  if (radarNav && radarFallback) {
-    radarNav.hidden = false;
-    radarFallback.hidden = true;
-    radarNav.querySelectorAll('[data-radar-target]').forEach(button => {
-      button.addEventListener('click', () => {
-        const target = button.dataset.radarTarget;
-        radarNav.querySelectorAll('[data-radar-target]').forEach(item => {
-          item.setAttribute('aria-pressed', String(item === button));
-        });
-        document.querySelectorAll('[data-radar-view]').forEach(view => {
-          view.hidden = view.dataset.radarView !== target;
-        });
+  // Each reconstruction owns its own preview state. Hover is an enhancement;
+  // focus, activation and touch use the same controls without navigating.
+  document.querySelectorAll('[data-demo-project]').forEach(demo => {
+    const nav = demo.querySelector('.demo-nav, .demo-tabs');
+    const fallback = demo.querySelector('.demo-nav-static, .demo-study-nav-static, .demo-pcs-nav-static');
+    if (!nav || !fallback) return;
+    nav.hidden = false;
+    fallback.hidden = true;
+    const buttons = [...nav.querySelectorAll('[data-demo-target]')];
+    const pages = [...demo.querySelectorAll('[data-demo-view]')];
+    const select = button => {
+      buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
+    };
+    buttons.forEach(button => {
+      button.addEventListener('pointerenter', event => {
+        if (event.pointerType === 'mouse' || event.pointerType === 'pen') select(button);
       });
+      button.addEventListener('focus', () => select(button));
+      button.addEventListener('click', () => select(button));
     });
-  }
+  });
 
   /* Math & Track Geometry */
   let maxX = 1, panelStarts = [], footerVisible = false;
@@ -302,9 +307,13 @@
     const p = e.target.closest('[data-panel]');
     if (!p) return;
     if (stage.scrollLeft !== 0) stage.scrollLeft = 0;
-    const idx = panels.indexOf(p);
-    const targetY = dest(idx);
-    if (Math.abs(scrollY - targetY) > 16) scrollTo({ top: targetY, behavior: 'instant' });
+    const box = e.target.getBoundingClientRect();
+    const stageBox = stage.getBoundingClientRect();
+    // A visible control needs no chapter recentering. Move only when keyboard
+    // focus reaches a control outside the horizontally visible stage.
+    if (box.left < stageBox.left - 1 || box.right > stageBox.right + 1) {
+      scrollTo({ top: dest(panels.indexOf(p)), behavior: 'instant' });
+    }
   });
 
   addEventListener('scroll', sched, { passive: true });

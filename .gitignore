@@ -1,0 +1,60 @@
+# ==============================================================================
+# Portfolio Hub (.gitignore)
+# ==============================================================================
+
+# --- Archives & Deployment Backups ---
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.bak
+
+# --- Python & Testing Artifacts ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+devpath/scratch/
+devpath/tests/__pycache__/
+devpath/tests/*.png
+
+# --- Sandbox Prototyping & Verification Probes ---
+sandbox/_*.mjs
+
+# --- Temporary Files & Error Logs ---
+*.log
+console.error*
+*.tmp
+*.temp
+
+# --- Local IDE & Editor Metadata ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Operating System Files ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# --- Environment & Secret Protections ---
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*service-account*.json
+*serviceAccount*.json
+secrets/
+credentials/
+
+# --- Private & Non-Hub Root Directories ---
+anniversary/
+aspnet_client/

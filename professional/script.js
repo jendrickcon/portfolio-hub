@@ -15,9 +15,9 @@
 
   /* Snippet interactive state controller */
   const snippetData = {
-    'udm-radar': { tag: 'UDM-RADAR // DECISION SUPPORT', href: '#udm-radar' },
-    'studyquest': { tag: 'STUDYQUEST // GAMIFIED LEARNING', href: '#studyquest' },
-    'mini-pcs': { tag: 'MINI PCS // AIRTABLE WORKFLOW', href: '#mini-pcs' }
+    'udm-radar': { tag: 'UDM-RADAR // STUDENT PORTAL', href: '#udm-radar', caption: 'Reconstructed from the student dashboard; sample content.' },
+    'studyquest': { tag: 'STUDYQUEST // LEARNING PATH', href: '#studyquest', caption: 'Reconstructed from the course interface; sample content.' },
+    'mini-pcs': { tag: 'MINI PCS // BATCH WORKFLOW', href: '#mini-pcs', caption: 'Reconstructed from the batch interface; sample content.' }
   };
   const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
   document.querySelector('.mobile-tabs').hidden = false;
@@ -40,6 +40,7 @@
       v.classList.toggle('active', v.id === 'view-' + key);
     });
     if (snippetTag) snippetTag.textContent = snippetData[key].tag;
+    document.querySelector('.snippet-caption').textContent = snippetData[key].caption;
     if (snippetJump) snippetJump.setAttribute('href', snippetData[key].href);
   }
 
@@ -65,7 +66,7 @@
   function layout() {
     const hh = hdr.offsetHeight;
     html.style.setProperty('--hh', hh + 'px');
-    enh = mq.matches;
+    enh = mq.matches && !document.querySelector('.case-more[open]');
     html.classList.toggle('enh', enh);
 
     if (enh) {
@@ -211,20 +212,65 @@
     }, { threshold: [0, 1] }).observe(footer);
   }
 
-  function go(id, push) {
-    const i = panels.findIndex(p => p.id === id);
-    if (i < 0) return false;
-    scrollTo(0, dest(i));
-    if (push) history.replaceState(null, '', '#' + id);
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let navigationId = 0;
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  function destination(id) {
+    const target = document.getElementById(id);
+    if (!target) return null;
+    const index = panels.indexOf(target);
+    return { target, y: Math.max(0, index >= 0 && enh ? dest(index) : top(target) - hdr.offsetHeight - 12) };
+  }
+
+  function focusDestination(target) {
+    const focus = target.matches('main, p') ? target : (target.querySelector('h1, h2, h3') || target);
+    if (!focus.hasAttribute('tabindex')) focus.setAttribute('tabindex', '-1');
+    focus.focus({ preventScroll: true });
+  }
+
+  function go(id, { historyEntry = false, animate = false, focus = false } = {}) {
+    const point = destination(id);
+    if (!point) return false;
+    const token = ++navigationId;
+    if (historyEntry && location.hash !== '#' + id) history.pushState(null, '', '#' + encodeURIComponent(id));
+    const targetY = Math.min(point.y, Math.max(0, html.scrollHeight - innerHeight));
+    const animated = animate && !motion.matches;
+    scrollTo({ top: targetY, behavior: animated ? 'smooth' : 'instant' });
+    if (focus) {
+      const started = performance.now();
+      const finishWhenReached = () => {
+        if (token !== navigationId) return;
+        if (Math.abs(scrollY - targetY) < 2 || !animated) { focusDestination(point.target); return; }
+        if (performance.now() - started < 4000) requestAnimationFrame(finishWhenReached);
+      };
+      requestAnimationFrame(finishWhenReached);
+    }
     return true;
   }
 
-  // Intercept hash clicks targeting panels
   document.addEventListener('click', e => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const a = e.target.closest('a[href^="#"]');
-    if (!a || !enh) return;
-    const targetId = a.getAttribute('href').slice(1);
-    if (go(targetId, true)) e.preventDefault();
+    if (!a || a.hasAttribute('download') || a.hasAttribute('data-native') || (a.target && a.target !== '_self')) return;
+    const id = decodeURIComponent(a.getAttribute('href').slice(1));
+    if (go(id, { historyEntry: true, animate: true, focus: true })) e.preventDefault();
+  });
+
+  addEventListener('popstate', () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (id) go(id, { focus: true });
+    else { navigationId++; scrollTo({ top: 0, behavior: 'instant' }); }
+  });
+
+  // Native same-document hash changes can target an offscreen translated panel.
+  addEventListener('hashchange', () => {
+    if (!enh) return;
+    const id = decodeURIComponent(location.hash.slice(1));
+    const index = panels.findIndex(panel => panel.id === id);
+    if (index >= 0) setTimeout(() => {
+      if (decodeURIComponent(location.hash.slice(1)) === id && Math.abs(scrollY - dest(index)) > 2) go(id, { focus: true });
+    }, 80);
   });
 
   // Keep stage scrollLeft at 0 to avoid native container focus shift
@@ -240,13 +286,20 @@
     if (stage.scrollLeft !== 0) stage.scrollLeft = 0;
     const idx = panels.indexOf(p);
     const targetY = dest(idx);
-    if (Math.abs(scrollY - targetY) > 16) scrollTo(0, targetY);
+    if (Math.abs(scrollY - targetY) > 16) scrollTo({ top: targetY, behavior: 'instant' });
   });
 
   addEventListener('scroll', sched, { passive: true });
   addEventListener('resize', layout);
-  addEventListener('hashchange', () => { if (enh && location.hash) go(location.hash.slice(1), false); });
   mq.addEventListener('change', layout);
+  document.querySelectorAll('.case-more').forEach(detail => {
+    detail.addEventListener('toggle', () => {
+      const panel = detail.closest('[data-panel]');
+      layout();
+      if (detail.open) detail.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      else if (panel && enh) go(panel.id);
+    });
+  });
   layout();
-  if (location.hash) requestAnimationFrame(() => go(location.hash.slice(1), false));
+  if (location.hash) requestAnimationFrame(() => go(decodeURIComponent(location.hash.slice(1))));
 })();

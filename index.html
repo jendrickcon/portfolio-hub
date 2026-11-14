@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enuhri Portfolio Hub</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>💻</text></svg>" />
+  <link rel="stylesheet" href="style.css?v=1.8" />
+</head>
+<body>
+
+  <!-- Always-visible accessibility controls, independent of CRT phase -->
+  <div id="display-settings" class="display-settings" role="group" aria-label="Display settings">
+    <button type="button" id="toggle-power-btn" class="settings-btn settings-btn--power" aria-pressed="false" title="Power / Return to landing page">POWER: OFF</button>
+    <button type="button" id="toggle-scanlines-btn" class="settings-btn" aria-pressed="true">SCANLINES: ON</button>
+    <button type="button" id="toggle-motion-btn" class="settings-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
+    <button type="button" id="toggle-sound-btn" class="settings-btn" aria-pressed="false">SOUND: OFF</button>
+  </div>
+
+
+  <!-- ============================================= -->
+  <!-- PHASE 1: LANDING SCREEN                        -->
+  <!-- ============================================= -->
+  <main id="landing-screen" class="phase active-phase">
+
+    <div class="hub-layout">
+
+      <!-- Left panel: title + description -->
+      <section class="side-panel side-panel--left">
+        <h1 class="hub-title">ENUHRI<br />PORTFOLIO HUB</h1>
+        <p class="hub-description">
+          A collection of projects, ideas, and creations.
+          Explore my work through an interactive retro computer experience.
+        </p>
+      </section>
+
+      <!-- Center: the CRT computer composition -->
+      <section class="crt-stage">
+
+        <div class="crt-composition">
+
+          <!-- Supplied desk sprite provides the physical setting for the computer. -->
+          <img class="desk-sprite" src="assets/sprites/desk.png" alt="" aria-hidden="true" />
+
+          <!-- The monitor itself -->
+          <div class="crt-monitor">
+            <img class="monitor-casing" src="assets/sprites/monitor.png" alt="" aria-hidden="true" />
+
+            <!-- Positioned to sit exactly inside the glass, per the sprite manifest -->
+            <div class="screen-overlay">
+              <div class="screen-scanlines" aria-hidden="true"></div>
+
+              <!-- Phase-specific screen content lives here. -->
+              <div id="screen-content" class="screen-content">
+                <div class="landing-screen-body">
+                  <p class="boot-label">SYSTEM READY</p>
+                  <button id="play-btn" type="button" class="play-btn">
+                    <span class="play-icon" aria-hidden="true">▶</span>
+                    <span>PLAY</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              id="power-button-hotspot"
+              class="power-button-hotspot"
+              type="button"
+              aria-label="Power: Click to turn on retro PC"
+              title="Power: Click to turn on retro PC">
+            </button>
+          </div>
+
+          <!-- Keyboard + mouse, decorative -->
+          <div class="accessories">
+            <img class="keyboard-sprite" src="assets/sprites/keyboard.png" alt="" aria-hidden="true" />
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <script src="script.js?v=1.8"></script>
+</body>
+</html>

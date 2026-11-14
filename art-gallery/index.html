@@ -1,0 +1,3115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enuhri Art Gallery</title>
+  <style>
+    /* ===================================================
+       0. RESET & BASE
+    =================================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --marble-cream: #f2ead9;
+      --marble-warm: #e6dcc4;
+      --marble-shadow: #d8ccae;
+      --gold: #b8923f;
+      --gold-light: #d8b671;
+      --gold-dark: #8a6a2a;
+      --ink: #3a3226;
+      --ink-soft: #6b5f4d;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: var(--ink);
+      background: var(--marble-cream);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    .hidden-room {
+      display: none !important;
+    }
+
+    .room {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* ===================================================
+       1. ENTRANCE HALL
+    =================================================== */
+    #entrance-hall {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(ellipse at top, rgba(255,255,255,0.4), transparent 60%),
+        linear-gradient(180deg, var(--marble-cream) 0%, var(--marble-warm) 70%, var(--marble-shadow) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative columns flanking the entrance, purely CSS */
+    #entrance-hall::before,
+    #entrance-hall::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 90px;
+      background: linear-gradient(90deg, var(--marble-shadow), var(--marble-cream) 40%, var(--marble-shadow));
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.08);
+      border-left: 3px solid var(--gold-light);
+      border-right: 3px solid var(--gold-light);
+    }
+    #entrance-hall::before { left: 6%; }
+    #entrance-hall::after  { right: 6%; }
+
+    .main-hub-link {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      z-index: 3;
+      transform: translateX(-50%);
+      padding: 9px 22px;
+      color: var(--gold-dark);
+      background: rgba(255, 253, 246, 0.72);
+      border: 1px solid var(--gold-light);
+      border-radius: 2px;
+      box-shadow: 0 4px 12px rgba(90, 70, 30, 0.14);
+      font-size: 0.85rem;
+      letter-spacing: 0.8px;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    @media (min-width: 701px) {
+      .main-hub-link {
+        top: 34px;
+        padding: 13px 32px;
+        font-size: 1rem;
+        letter-spacing: 1px;
+      }
+
+      .entrance-content {
+        width: min(780px, 82vw);
+        max-width: 780px;
+        padding: 64px 56px;
+      }
+
+      .museum-title {
+        font-size: 2.9rem;
+      }
+
+      .museum-description {
+        font-size: 1.3rem;
+      }
+    }
+
+    .main-hub-link:hover,
+    .main-hub-link:focus-visible {
+      transform: translateX(-50%) translateY(-2px);
+      background: rgba(255, 253, 246, 0.94);
+      box-shadow: 0 6px 16px rgba(90, 70, 30, 0.2);
+    }
+
+    .entrance-content {
+      position: relative;
+      z-index: 2;
+      max-width: 620px;
+      text-align: center;
+      padding: 48px 40px;
+      background: rgba(255, 253, 246, 0.55);
+      border: 1px solid var(--gold-light);
+      border-radius: 4px;
+      box-shadow: 0 10px 40px rgba(90, 70, 30, 0.15);
+    }
+
+    .museum-title {
+      font-size: 2.4rem;
+      letter-spacing: 2px;
+      color: var(--gold-dark);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      font-weight: normal;
+    }
+
+    .museum-title::after {
+      content: "";
+      display: block;
+      width: 80px;
+      height: 2px;
+      background: var(--gold);
+      margin: 14px auto 0;
+    }
+
+    .museum-description {
+      font-size: 1.15rem;
+      font-style: italic;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      margin-bottom: 26px;
+    }
+
+    .museum-instructions p {
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    #enter-gallery-btn {
+      margin-top: 28px;
+      padding: 14px 38px;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--marble-cream);
+      background: linear-gradient(180deg, var(--gold-light), var(--gold-dark));
+      border-radius: 2px;
+      box-shadow: 0 4px 12px rgba(138, 106, 42, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #enter-gallery-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(138, 106, 42, 0.5);
+    }
+
+    /* ===================================================
+       2. GALLERY HALL
+    =================================================== */
+    #gallery-hall {
+      background: var(--marble-shadow);
+    }
+
+    .gallery-topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: linear-gradient(180deg, rgba(58,50,38,0.85), rgba(58,50,38,0));
+      color: var(--marble-cream);
+    }
+
+    #return-to-entrance-btn {
+      color: var(--marble-cream);
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--gold-light);
+      padding: 8px 16px;
+      border-radius: 2px;
+    }
+
+    #return-to-entrance-btn:hover {
+      background: rgba(216, 182, 113, 0.15);
+    }
+
+    .gallery-hint {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.85;
+    }
+
+    #gallery-viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+      background: linear-gradient(180deg, rgba(214, 196, 160, 0.9), rgba(210, 189, 146, 0.88));
+    }
+
+    .gallery-world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 1000px;
+      transform-origin: top left;
+      will-change: transform;
+    }
+
+    #gallery-viewport:active {
+      cursor: grabbing;
+    }
+
+    #gallery-viewport,
+    #gallery-viewport * {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    #gallery-viewport img {
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .parallax-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      will-change: transform;
+      transition: transform 0.35s ease-out;
+    }
+
+    #gallery-viewport.is-dragging .parallax-layer {
+      transition: none;
+    }
+
+    #gallery-viewport.is-keyboard-moving .parallax-layer {
+      transition: none;
+    }
+
+    #layer-background {
+      z-index: 1;
+      width: 4200px;
+      background:
+        linear-gradient(180deg, rgba(245, 236, 218, 0.9), rgba(210, 191, 154, 0.95)),
+        url("assets/textures/gallery-wallpaper.png");
+      background-repeat: no-repeat, repeat-x;
+      background-size: 100% 100%, auto 100%;
+      background-blend-mode: normal, soft-light;
+    }
+
+    #layer-background::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 22%;
+      background:
+        linear-gradient(180deg, rgba(83, 66, 48, 0.12), rgba(58,50,38,0.2)),
+        repeating-linear-gradient(
+          90deg, rgba(247,239,218,0.25) 0 130px, rgba(110,87,57,0.12) 130px 134px
+        );
+      box-shadow: inset 0 12px 30px rgba(58,50,38,0.08), inset 0 -24px 35px rgba(58,50,38,0.15);
+    }
+
+    #layer-background::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 15%;
+      background:
+        linear-gradient(180deg, rgba(82, 61, 39, 0.32), rgba(255,255,255,0.05) 34%, transparent),
+        repeating-linear-gradient(90deg, transparent 0 195px, rgba(121, 91, 50, 0.25) 195px 202px);
+      border-bottom: 12px solid rgba(126, 96, 53, 0.45);
+      box-shadow: 0 8px 20px rgba(58,50,38,0.14);
+    }
+
+    #layer-artwork {
+      z-index: 2;
+      width: 4200px;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(222, 208, 179, 0.65), rgba(204, 183, 143, 0.8));
+    }
+
+    #layer-wall-statues {
+      z-index: 3;
+      width: 4200px;
+      pointer-events: none;
+    }
+
+    .wall-panel {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-left: 2px solid rgba(99, 79, 46, 0.25);
+      border-right: 2px solid rgba(99, 79, 46, 0.25);
+      background:
+        linear-gradient(180deg, rgba(246,239,229,0.65), rgba(218,200,167,0.7)),
+        url("assets/textures/gallery-wallpaper.png");
+      background-repeat: no-repeat, repeat-x;
+      background-size: 100% 100%, auto 100%;
+      background-blend-mode: normal, soft-light;
+      box-shadow: inset 0 0 0 3px rgba(127, 96, 45, 0.25);
+    }
+
+    .wall-panel::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 4%;
+      right: 4%;
+      height: 18px;
+      background: linear-gradient(180deg, rgba(165, 129, 77, 0.45), rgba(91, 71, 38, 0.08));
+      border-bottom: 2px solid rgba(127, 96, 45, 0.35);
+      box-shadow: 0 10px 18px rgba(58,50,38,0.08);
+    }
+
+    .wall-panel::after {
+      content: "";
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      width: 520px;
+      height: 300px;
+      transform: translateX(-50%);
+      border: 14px solid rgba(143, 110, 64, 0.22);
+      border-bottom: 0;
+      border-radius: 280px 280px 0 0;
+      box-shadow: inset 0 0 35px rgba(255,255,255,0.18), 0 0 0 3px rgba(255,255,255,0.12);
+      pointer-events: none;
+    }
+
+    .wall-frame-zone {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .artwork-plaque {
+      position: absolute;
+      width: 190px;
+      min-height: 30px;
+      padding: 6px 8px;
+      color: var(--ink);
+      background: rgba(247, 239, 218, 0.92);
+      border: 1px solid rgba(138, 106, 42, 0.7);
+      box-shadow: 0 3px 8px rgba(58,50,38,0.16);
+      font-size: 0.68rem;
+      line-height: 1.15;
+      text-align: center;
+      letter-spacing: 0.2px;
+    }
+
+    .artwork-plaque strong,
+    .artwork-plaque span {
+      display: block;
+    }
+
+    .artwork-plaque span {
+      color: var(--ink-soft);
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .artwork-frame {
+      position: absolute;
+      width: 190px;
+      height: 230px;
+      background: var(--marble-cream);
+      border: 10px solid var(--gold);
+      border-radius: 2px;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.22), inset 0 0 0 2px var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+      overflow: hidden;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .artwork-frame:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 18px 32px rgba(0,0,0,0.28), inset 0 0 0 2px var(--gold-dark);
+    }
+
+    .artwork-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    #layer-decorations {
+      z-index: 5;
+      width: 4200px;
+      pointer-events: none;
+    }
+
+    #layer-foreground {
+      z-index: 7;
+      width: 4200px;
+      pointer-events: none;
+    }
+
+    .decor-column {
+      position: absolute;
+      bottom: 0;
+      width: 82px;
+      height: 89%;
+      background:
+        linear-gradient(90deg, rgba(182, 163, 131, 0.64), rgba(240, 232, 214, 0.64) 18%, rgba(182, 163, 131, 0.1) 42%, rgba(182, 163, 131, 0.1) 58%, rgba(122, 101, 78, 0.64));
+      background-size: 100% 100%;
+      border-left: 3px solid rgba(143, 110, 64, 0.9);
+      border-right: 3px solid rgba(143, 110, 64, 0.9);
+      box-shadow: 0 0 18px rgba(58,50,38,0.1);
+    }
+
+    .decor-column::before {
+      content: "";
+      position: absolute;
+      left: -10px;
+      right: -10px;
+      top: -18px;
+      height: 36px;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(201, 171, 123, 0.8), rgba(143, 110, 64, 0.8));
+    border: 2px solid rgba(119, 89, 46, 0.8);
+    }
+
+    .decor-column::after {
+      content: "";
+      display: block;
+      position: absolute;
+      inset: 0;
+      background: url("assets/textures/pillar-fluted.png") center / 100% 100% no-repeat;
+      opacity: 0.48;
+      mix-blend-mode: multiply;
+      filter: contrast(1.5) brightness(0.92);
+      pointer-events: none;
+      -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.42) 18%, rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.06) 58%, rgba(0,0,0,0.42) 82%, rgba(0,0,0,0.76) 100%);
+      mask-image: linear-gradient(90deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.42) 18%, rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.06) 58%, rgba(0,0,0,0.42) 82%, rgba(0,0,0,0.76) 100%);
+    }
+
+    .statue {
+      position: absolute;
+      bottom: 50px;
+      width: 70px;
+      height: 120px;
+      background: linear-gradient(180deg, rgba(180,163,136,0.9), rgba(118,101,79,0.9));
+      border-radius: 28px 28px 10px 10px;
+      box-shadow: inset 0 0 0 2px rgba(79,65,46,0.4);
+    }
+
+    .outer-statue {
+      width: 92px !important;
+      height: 150px;
+      border-radius: 34px 34px 12px 12px;
+    }
+
+    .outer-statue::before {
+      left: 29px;
+      width: 34px;
+      height: 34px;
+    }
+
+    .outer-statue::after {
+      left: 20px;
+      right: 20px;
+    }
+
+    .wall-statue {
+      top: 700px;
+      width: 58px;
+      height: 98px;
+      opacity: 0.62;
+      transform: scale(0.82);
+      filter: saturate(0.7);
+    }
+
+    .wall-statue .statue-pillar {
+      position: absolute;
+      z-index: -1;
+      left: 12px;
+      right: 12px;
+      bottom: -250px;
+      height: 252px;
+      background:
+        linear-gradient(90deg, rgba(157,135,104,0.6), rgba(226,213,188,0.6) 24%, rgba(171,145,108,0.1) 44%, rgba(171,145,108,0.1) 56%, rgba(116,92,61,0.6));
+      background-size: 100% 100%;
+      border-left: 2px solid rgba(122,94,57,0.7);
+      border-right: 2px solid rgba(122,94,57,0.7);
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.22);
+    }
+
+    .wall-statue .statue-pillar::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("assets/textures/pillar-fluted.png") center / 100% 100% no-repeat;
+      opacity: 0.48;
+      mix-blend-mode: multiply;
+      filter: contrast(1.18) saturate(0.9);
+      pointer-events: none;
+      -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.38) 20%, rgba(0,0,0,0.05) 44%, rgba(0,0,0,0.05) 56%, rgba(0,0,0,0.38) 80%, rgba(0,0,0,0.72) 100%);
+      mask-image: linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.38) 20%, rgba(0,0,0,0.05) 44%, rgba(0,0,0,0.05) 56%, rgba(0,0,0,0.38) 80%, rgba(0,0,0,0.72) 100%);
+    }
+
+    .wall-statue .statue-pillar-base {
+      position: absolute;
+      z-index: -1;
+      left: 3px;
+      right: 3px;
+      bottom: -264px;
+      height: 18px;
+      background: linear-gradient(180deg, rgba(202,184,153,0.96), rgba(118,96,67,0.96));
+      border: 2px solid rgba(103,78,46,0.7);
+      box-shadow: 0 8px 12px rgba(58,50,38,0.18);
+    }
+
+    .wall-statue .statue-foot {
+      display: none;
+    }
+
+    .wall-statue .statue-pedestal {
+      left: -8px;
+      right: -8px;
+      bottom: -30px;
+      height: 24px;
+    }
+
+    .statue .statue-pedestal {
+      position: absolute;
+      z-index: -1;
+      left: -15px;
+      right: -15px;
+      bottom: -34px;
+      height: 28px;
+      background: linear-gradient(180deg, rgba(206,188,157,0.95), rgba(118,96,67,0.95));
+      border: 2px solid rgba(103,78,46,0.7);
+      box-shadow: 0 8px 12px rgba(58,50,38,0.2);
+    }
+
+    .statue::before {
+      content: "";
+      position: absolute;
+      top: -24px;
+      left: 18px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, rgba(196,178,154,0.9), rgba(118,101,79,0.9));
+    }
+
+    .statue::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: -16px;
+      height: 16px;
+      background: rgba(75,58,39,0.4);
+      border-radius: 50%;
+    }
+
+    #layer-visitor {
+      z-index: 6;
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    #visitor-sprite {
+      position: relative;
+      width: 440px;
+      height: 1000px;
+      margin-bottom: -200px;
+      object-fit: contain;
+      object-position: bottom center;
+      background: transparent;
+      opacity: 0.96;
+      filter: drop-shadow(0 16px 14px rgba(74, 61, 42, 0.22));
+      transition: opacity 160ms ease-out, transform 260ms ease-out;
+    }
+
+    #visitor-sprite.is-transitioning {
+      opacity: 0.2;
+    }
+
+    #gallery-viewport.is-moving #visitor-sprite {
+      animation: visitor-step 0.7s ease-in-out infinite alternate;
+      transition: none;
+    }
+
+    @keyframes visitor-step {
+      from { transform: translate3d(0, 0, 0) rotate(-1deg); }
+      to { transform: translate3d(0, -24px, 0) rotate(1deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .parallax-layer {
+        animation: none;
+        transition: none;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .entrance-content {
+        padding: 32px 22px;
+        max-width: 90%;
+      }
+      .museum-title {
+        font-size: 1.7rem;
+      }
+      #entrance-hall::before,
+      #entrance-hall::after {
+        width: 40px;
+      }
+      .wall-statue .statue-pillar {
+        left: 15px;
+        right: 15px;
+        bottom: -225px;
+        height: 213px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .gallery-topbar {
+        gap: 6px;
+        padding: 10px 8px;
+      }
+      .gallery-topbar button {
+        padding: 7px 8px;
+        font-size: 0.68rem;
+      }
+      .gallery-hint {
+        display: none;
+      }
+      .studio-topbar {
+        padding: 12px 10px;
+      }
+      .studio-topbar > span {
+        display: none;
+      }
+      .studio-layout {
+        gap: 14px;
+        margin-top: 14px;
+        padding: 0 12px 28px;
+      }
+      .studio-panel {
+        padding: 14px;
+      }
+      .studio-tools {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .canvas-wrap {
+        padding: 9px;
+      }
+    }
+
+    /* ===================================================
+       3. ARTWORK MODAL
+    =================================================== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(30, 24, 14, 0.6);
+    }
+
+    .modal-content {
+      position: relative;
+      width: min(960px, 92vw);
+      max-height: 88vh;
+      box-sizing: border-box;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: var(--marble-cream);
+      border: 6px solid var(--gold);
+      border-radius: 4px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .modal-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
+
+    #modal-image-wrap {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: var(--marble-warm);
+      border: 4px solid var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #modal-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .modal-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .modal-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    #modal-title {
+      font-size: 1.4rem;
+      color: var(--gold-dark);
+      margin-bottom: 6px;
+    }
+
+    #modal-artist {
+      font-style: italic;
+      color: var(--ink-soft);
+      margin-bottom: 14px;
+    }
+
+    #modal-description {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--ink);
+    }
+
+    .modal-reactions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(138, 106, 42, 0.28);
+    }
+
+    #heart-btn {
+      color: var(--gold-dark);
+      border: 1px solid var(--gold-light);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    #heart-btn.is-hearted {
+      color: var(--gold-dark);
+      background: rgba(199, 155, 69, 0.2);
+    }
+
+    .modal-feedback {
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    .modal-feedback h3 {
+      margin-bottom: 8px;
+      color: var(--gold-dark);
+      font-size: 0.95rem;
+    }
+
+    #feedback-input {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 8px;
+      color: var(--ink);
+      border: 1px solid var(--gold-light);
+      background: rgba(255, 255, 255, 0.8);
+      font: inherit;
+    }
+
+    .feedback-compose {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #feedback-submit-btn {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      color: var(--marble-cream);
+      border: 1px solid var(--gold-light);
+      background: var(--gold-dark);
+    }
+
+    #feedback-counter {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      text-align: right;
+    }
+
+    #feedback-counter.near-limit {
+      color: var(--gold-dark);
+    }
+
+    #feedback-status {
+      min-height: 1em;
+      margin-top: 6px;
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+
+    #feedback-list {
+      display: grid;
+      gap: 7px;
+      margin-top: 12px;
+      max-height: 130px;
+      overflow: auto;
+    }
+
+    .feedback-note {
+      padding: 7px 9px;
+      color: var(--ink);
+      background: rgba(232, 220, 196, 0.55);
+      font-size: 0.82rem;
+    }
+
+    .feedback-note small {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink-soft);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 1.6rem;
+      color: var(--gold-dark);
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: var(--ink);
+    }
+
+    @media (max-width: 899px) {
+      .modal-content {
+        width: 92vw;
+        max-height: 90vh;
+        padding: 24px 20px;
+      }
+
+      .modal-columns {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+
+      #modal-image-wrap {
+        aspect-ratio: 4 / 5;
+        max-height: 60vh;
+      }
+    }
+
+    @media (max-width: 699px) {
+      .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 24px 20px;
+      }
+
+      #heart-btn {
+        min-height: 40px;
+      }
+
+      #feedback-input,
+      #feedback-submit-btn {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .modal-content {
+        width: 94vw;
+        padding: 20px 16px;
+        max-height: 92vh;
+      }
+
+      .modal-columns,
+      .modal-details,
+      .modal-feedback,
+      .feedback-compose {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      #modal-image-wrap {
+        aspect-ratio: 3 / 4;
+      }
+
+      .modal-title-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #heart-btn {
+        width: max-content;
+        justify-self: end;
+      }
+
+      .feedback-compose {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #feedback-submit-btn {
+        width: 100%;
+      }
+
+      .feedback-list {
+        max-height: 120px;
+      }
+    }
+
+    /* ===================================================
+       4. ARTIST STUDIO
+    =================================================== */
+    #studio-room {
+      background: radial-gradient(circle at 50% 10%, #f3ead7 0, #d7c39b 58%, #b69a68 100%);
+      overflow: auto;
+    }
+
+    .studio-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 28px;
+      color: var(--marble-cream);
+      background: rgba(58, 50, 38, 0.88);
+    }
+
+    .studio-topbar h1 {
+      font-size: 1.35rem;
+      font-weight: normal;
+      letter-spacing: 1px;
+    }
+
+    .studio-topbar button,
+    #create-artwork-btn,
+    .studio-actions button {
+      padding: 9px 14px;
+      color: var(--marble-cream);
+      border: 1px solid var(--gold-light);
+      border-radius: 2px;
+      background: rgba(58, 50, 38, 0.25);
+    }
+
+    #create-artwork-btn {
+      background: rgba(138, 106, 42, 0.8);
+    }
+
+    .studio-layout {
+      display: grid;
+      grid-template-columns: 210px minmax(360px, 560px) 290px;
+      gap: 26px;
+      align-items: start;
+      justify-content: center;
+      max-width: 1160px;
+      margin: 30px auto;
+      padding: 0 22px 40px;
+    }
+
+    .studio-layout > * {
+      min-width: 0;
+    }
+
+    .studio-panel {
+      padding: 18px;
+      background: rgba(255, 253, 246, 0.84);
+      border: 1px solid var(--gold-light);
+      box-shadow: 0 10px 24px rgba(90, 70, 30, 0.16);
+    }
+
+    .studio-panel h2 {
+      margin-bottom: 16px;
+      color: var(--gold-dark);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .studio-tools {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .studio-tools button {
+      width: 52px;
+      height: 52px;
+      padding: 7px;
+      color: var(--ink);
+      border: 1px solid var(--gold-light);
+      background: var(--marble-warm);
+      font-size: 1.35rem;
+      cursor: pointer;
+    }
+
+    .studio-tools button.active {
+      color: var(--marble-cream);
+      background: var(--gold-dark);
+    }
+
+    .studio-tools button span {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .palette-heading,
+    .custom-color summary {
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    #palette-swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .swatch {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 2px solid rgba(58, 50, 38, 0.18);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .swatch.active {
+      outline: 2px solid var(--gold-dark);
+      outline-offset: 2px;
+    }
+
+    #shade-chips {
+      display: flex;
+      gap: 8px;
+      margin: 13px 0;
+    }
+
+    .shade-chip {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 1px solid var(--gold-dark);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .custom-color {
+      margin-top: 16px;
+      border-top: 1px solid rgba(138, 106, 42, 0.28);
+      padding-top: 12px;
+    }
+
+    .custom-color summary {
+      cursor: pointer;
+    }
+
+    .studio-control {
+      display: block;
+      margin-top: 18px;
+      color: var(--ink-soft);
+      font-size: 0.85rem;
+    }
+
+    .studio-control input {
+      width: 100%;
+      margin-top: 7px;
+    }
+
+    .canvas-wrap {
+      padding: 14px;
+      background: rgba(58, 50, 38, 0.72);
+      border: 8px solid var(--gold-dark);
+      box-shadow: 0 14px 30px rgba(58,50,38,0.22);
+    }
+
+    #drawing-canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: #fffdf6;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #wall-preview {
+      display: grid;
+      place-items: center;
+      min-height: 170px;
+      margin-top: 18px;
+      padding: 16px;
+      background: linear-gradient(135deg, #c4a978, #9f8050);
+      border: 5px solid var(--gold-dark);
+    }
+
+    #wall-preview img {
+      display: block;
+      width: 125px;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      border: 8px solid var(--gold-light);
+      box-shadow: 0 8px 15px rgba(40, 30, 18, 0.32);
+    }
+
+    #wall-preview-image[hidden],
+    #wall-preview-placeholder[hidden] {
+      display: none;
+    }
+
+    #wall-preview-placeholder {
+      display: grid;
+      place-items: center;
+      width: 125px;
+      aspect-ratio: 3 / 4;
+      padding: 18px;
+      color: rgba(255, 253, 246, 0.9);
+      border: 2px dashed rgba(255, 253, 246, 0.72);
+      text-align: center;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .studio-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .studio-form label {
+      display: grid;
+      gap: 5px;
+      color: var(--ink-soft);
+      font-size: 0.85rem;
+    }
+
+    .studio-form input,
+    .studio-form textarea {
+      width: 100%;
+      padding: 9px;
+      color: var(--ink);
+      font: inherit;
+      border: 1px solid var(--gold-light);
+      background: rgba(255,255,255,0.75);
+    }
+
+    .studio-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .studio-actions {
+      display: grid;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .studio-actions button {
+      color: var(--marble-cream);
+      background: linear-gradient(180deg, var(--gold-light), var(--gold-dark));
+    }
+
+    #discard-draft-btn {
+      color: var(--ink);
+      background: transparent;
+    }
+
+    #studio-status {
+      min-height: 40px;
+      margin-top: 14px;
+      color: var(--ink-soft);
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    /* ===================================================
+       5. RESPONSIVE ADJUSTMENTS
+    =================================================== */
+    @media (min-width: 700px) and (max-width: 899px) {
+      .studio-layout {
+        grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .studio-layout > .studio-panel:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .studio-tools {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+
+    @media (max-width: 699px) {
+      #studio-room {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .studio-topbar {
+        justify-content: flex-start;
+        padding: 10px 14px;
+      }
+
+      .studio-topbar > span {
+        display: none;
+      }
+
+      .entrance-content {
+        padding: 32px 22px;
+        max-width: 90%;
+      }
+      .museum-title {
+        font-size: 1.7rem;
+      }
+      #entrance-hall::before,
+      #entrance-hall::after {
+        width: 40px;
+      }
+      .studio-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        max-width: 620px;
+        margin-top: 16px;
+        padding: 0 14px calc(28px + env(safe-area-inset-bottom));
+      }
+
+      .studio-topbar h1 {
+        font-size: 1rem;
+      }
+
+      .studio-layout > .studio-panel:first-child {
+        display: contents;
+      }
+
+      .canvas-wrap {
+        order: 2;
+        border-width: 6px;
+        padding: 10px;
+      }
+
+      .studio-layout > .studio-panel:last-child {
+        order: 8;
+        min-width: 0;
+      }
+
+      .studio-tools {
+        order: 1;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .studio-tools::-webkit-scrollbar {
+        display: none;
+      }
+
+      .studio-tools button {
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        padding: 3px;
+        font-size: 1rem;
+      }
+
+      .studio-tools button span {
+        display: none;
+      }
+
+      .studio-panel {
+        min-width: 0;
+        padding: 14px;
+      }
+
+      .studio-layout > .studio-panel:first-child > h2 {
+        display: none;
+      }
+
+      .palette-heading {
+        order: 3;
+      }
+
+      #palette-swatches {
+        order: 4;
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      #shade-chips {
+        order: 5;
+      }
+
+      .custom-color {
+        order: 6;
+      }
+
+      .studio-layout > .studio-panel:first-child > .studio-control {
+        order: 7;
+      }
+
+      .swatch {
+        width: 26px;
+        height: 26px;
+        min-width: 40px;
+        min-height: 40px;
+        background-clip: content-box;
+        padding: 7px;
+      }
+
+      .shade-chip {
+        width: 18px;
+        height: 18px;
+        min-width: 40px;
+        min-height: 40px;
+        padding: 10px;
+        background-clip: content-box;
+      }
+
+      .studio-form input,
+      .studio-form textarea {
+        font-size: 16px;
+      }
+
+      .studio-actions {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .studio-actions button {
+        width: 100%;
+      }
+
+      #wall-preview {
+        max-width: 180px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .canvas-wrap {
+        border-width: 4px;
+        padding: 7px;
+      }
+
+      .studio-tools button {
+        flex-basis: 34px;
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+      }
+
+      .swatch {
+        width: 22px;
+        height: 22px;
+        min-width: 40px;
+        min-height: 40px;
+        padding: 9px;
+      }
+
+      .shade-chip {
+        width: 16px;
+        height: 16px;
+        padding: 12px;
+      }
+
+      #wall-preview {
+        max-width: 160px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================= -->
+  <!-- ROOM 1: ENTRANCE HALL                          -->
+  <!-- ============================================= -->
+  <section id="entrance-hall" class="room active-room">
+    <a class="main-hub-link" href="./enuhri-hub">Main Hub</a>
+    <a class="main-hub-link" href="..">Main Hub</a>
+    <div class="entrance-content">
+      <h1 class="museum-title">Enuhri Art Gallery</h1>
+
+      <p class="museum-description">
+        Welcome to Enuhri Art Gallery — a living gallery where every
+        visitor can become an exhibitor.
+      </p>
+
+      <div class="museum-instructions">
+        <p>Explore the gallery by dragging left and right, or using your arrow keys.</p>
+        <p>Every piece on display was submitted by a visitor, just like you.</p>
+      </div>
+
+      <button id="enter-gallery-btn" type="button">Enter Gallery</button>
+    </div>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- ROOM 2: LOOPING GALLERY                        -->
+  <!-- ============================================= -->
+  <section id="gallery-hall" class="room hidden-room">
+
+    <!-- Top bar with a way back to the entrance -->
+    <header class="gallery-topbar">
+      <button id="return-to-entrance-btn" type="button">← Entrance</button>
+      <span class="gallery-hint">Drag or hold ← → or A / D to walk</span>
+      <button id="create-artwork-btn" type="button">Create Artwork</button>
+    </header>
+
+    <!-- The parallax viewport: everything inside here scrolls -->
+    <div id="gallery-viewport">
+
+      <!-- Fixed-size gallery world; the viewport acts as a responsive camera. -->
+      <div id="gallery-world" class="gallery-world">
+
+        <!-- Layer 1: farthest back, moves slowest -->
+        <div id="layer-background" class="parallax-layer">
+          <!-- repeating wall/arch pattern will live here -->
+        </div>
+
+        <!-- Layer 2: the artwork wall itself -->
+        <div id="layer-artwork" class="parallax-layer">
+          <!-- individual .artwork-frame elements get inserted here by JS -->
+        </div>
+
+        <!-- Layer 3: wall-side statues -->
+        <div id="layer-wall-statues" class="parallax-layer"></div>
+
+        <!-- Layer 4: middle decorations -->
+        <div id="layer-decorations" class="parallax-layer">
+          <!-- decorative elements will live here -->
+        </div>
+
+        <!-- Layer 5: the visitor, in front of wall decorations -->
+        <div id="layer-visitor" class="parallax-layer">
+          <img
+            id="visitor-sprite"
+            src="assets/avatar/avatar-idle.png"
+            alt="Gallery visitor"
+            data-state="idle">
+        </div>
+
+        <!-- Layer 6: pillars and statues in the extreme foreground -->
+        <div id="layer-foreground" class="parallax-layer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- ROOM 3: ARTIST STUDIO                         -->
+  <!-- ============================================= -->
+  <section id="studio-room" class="room hidden-room">
+    <header class="studio-topbar">
+      <button id="back-to-gallery-btn" type="button">← Gallery</button>
+      <h1>Artist Studio</h1>
+      <span>Make something for the museum</span>
+    </header>
+
+    <main class="studio-layout">
+      <aside class="studio-panel">
+        <h2>Tools</h2>
+        <div class="studio-tools">
+          <button id="brush-tool-btn" class="active" type="button" aria-label="Brush">✎<span>Brush</span></button>
+          <button id="fill-tool-btn" type="button" aria-label="Fill">◩<span>Fill</span></button>
+          <button id="eraser-tool-btn" type="button" aria-label="Eraser">⌫<span>Eraser</span></button>
+          <button id="undo-btn" type="button" aria-label="Undo">↶<span>Undo</span></button>
+          <button id="redo-btn" type="button" aria-label="Redo">↷<span>Redo</span></button>
+          <button id="clear-canvas-btn" type="button" aria-label="Clear">⌧<span>Clear</span></button>
+        </div>
+        <p class="palette-heading">Enuhri palette</p>
+        <div id="palette-swatches" aria-label="Curated colors"></div>
+        <div id="shade-chips" aria-label="Color shades"></div>
+        <details class="custom-color">
+          <summary>Custom color</summary>
+          <label class="studio-control">
+            <input id="brush-color" type="color" value="#3a3226" />
+          </label>
+        </details>
+        <label class="studio-control">
+          Brush size
+          <input id="brush-size" type="range" min="2" max="48" value="8" />
+        </label>
+        <label class="studio-control">
+          Add an image
+          <input id="image-upload" type="file" accept="image/png,image/jpeg,image/webp" />
+        </label>
+      </aside>
+
+      <section class="canvas-wrap">
+        <canvas id="drawing-canvas" width="600" height="800"></canvas>
+      </section>
+
+      <aside class="studio-panel">
+        <h2>Artwork details</h2>
+        <div class="studio-form">
+          <label>
+            Title
+            <input id="artwork-title-input" maxlength="80" placeholder="My artwork" />
+          </label>
+          <label>
+            Artist name
+            <input id="artwork-artist-input" maxlength="60" placeholder="Anonymous" />
+          </label>
+          <label>
+            Description
+            <textarea id="artwork-description-input" maxlength="300" placeholder="Tell visitors about your piece"></textarea>
+          </label>
+        </div>
+        <div class="studio-actions">
+          <button id="preview-artwork-btn" type="button">Preview</button>
+          <button id="submit-artwork-btn" type="button">Hang it on the wall</button>
+          <button id="discard-draft-btn" type="button">Discard</button>
+        </div>
+        <div id="wall-preview" aria-label="Artwork wall preview">
+          <div id="wall-preview-placeholder">Your framed artwork will appear here after you choose Preview.</div>
+          <img id="wall-preview-image" alt="Artwork preview" hidden>
+        </div>
+        <p id="studio-status" role="status"></p>
+      </aside>
+    </main>
+  </section>
+
+  <!-- ============================================= -->
+  <!-- ARTWORK DETAIL MODAL (shared by all artworks)  -->
+  <!-- ============================================= -->
+  <div id="artwork-modal" class="modal hidden-room">
+    <div class="modal-content">
+      <button id="modal-close-btn" class="modal-close" type="button">&times;</button>
+      <div class="modal-columns">
+        <div id="modal-image-wrap">
+          <img id="modal-image" src="" alt="" />
+        </div>
+        <div class="modal-details">
+          <div class="modal-title-row">
+            <h2 id="modal-title"></h2>
+            <button id="heart-btn" type="button" aria-pressed="false">♡ <span id="heart-count">0</span></button>
+          </div>
+          <p id="modal-artist"></p>
+          <p id="modal-description"></p>
+          <div class="modal-reactions">
+            <span id="modal-visitor-name"></span>
+          </div>
+          <section class="modal-feedback" aria-labelledby="feedback-heading">
+            <h3 id="feedback-heading">Leave a short note</h3>
+            <div class="feedback-compose">
+              <input id="feedback-input" maxlength="25" placeholder="Your note" autocomplete="off">
+              <button id="feedback-submit-btn" type="button">Save</button>
+            </div>
+            <span id="feedback-counter">0/150</span>
+            <p id="feedback-status" role="status"></p>
+            <div id="feedback-list" aria-live="polite"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+
+  // FIREBASE
+  import { initializeApp } 
+    from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+
+  import {
+    getAuth,
+    signInAnonymously,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  collection,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  limit,
+  serverTimestamp,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+
+  // Your Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAQz7bgX1EGU9KDwrrbbJgyqrpd0t_AuJc",
+    authDomain: "enuhri-hub.firebaseapp.com",
+    projectId: "enuhri-hub",
+    storageBucket: "enuhri-hub.firebasestorage.app",
+    messagingSenderId: "290310278997",
+    appId: "1:290310278997:web:4841f8076c5487f02529dc",
+    measurementId: "G-F0G0M4X6XK"
+  };
+
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+
+  // Firebase Authentication
+  const auth = getAuth(app);
+
+  // Cloud Firestore
+  const db = getFirestore(app);
+
+  // =========================
+  // YOUR EXISTING MUSEUM CODE
+  // =========================
+
+  // Automatically strip 'index.html' from browser address bar
+  if (window.location.pathname.endsWith('/index.html') || window.location.pathname === '/index.html') {
+    const cleanPath =
+      (window.location.pathname.replace(/\/index\.html$/, '/') || '/') +
+      window.location.search +
+      window.location.hash;
+
+    window.history.replaceState(null, '', cleanPath);
+  }
+
+  // ...the rest of your existing museum JavaScript...
+
+    /* ===================================================
+       STEP 4: NAVIGATION + MODAL BEHAVIOR
+       (Dragging/keys arrive in Step 5, parallax math in
+        Step 6, real artwork data in Step 7.)
+    =================================================== */
+
+    // ---- Element references ----
+    const entranceHall   = document.getElementById('entrance-hall');
+    const galleryHall    = document.getElementById('gallery-hall');
+    const studioRoom     = document.getElementById('studio-room');
+    const enterBtn       = document.getElementById('enter-gallery-btn');
+    const returnBtn      = document.getElementById('return-to-entrance-btn');
+    const createArtworkBtn = document.getElementById('create-artwork-btn');
+    const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
+
+    const modal           = document.getElementById('artwork-modal');
+    const modalCloseBtn   = document.getElementById('modal-close-btn');
+    const modalImage      = document.getElementById('modal-image');
+    const modalTitle      = document.getElementById('modal-title');
+    const modalArtist     = document.getElementById('modal-artist');
+    const modalDescription = document.getElementById('modal-description');
+    const modalVisitorName = document.getElementById('modal-visitor-name');
+    const heartButton = document.getElementById('heart-btn');
+    const heartCount = document.getElementById('heart-count');
+    const feedbackInput = document.getElementById('feedback-input');
+    const feedbackCounter = document.getElementById('feedback-counter');
+    const feedbackSubmitButton = document.getElementById('feedback-submit-btn');
+    const feedbackList = document.getElementById('feedback-list');
+    const feedbackStatus = document.getElementById('feedback-status');
+    let activeArtwork = null;
+
+let visitorId = null;
+let visitorName = 'Visitor';
+
+const authReady = new Promise((resolve, reject) => {
+  onAuthStateChanged(auth, (user) => {
+    if (!user) return;
+
+    visitorId = user.uid;
+
+    const adjectives = [
+      'Quiet',
+      'Amber',
+      'Pale',
+      'Patient',
+      'Gentle',
+      'Wandering',
+      'Still',
+      'Soft',
+      'Distant',
+      'Warm'
+    ];
+
+    const nouns = [
+      'Observer',
+      'Wanderer',
+      'Onlooker',
+      'Visitor',
+      'Keeper',
+      'Walker'
+    ];
+
+    const savedNameKey = `museumVisitorName_${user.uid}`;
+    let name = localStorage.getItem(savedNameKey);
+
+    if (!name) {
+      const index = Math.abs(
+        [...user.uid].reduce(
+          (sum, char) => sum + char.charCodeAt(0),
+          0
+        )
+      );
+
+      name = `${adjectives[index % adjectives.length]} ${nouns[index % nouns.length]}`;
+
+      localStorage.setItem(savedNameKey, name);
+    }
+
+    visitorName = name;
+
+    console.log('Firebase visitor UID:', visitorId);
+    console.log('Museum visitor name:', visitorName);
+
+    resolve(user);
+  });
+});
+
+signInAnonymously(auth).catch((error) => {
+  console.error('Firebase authentication failed:', error);
+  reject(error);
+});
+
+const ArtworkStore = {
+  async toggleHeart(artworkId) {
+    await authReady; // Wait for initial load
+    const activeUid = auth.currentUser.uid; // Always get the true active session
+
+    const likeRef = doc(
+      db,
+      'artworks',
+      String(artworkId),
+      'likes',
+      activeUid
+    );
+
+    const existing = await getDoc(likeRef);
+
+    if (existing.exists()) {
+      await deleteDoc(likeRef);
+    } else {
+      await setDoc(likeRef, {
+        uid: activeUid,
+        createdAt: serverTimestamp()
+      });
+    }
+  },
+
+  async submitFeedback(artworkId, text) {
+    await authReady; // Wait for initial load
+    const activeUid = auth.currentUser.uid; // Always get the true active session
+
+    const cleanText = [...text.trim()]
+      .slice(0, 25)
+      .join('');
+
+    const commentRef = doc(
+      db,
+      'artworks',
+      String(artworkId),
+      'comments',
+      activeUid
+    );
+
+    if (!cleanText) {
+      await deleteDoc(commentRef);
+      return;
+    }
+
+    const existing = await getDoc(commentRef);
+
+    if (existing.exists()) {
+      await setDoc(
+        commentRef,
+        {
+          uid: activeUid,
+          text: cleanText,
+          displayName: visitorName,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    } else {
+      await setDoc(commentRef, {
+        uid: activeUid,
+        text: cleanText,
+        displayName: visitorName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+  }
+};
+
+    function renderArtworkFeedback(artwork) {
+      const notes = ArtworkStore.getFeedback(artwork.id).slice(0, 5);
+      const mine = ArtworkStore.getMyFeedback(artwork.id);
+      feedbackInput.value = mine?.text || '';
+      feedbackCounter.textContent = `${[...feedbackInput.value].length}/25`;
+      feedbackCounter.classList.toggle('near-limit', [...feedbackInput.value].length >= 20);
+      feedbackList.innerHTML = notes.length
+        ? notes.map((note) => `<div class="feedback-note">${note.text.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))}<small>— ${note.displayName}</small></div>`).join('')
+        : '<p class="feedback-note">No notes yet. Be the first to leave one.</p>';
+    }
+
+    function renderArtworkReaction(artwork) {
+      const hearted = ArtworkStore.isHearted(artwork.id);
+      heartButton.classList.toggle('is-hearted', hearted);
+      heartButton.setAttribute('aria-pressed', String(hearted));
+      heartButton.firstChild.textContent = hearted ? '♥ ' : '♡ ';
+      heartCount.textContent = ArtworkStore.getHeartCount(artwork.id);
+    }
+
+    // ---- Room switching ----
+    function showGallery() {
+      entranceHall.classList.add('hidden-room');
+      studioRoom.classList.add('hidden-room');
+      galleryHall.classList.remove('hidden-room');
+      requestAnimationFrame(() => {
+        calculateCamera();
+        renderGalleryPosition();
+      });
+    }
+
+    function showEntrance() {
+      stopGalleryInteraction();
+      galleryHall.classList.add('hidden-room');
+      studioRoom.classList.add('hidden-room');
+      entranceHall.classList.remove('hidden-room');
+    }
+
+    function showStudio() {
+      stopGalleryInteraction();
+      entranceHall.classList.add('hidden-room');
+      galleryHall.classList.add('hidden-room');
+      studioRoom.classList.remove('hidden-room');
+      resizeDrawingCanvas();
+      resetStudioDraft();
+    }
+
+    enterBtn.addEventListener('click', showGallery);
+    returnBtn.addEventListener('click', showEntrance);
+    createArtworkBtn.addEventListener('click', showStudio);
+    backToGalleryBtn.addEventListener('click', showGallery);
+
+let unsubscribeLikes = null;
+let unsubscribeComments = null;
+
+function subscribeToArtworkData(artwork) {
+  if (unsubscribeLikes) {
+    unsubscribeLikes();
+    unsubscribeLikes = null;
+  }
+
+  if (unsubscribeComments) {
+    unsubscribeComments();
+    unsubscribeComments = null;
+  }
+
+  const artworkId = String(artwork.id);
+
+  // -------------------------
+  // LIKES
+  // -------------------------
+
+  const likesRef = collection(
+    db,
+    'artworks',
+    artworkId,
+    'likes'
+  );
+
+  unsubscribeLikes = onSnapshot(
+    likesRef,
+    (snapshot) => {
+      const likedByCurrentUser =
+        visitorId &&
+        snapshot.docs.some(
+          (document) => document.id === visitorId
+        );
+
+      heartButton.classList.toggle(
+        'is-hearted',
+        likedByCurrentUser
+      );
+
+      heartButton.setAttribute(
+        'aria-pressed',
+        String(likedByCurrentUser)
+      );
+
+      heartButton.firstChild.textContent =
+        likedByCurrentUser ? '♥ ' : '♡ ';
+
+      heartCount.textContent = snapshot.size;
+    },
+    (error) => {
+      console.error('Could not load likes:', error);
+    }
+  );
+
+
+  // -------------------------
+  // COMMENTS
+  // -------------------------
+
+  const commentsRef = collection(
+    db,
+    'artworks',
+    artworkId,
+    'comments'
+  );
+
+  const commentsQuery = query(
+    commentsRef,
+    orderBy('createdAt', 'desc'),
+    limit(5)
+  );
+
+  unsubscribeComments = onSnapshot(
+    commentsQuery,
+    (snapshot) => {
+
+      const notes = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data()
+      }));
+
+      const mine = notes.find(
+        (note) => note.uid === visitorId
+      );
+
+      feedbackInput.value = mine?.text || '';
+
+      feedbackCounter.textContent =
+        `${[...feedbackInput.value].length}/25`;
+
+      feedbackCounter.classList.toggle(
+        'near-limit',
+        [...feedbackInput.value].length >= 20
+      );
+
+      feedbackList.innerHTML = notes.length
+        ? notes.map((note) => `
+            <div class="feedback-note">
+              ${note.text.replace(
+                /[&<>"']/g,
+                (char) => ({
+                  '&': '&amp;',
+                  '<': '&lt;',
+                  '>': '&gt;',
+                  '"': '&quot;',
+                  "'": '&#39;'
+                }[char])
+              )}
+              <small>— ${note.displayName || 'Visitor'}</small>
+            </div>
+          `).join('')
+        : '<p class="feedback-note">No notes yet. Be the first to leave one.</p>';
+    },
+    (error) => {
+      console.error('Could not load comments:', error);
+    }
+  );
+}
+
+    // ---- Artwork modal behavior ----
+    // Step 7 will call this from each artwork's click handler,
+    // passing that artwork's own data.
+    function openArtworkModal(artwork) {
+      activeArtwork = artwork;
+      modalImage.src = artwork.image || '';
+      modalImage.alt = artwork.title || '';
+      modalTitle.textContent = artwork.title || '';
+      modalArtist.textContent = artwork.artist ? `by ${artwork.artist}` : '';
+      modalDescription.textContent = artwork.description || '';
+      modalVisitorName.textContent = visitorName;
+     
+      subscribeToArtworkData(artwork);
+      
+      feedbackStatus.textContent = '';
+      modal.classList.remove('hidden-room');
+    }
+
+    function closeArtworkModal() {
+      modal.classList.add('hidden-room');
+    }
+
+    modalCloseBtn.addEventListener('click', closeArtworkModal);
+
+    heartButton.addEventListener('click', async () => {
+      if (!activeArtwork) return;
+
+      try {
+        await ArtworkStore.toggleHeart(activeArtwork.id);
+      } catch (error) {
+        console.error('Like failed:', error);
+      }
+    });
+
+    feedbackInput.addEventListener('input', () => {
+      const characterCount = [...feedbackInput.value].length;
+      feedbackCounter.textContent = `${characterCount}/25`;
+      feedbackCounter.classList.toggle('near-limit', characterCount >= 20);
+    });
+
+    feedbackSubmitButton.addEventListener('click', async () => {
+  if (!activeArtwork) return;
+
+  try {
+    const text = feedbackInput.value.trim();
+
+    await ArtworkStore.submitFeedback(
+      activeArtwork.id,
+      text
+    );
+
+    feedbackStatus.textContent =
+      text ? 'Note saved.' : 'Note removed.';
+
+  } catch (error) {
+    console.error('Comment failed:', error);
+    feedbackStatus.textContent =
+      'Could not save your note.';
+  }
+});
+
+    feedbackInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        feedbackSubmitButton.click();
+      }
+    });
+
+    // Click outside the modal card also closes it
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeArtworkModal();
+      }
+    });
+
+    // Escape key closes the modal
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !modal.classList.contains('hidden-room')) {
+        closeArtworkModal();
+      }
+    });
+
+    // ---- Gallery movement: dragging + continuous arrow keys ----
+    const galleryViewport = document.getElementById('gallery-viewport');
+    const galleryWorld = document.getElementById('gallery-world');
+    const parallaxLayers = document.querySelectorAll('.parallax-layer');
+    const visitorSprite = document.getElementById('visitor-sprite');
+    const visitorSprites = {
+      idle: 'assets/avatar/avatar-idle.png',
+      walking: 'assets/avatar/avatar-walk.png',
+      looking: 'assets/avatar/avatar-observe.png',
+    };
+    const attentiveArtworkFrames = new Set();
+    Object.values(visitorSprites).forEach((src) => {
+      const preload = new Image();
+      preload.src = src;
+    });
+    const WORLD_HEIGHT = 1000;
+    let cameraScale = 1;
+
+    let scrollOffset = 0;
+    let minOffset = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let offsetAtDragStart = 0;
+
+    function updateVisitorState() {
+      if (!visitorSprite) return;
+      const nextState = attentiveArtworkFrames.size > 0
+        ? 'looking'
+        : galleryViewport.classList.contains('is-moving')
+          ? 'walking'
+          : 'idle';
+      if (visitorSprite.dataset.state === nextState) return;
+      visitorSprite.classList.add('is-transitioning');
+      visitorSprite.src = visitorSprites[nextState];
+      visitorSprite.dataset.state = nextState;
+      requestAnimationFrame(() => visitorSprite.classList.remove('is-transitioning'));
+    }
+
+    function setArtworkAttention(frame, isAttentive) {
+      if (isAttentive) {
+        attentiveArtworkFrames.add(frame);
+      } else {
+        attentiveArtworkFrames.delete(frame);
+      }
+      updateVisitorState();
+    }
+
+    function stopGalleryInteraction() {
+      heldKeys.left = false;
+      heldKeys.right = false;
+      isDragging = false;
+      galleryViewport.classList.remove('is-dragging');
+      galleryViewport.classList.remove('is-moving');
+      galleryViewport.classList.remove('is-keyboard-moving');
+      updateVisitorState();
+      if (keyboardAnimationId !== null) {
+        cancelAnimationFrame(keyboardAnimationId);
+        keyboardAnimationId = null;
+      }
+      lastKeyboardFrameTime = 0;
+    }
+
+    function calculateBounds() {
+      const viewportWidth = galleryViewport.clientWidth / cameraScale;
+      const layerWidth = document.getElementById('layer-artwork').offsetWidth;
+      minOffset = -(layerWidth - viewportWidth);
+      if (minOffset > 0) minOffset = 0;
+      scrollOffset = clampOffset(scrollOffset);
+      renderGalleryPosition();
+    }
+
+    function calculateCamera() {
+      const viewportHeight = galleryViewport.clientHeight;
+      const desktopSceneHeight = 850;
+      const maxSceneScale = viewportHeight <= 1000 ? 1 : 2;
+      cameraScale = viewportHeight <= 1000
+        ? viewportHeight / WORLD_HEIGHT
+        : Math.min(maxSceneScale, viewportHeight / desktopSceneHeight);
+      const cameraVerticalOffset = viewportHeight <= 1000
+        ? 0
+        : Math.round(100 - 160 * cameraScale);
+      galleryWorld.style.height = `${WORLD_HEIGHT}px`;
+      galleryWorld.style.transform =
+        `translate3d(0, ${cameraVerticalOffset}px, 0) scale(${cameraScale})`;
+      document.getElementById('layer-visitor').style.width =
+        `${galleryViewport.clientWidth / cameraScale}px`;
+      calculateBounds();
+    }
+
+    function clampOffset(value) {
+      if (value > 0) return 0;
+      if (value < minOffset) return minOffset;
+      return value;
+    }
+
+    const LAYER_SPEEDS = {
+      'layer-background': 0.35,
+      'layer-artwork': 1,
+      'layer-wall-statues': 1,
+      'layer-decorations': 1.12,
+      'layer-visitor': 0.05,
+      'layer-foreground': 1.32,
+    };
+
+    function renderGalleryPosition() {
+      parallaxLayers.forEach((layer) => {
+        const speed = LAYER_SPEEDS[layer.id] ?? 1;
+        layer.style.transform = `translate3d(${scrollOffset * speed}px, 0, 0)`;
+      });
+    }
+
+    function setGalleryMoving(isMoving) {
+      if (isMoving) {
+        galleryViewport.classList.add('is-moving');
+        updateVisitorState();
+        return;
+      }
+
+      if (!galleryViewport.classList.contains('is-moving')) return;
+      galleryViewport.classList.remove('is-moving');
+      updateVisitorState();
+    }
+
+    galleryViewport.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (event.target.closest('.artwork-frame')) return;
+
+      isDragging = true;
+      dragStartX = event.clientX;
+      offsetAtDragStart = scrollOffset;
+      galleryViewport.classList.add('is-dragging');
+      setGalleryMoving(true);
+      galleryViewport.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    galleryViewport.addEventListener('pointermove', (event) => {
+      if (!isDragging) return;
+      const delta = (event.clientX - dragStartX) / cameraScale;
+      scrollOffset = clampOffset(offsetAtDragStart + delta);
+      renderGalleryPosition();
+      setGalleryMoving(true);
+      event.preventDefault();
+    });
+
+    function endDrag(event) {
+      if (!isDragging) return;
+      isDragging = false;
+      galleryViewport.classList.remove('is-dragging');
+      setGalleryMoving(false);
+
+      if (
+        event &&
+        event.pointerId !== undefined &&
+        galleryViewport.hasPointerCapture(event.pointerId)
+      ) {
+        galleryViewport.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    galleryViewport.addEventListener('pointerup', endDrag);
+    galleryViewport.addEventListener('pointercancel', endDrag);
+
+    const heldKeys = {
+      left: false,
+      right: false,
+    };
+    const KEY_SPEED = 220; // pixels per second
+    let keyboardAnimationId = null;
+    let lastKeyboardFrameTime = 0;
+
+    function movementDirectionForKey(event) {
+      if (event.code === 'ArrowLeft' || event.code === 'KeyA') return 'left';
+      if (event.code === 'ArrowRight' || event.code === 'KeyD') return 'right';
+      return null;
+    }
+
+    function moveWithKeyboard(timestamp) {
+      const elapsedSeconds = lastKeyboardFrameTime
+        ? Math.min((timestamp - lastKeyboardFrameTime) / 1000, 0.05)
+        : 0;
+      lastKeyboardFrameTime = timestamp;
+
+      let direction = 0;
+      if (heldKeys.left) direction += 1;
+      if (heldKeys.right) direction -= 1;
+
+      if (direction !== 0) {
+        scrollOffset = clampOffset(scrollOffset + direction * KEY_SPEED * elapsedSeconds);
+        renderGalleryPosition();
+        setGalleryMoving(true);
+      }
+
+      if (heldKeys.left || heldKeys.right) {
+        keyboardAnimationId = requestAnimationFrame(moveWithKeyboard);
+      } else {
+        keyboardAnimationId = null;
+        lastKeyboardFrameTime = 0;
+        galleryViewport.classList.remove('is-keyboard-moving');
+        setGalleryMoving(false);
+      }
+    }
+
+    function startKeyboardMovement() {
+      if (keyboardAnimationId === null) {
+        galleryViewport.classList.add('is-keyboard-moving');
+        lastKeyboardFrameTime = 0;
+        keyboardAnimationId = requestAnimationFrame(moveWithKeyboard);
+      }
+    }
+
+    function stopKeyboardMovement() {
+      if (keyboardAnimationId !== null) {
+        cancelAnimationFrame(keyboardAnimationId);
+        keyboardAnimationId = null;
+      }
+      lastKeyboardFrameTime = 0;
+      galleryViewport.classList.remove('is-keyboard-moving');
+      setGalleryMoving(false);
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (galleryHall.classList.contains('hidden-room')) return;
+      
+      // Ignore keystrokes if the user is typing in an input box
+      if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
+
+      const direction = movementDirectionForKey(event);
+      if (!direction) return;
+
+      event.preventDefault();
+      heldKeys[direction] = true;
+      startKeyboardMovement();
+    });
+
+    document.addEventListener('keyup', (event) => {
+      // Ignore keystrokes if the user is typing in an input box
+      if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
+
+      const direction = movementDirectionForKey(event);
+      if (!direction) return;
+
+      heldKeys[direction] = false;
+      if (!heldKeys.left && !heldKeys.right) {
+        stopKeyboardMovement();
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      heldKeys.left = false;
+      heldKeys.right = false;
+      stopKeyboardMovement();
+    });
+
+    window.addEventListener('resize', calculateCamera);
+
+    // ===================================================
+    // STEP 8+: MUSEUM WALL ARCHITECTURE
+    // Artwork is mounted to the wall plane rather than floating
+    // as a separate layer.
+    // ===================================================
+
+    function svgToDataUri(svgMarkup) {
+      return `data:image/svg+xml,${encodeURIComponent(svgMarkup)}`;
+    }
+
+    const artGenerators = {
+      abstract(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <circle cx="60" cy="90" r="55" fill="${c[1]}" opacity="0.85"/>
+          <path d="M20 200 Q100 120 190 220 L190 260 L20 260 Z" fill="${c[2]}" opacity="0.9"/>
+        </svg>`;
+      },
+      landscape(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="150" fill="${c[0]}"/>
+          <rect y="150" width="200" height="110" fill="${c[1]}"/>
+          <circle cx="150" cy="55" r="22" fill="${c[2]}"/>
+          <path d="M0 160 L60 110 L120 165 L200 130 L200 260 L0 260 Z" fill="${c[2]}" opacity="0.5"/>
+        </svg>`;
+      },
+      portrait(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <ellipse cx="100" cy="110" rx="55" ry="70" fill="${c[1]}"/>
+          <rect x="60" y="175" width="80" height="85" fill="${c[2]}"/>
+        </svg>`;
+      },
+      stillLife(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <ellipse cx="100" cy="210" rx="70" ry="14" fill="${c[1]}" opacity="0.6"/>
+          <circle cx="75" cy="170" r="30" fill="${c[2]}"/>
+          <circle cx="120" cy="180" r="24" fill="${c[1]}"/>
+          <rect x="90" y="90" width="18" height="90" fill="${c[2]}"/>
+        </svg>`;
+      },
+      geometric(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <polygon points="100,20 180,120 100,220 20,120" fill="${c[1]}"/>
+          <rect x="60" y="60" width="80" height="80" fill="${c[2]}" opacity="0.8"/>
+        </svg>`;
+      },
+      surreal(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <ellipse cx="100" cy="130" rx="90" ry="30" fill="${c[1]}"/>
+          <circle cx="100" cy="70" r="35" fill="${c[2]}"/>
+          <rect x="90" y="130" width="20" height="110" fill="${c[2]}"/>
+        </svg>`;
+      },
+      digital(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <rect x="20" y="20" width="160" height="20" fill="${c[1]}"/>
+          <rect x="20" y="60" width="100" height="20" fill="${c[2]}"/>
+          <rect x="20" y="100" width="140" height="20" fill="${c[1]}"/>
+          <rect x="20" y="140" width="70" height="20" fill="${c[2]}"/>
+        </svg>`;
+      },
+      minimalist(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <line x1="30" y1="130" x2="170" y2="130" stroke="${c[1]}" stroke-width="6"/>
+          <circle cx="100" cy="70" r="10" fill="${c[2]}"/>
+        </svg>`;
+      },
+      colorful(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <circle cx="60" cy="70" r="40" fill="${c[1]}" opacity="0.8"/>
+          <circle cx="140" cy="110" r="45" fill="${c[2]}" opacity="0.8"/>
+          <circle cx="90" cy="190" r="35" fill="${c[1]}" opacity="0.7"/>
+        </svg>`;
+      },
+      classical(c) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+          <rect width="200" height="260" fill="${c[0]}"/>
+          <rect x="40" y="40" width="12" height="180" fill="${c[1]}"/>
+          <rect x="148" y="40" width="12" height="180" fill="${c[1]}"/>
+          <polygon points="40,40 100,10 160,40" fill="${c[2]}"/>
+        </svg>`;
+      },
+    };
+
+    let artworks = [
+      { id: 1,  title: "Whispers of the Sky",     artist: "Luna Vale",     description: "An abstract interpretation of light and movement.", style: "abstract",  colors: ["#efe4d0", "#b8923f", "#6b5f4d"] },
+      { id: 2,  title: "Fields at Dusk",          artist: "Marco Reyes",   description: "A quiet landscape rendered in warm, fading tones.", style: "landscape", colors: ["#f0e8d6", "#c9a45c", "#8a6a2a"] },
+      { id: 3,  title: "The Unnamed Visitor",     artist: "Ines Bloom",    description: "A study of presence and anonymity in portraiture.", style: "portrait",  colors: ["#e9dfc8", "#8a6a2a", "#3a3226"] },
+      { id: 4,  title: "Table by the Window",     artist: "Theo Grant",   description: "A still life composed of simple, everyday forms.", style: "stillLife", colors: ["#f2ead9", "#d8b671", "#6b5f4d"] },
+      { id: 5,  title: "Fracture No. 3",          artist: "Sana Okoro",   description: "Geometric shapes in tension, exploring balance.", style: "geometric", colors: ["#e6dcc4", "#3a3226", "#b8923f"] },
+      { id: 6,  title: "The Floating Hour",       artist: "Petra Lund",   description: "A surreal scene suspended outside of time.", style: "surreal",   colors: ["#eee3cf", "#8a6a2a", "#3a3226"] },
+      { id: 7,  title: "Signal Garden",           artist: "Ravi Chandra", description: "A digitally-inspired composition of layered signals.", style: "digital", colors: ["#f2ead9", "#6b5f4d", "#b8923f"] },
+      { id: 8,  title: "Quiet Line",              artist: "Anya Solberg", description: "A minimalist study in restraint and negative space.", style: "minimalist", colors: ["#f5efe1", "#8a6a2a", "#3a3226"] },
+      { id: 9,  title: "Carnival Fragments",      artist: "Diego Marin",  description: "An experimental burst of color and movement.", style: "colorful", colors: ["#efe4d0", "#b8923f", "#8a6a2a"] },
+      { id: 10, title: "Pillars of Memory",       artist: "Helene Foss",  description: "A classical-inspired tribute to architecture and time.", style: "classical", colors: ["#f0e8d6", "#8a6a2a", "#3a3226"] },
+      { id: 11, title: "Low Tide",                artist: "Marco Reyes",  description: "A landscape capturing the stillness of an empty shore.", style: "landscape", colors: ["#eee3cf", "#6b5f4d", "#b8923f"] },
+      { id: 12, title: "Study in Grey",           artist: "Ines Bloom",   description: "A restrained portrait exploring tone over detail.", style: "portrait", colors: ["#e6dcc4", "#6b5f4d", "#8a6a2a"] },
+      { id: 13, title: "Vessel and Shadow",       artist: "Theo Grant",   description: "A still life focused on the play of light on form.", style: "stillLife", colors: ["#f2ead9", "#8a6a2a", "#3a3226"] },
+      { id: 14, title: "Interior Weather",        artist: "Sana Okoro",   description: "A geometric meditation on mood and structure.", style: "geometric", colors: ["#efe4d0", "#b8923f", "#3a3226"] },
+    ];
+
+    artworks.forEach((art) => {
+      const generator = artGenerators[art.style] || artGenerators.abstract;
+      art.image = svgToDataUri(generator(art.colors));
+    });
+
+    async function loadSharedArtworks() {
+  try {
+    const artworksRef = collection(db, 'artworks');
+    // Fetch artworks ordered by newest first
+    const q = query(artworksRef, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+
+    const fetchedArtworks = [];
+    snapshot.forEach((document) => {
+      fetchedArtworks.push(document.data());
+    });
+
+    if (fetchedArtworks.length > 0) {
+      // Preserve the built-in numeric artworks and prepend the database ones
+      const builtInArtworks = artworks.filter(art => typeof art.id === 'number');
+      artworks = fetchedArtworks.concat(builtInArtworks);
+      
+      // Rebuild the wall now that the shared artworks have arrived
+      buildMuseumWall();
+      calculateBounds();
+    }
+  } catch (error) {
+    console.warn('Shared artworks could not be loaded from Firestore.', error);
+  }
+}
+
+    function createArtworkFrame(art) {
+      const frame = document.createElement('div');
+      frame.className = 'artwork-frame';
+      frame.tabIndex = 0;
+      frame.setAttribute('role', 'button');
+      frame.setAttribute('aria-label', `View artwork: ${art.title}`);
+
+      const img = document.createElement('img');
+      img.src = art.image;
+      img.alt = art.title;
+
+      frame.appendChild(img);
+      frame.addEventListener('click', () => openArtworkModal(art));
+      frame.addEventListener('mouseenter', () => setArtworkAttention(frame, true));
+      frame.addEventListener('mouseleave', () => {
+        if (!frame.matches(':focus')) setArtworkAttention(frame, false);
+      });
+      frame.addEventListener('focusin', () => setArtworkAttention(frame, true));
+      frame.addEventListener('focusout', (event) => {
+        if (!frame.contains(event.relatedTarget)) setArtworkAttention(frame, false);
+      });
+
+      return frame;
+    }
+
+    function rectanglesOverlap(first, second) {
+      return (
+        first.left < second.left + second.width &&
+        first.left + first.width > second.left &&
+        first.top < second.top + second.height &&
+        first.top + first.height > second.top
+      );
+    }
+
+    function findWallStatuePosition(wallWidth, occupiedRects) {
+      const candidates = [
+        { left: 381, top: 700 },
+        { left: 285, top: 700 },
+        { left: 580, top: 700 },
+      ];
+      const statueSize = { width: 58, height: 98 };
+
+      return candidates.find((candidate) => {
+        const statueRect = { ...candidate, ...statueSize };
+        return !occupiedRects.some((occupiedRect) =>
+          rectanglesOverlap(statueRect, occupiedRect)
+        );
+      }) || {
+        left: (wallWidth - statueSize.width) / 2,
+        top: 700,
+      };
+    }
+
+    const artworkLayouts = [
+      { left: 0.12, top: 0.26 },
+      { left: 0.43, top: 0.21 },
+      { left: 0.71, top: 0.27 },
+    ];
+
+    const ARTWORK_GAP = 28;
+
+    function getArtworkPosition(panelIndex, artPositionIndex, wallWidth, occupiedRects) {
+      const layout = artworkLayouts[artPositionIndex] || {
+        left: 0.12 + artPositionIndex * 0.16,
+        top: 0.24 + (artPositionIndex % 2) * 0.1,
+      };
+      const leftVariation = ((panelIndex * 61 + artPositionIndex * 29) % 81) - 40;
+      const topVariation = ((panelIndex * 47 + artPositionIndex * 31) % 71) - 35;
+
+      const preferred = {
+        left: Math.round(wallWidth * layout.left + leftVariation),
+        top: Math.round(WORLD_HEIGHT * layout.top + topVariation),
+      };
+      const candidates = [];
+
+      for (let row = 0; row < 5; row += 1) {
+        for (let column = 0; column < 3; column += 1) {
+          candidates.push({
+            left: 55 + column * 255,
+            top: 92 + row * 112,
+          });
+        }
+      }
+
+      candidates.sort((first, second) => (
+        Math.abs(first.left - preferred.left) +
+        Math.abs(first.top - preferred.top) -
+        Math.abs(second.left - preferred.left) -
+        Math.abs(second.top - preferred.top)
+      ));
+
+      const fits = (candidate) => {
+        const candidateRect = {
+          left: candidate.left - ARTWORK_GAP,
+          top: candidate.top - ARTWORK_GAP,
+          width: 190 + ARTWORK_GAP * 2,
+          height: 284 + ARTWORK_GAP * 2,
+        };
+        return !occupiedRects.some((occupiedRect) =>
+          rectanglesOverlap(candidateRect, occupiedRect)
+        );
+      };
+
+      return candidates.find(fits) || preferred;
+    }
+
+    function buildMuseumWall() {
+      const wall = document.getElementById('layer-artwork');
+      const wallStatueLayer = document.getElementById('layer-wall-statues');
+      const decorationLayer = document.getElementById('layer-decorations');
+      const foregroundLayer = document.getElementById('layer-foreground');
+      const wallWidth = 820;
+      const panelGroups = [];
+      for (let start = 0; start < artworks.length; start += 3) {
+        panelGroups.push(
+          artworks.slice(start, start + 3).map((art) => artworks.indexOf(art))
+        );
+      }
+
+      wall.innerHTML = '';
+      wallStatueLayer.innerHTML = '';
+      decorationLayer.innerHTML = '';
+      foregroundLayer.innerHTML = '';
+      const worldWidth = wallWidth * panelGroups.length;
+      document.getElementById('gallery-world').style.width = `${worldWidth}px`;
+      wall.style.width = `${worldWidth}px`;
+      wallStatueLayer.style.width = `${worldWidth}px`;
+      decorationLayer.style.width = `${worldWidth}px`;
+      foregroundLayer.style.width = `${worldWidth}px`;
+
+      const columnWidth = 82;
+      const columnSpacing = 680;
+      const firstColumnLeft = 100;
+      const endColumn = document.createElement('div');
+      endColumn.className = 'decor-column gallery-end-column';
+      endColumn.style.left = `${Math.max(0, worldWidth - columnWidth)}px`;
+      foregroundLayer.appendChild(endColumn);
+
+      panelGroups.forEach((group, panelIndex) => {
+        const panel = document.createElement('div');
+        panel.className = 'wall-panel';
+        panel.style.left = `${panelIndex * wallWidth}px`;
+        panel.style.width = `${wallWidth}px`;
+
+        const zone = document.createElement('div');
+        zone.className = 'wall-frame-zone';
+        const occupiedRects = [];
+
+        group.forEach((artIndex, artPositionIndex) => {
+          const art = artworks[artIndex];
+          const frame = createArtworkFrame(art);
+          const pos = getArtworkPosition(panelIndex, artPositionIndex, wallWidth, occupiedRects);
+          frame.style.left = `${pos.left}px`;
+          frame.style.top = `${pos.top}px`;
+          zone.appendChild(frame);
+          occupiedRects.push({
+            left: pos.left,
+            top: pos.top,
+            width: 190,
+            height: 230,
+          });
+
+          const plaque = document.createElement('div');
+          plaque.className = 'artwork-plaque';
+          plaque.style.left = `${pos.left}px`;
+          plaque.style.top = `${pos.top + 242}px`;
+          plaque.innerHTML = `<strong>${art.title}</strong><span>${art.artist}</span>`;
+          zone.appendChild(plaque);
+          occupiedRects.push({
+            left: pos.left - ARTWORK_GAP,
+            top: pos.top - ARTWORK_GAP,
+            width: 190 + ARTWORK_GAP * 2,
+            height: 284 + ARTWORK_GAP * 2,
+          });
+        });
+
+        panel.appendChild(zone);
+        wall.appendChild(panel);
+      });
+
+      for (let i = 0; i < panelGroups.length + 1; i += 1) {
+        const column = document.createElement('div');
+        column.className = 'decor-column';
+        const columnLeft = firstColumnLeft + i * columnSpacing;
+        column.style.left = `${columnLeft}px`;
+        foregroundLayer.appendChild(column);
+
+        if (i % 2 === 0) {
+          const statue = document.createElement('div');
+          statue.className = 'statue outer-statue';
+          const statueCenter = columnLeft + columnWidth / 2 + columnSpacing / 2;
+          statue.style.left = `${statueCenter - 46}px`;
+          const pedestal = document.createElement('div');
+          pedestal.className = 'statue-pedestal';
+          statue.appendChild(pedestal);
+          foregroundLayer.appendChild(statue);
+        }
+      }
+
+      panelGroups.forEach((group, panelIndex) => {
+        const wallStatue = document.createElement('div');
+        wallStatue.className = 'statue wall-statue';
+        const statueArtworkRects = [];
+        const statuePosition = findWallStatuePosition(
+          wallWidth,
+          group.map((_, artPositionIndex) => {
+            const pos = getArtworkPosition(
+              panelIndex,
+              artPositionIndex,
+              wallWidth,
+              statueArtworkRects
+            );
+            statueArtworkRects.push({
+              left: pos.left,
+              top: pos.top,
+              width: 190,
+              height: 284,
+            });
+            return statueArtworkRects[statueArtworkRects.length - 1];
+          })
+        );
+        // This is a wall-relative floor zone, below every artwork plaque.
+        wallStatue.style.left = `${panelIndex * wallWidth + statuePosition.left}px`;
+        wallStatue.style.top = `${statuePosition.top}px`;
+        const wallPedestal = document.createElement('div');
+        wallPedestal.className = 'statue-pedestal';
+        wallStatue.appendChild(wallPedestal);
+        const wallPillar = document.createElement('div');
+        wallPillar.className = 'statue-pillar';
+        wallStatue.appendChild(wallPillar);
+        const wallFoot = document.createElement('div');
+        wallFoot.className = 'statue-foot';
+        wallStatue.appendChild(wallFoot);
+        const wallPillarBase = document.createElement('div');
+        wallPillarBase.className = 'statue-pillar-base';
+        wallStatue.appendChild(wallPillarBase);
+        wallStatueLayer.appendChild(wallStatue);
+      });
+    }
+
+    // Render the default 14 artworks immediately
+    buildMuseumWall();
+    calculateCamera();
+
+    // Fetch shared user artworks asynchronously
+    loadSharedArtworks();
+
+    enterBtn.addEventListener('click', () => {
+      requestAnimationFrame(calculateCamera);
+    });
+
+    // ===================================================
+    // ARTIST STUDIO: CANVAS + LOCAL PROTOTYPE STORAGE
+    // ===================================================
+    const drawingCanvas = document.getElementById('drawing-canvas');
+    const drawingContext = drawingCanvas.getContext('2d');
+    const brushColorInput = document.getElementById('brush-color');
+    const brushSizeInput = document.getElementById('brush-size');
+    const studioStatus = document.getElementById('studio-status');
+    const titleInput = document.getElementById('artwork-title-input');
+    const artistInput = document.getElementById('artwork-artist-input');
+    const descriptionInput = document.getElementById('artwork-description-input');
+    const wallPreviewImage = document.getElementById('wall-preview-image');
+    const wallPreviewPlaceholder = document.getElementById('wall-preview-placeholder');
+    const paletteSwatches = document.getElementById('palette-swatches');
+    const shadeChips = document.getElementById('shade-chips');
+
+    let drawing = false;
+    let drawingTool = 'brush';
+    let drawingHistory = [];
+    let drawingHistoryIndex = -1;
+    let uploadedImageDataUrl = null;
+    const palette = ['#e8dcc4', '#c79b45', '#8a7550', '#6f8062', '#a8654f', '#9b7180', '#65727a', '#4a3f30', '#2f2922', '#f4ead5'];
+
+    function hexToRgb(hex) {
+      return {
+        r: parseInt(hex.slice(1, 3), 16),
+        g: parseInt(hex.slice(3, 5), 16),
+        b: parseInt(hex.slice(5, 7), 16),
+      };
+    }
+
+    function rgbToHex({ r, g, b }) {
+      return `#${[r, g, b].map((value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    function setBrushColor(color) {
+      brushColorInput.value = color;
+      document.querySelectorAll('.swatch').forEach((swatch) => {
+        swatch.classList.toggle('active', swatch.dataset.color === color);
+      });
+    }
+
+    function renderPalette() {
+      paletteSwatches.innerHTML = '';
+      palette.forEach((color, index) => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = `swatch${index === 0 ? ' active' : ''}`;
+        swatch.dataset.color = color;
+        swatch.style.backgroundColor = color;
+        swatch.setAttribute('aria-label', `Select color ${color}`);
+        swatch.addEventListener('click', () => {
+          setBrushColor(color);
+          const rgb = hexToRgb(color);
+          shadeChips.innerHTML = '';
+          [
+            { r: rgb.r + (255 - rgb.r) * 0.35, g: rgb.g + (255 - rgb.g) * 0.35, b: rgb.b + (255 - rgb.b) * 0.35 },
+            { r: rgb.r * 0.65, g: rgb.g * 0.65, b: rgb.b * 0.65 },
+          ].forEach((shade) => {
+            const chipColor = rgbToHex(shade);
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'shade-chip';
+            chip.style.backgroundColor = chipColor;
+            chip.setAttribute('aria-label', `Select shade ${chipColor}`);
+            chip.addEventListener('click', () => setBrushColor(chipColor));
+            shadeChips.appendChild(chip);
+          });
+        });
+        paletteSwatches.appendChild(swatch);
+      });
+      paletteSwatches.querySelector('.swatch').click();
+    }
+
+    function floodFill(point) {
+      const ratio = window.devicePixelRatio || 1;
+      const x = Math.floor(point.x * ratio);
+      const y = Math.floor(point.y * ratio);
+      if (x < 0 || y < 0 || x >= drawingCanvas.width || y >= drawingCanvas.height) return;
+      const imageData = drawingContext.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
+      const data = imageData.data;
+      const start = (y * drawingCanvas.width + x) * 4;
+      const target = data.slice(start, start + 4);
+      const color = hexToRgb(brushColorInput.value);
+      const replacement = [color.r, color.g, color.b, 255];
+      if (target[0] === replacement[0] && target[1] === replacement[1] && target[2] === replacement[2]) return;
+      const matches = (index) => Math.abs(data[index] - target[0]) < 12
+        && Math.abs(data[index + 1] - target[1]) < 12
+        && Math.abs(data[index + 2] - target[2]) < 12
+        && Math.abs(data[index + 3] - target[3]) < 12;
+      const queue = [[x, y]];
+      const visited = new Uint8Array(drawingCanvas.width * drawingCanvas.height);
+      while (queue.length) {
+        const [cx, cy] = queue.pop();
+        const position = cy * drawingCanvas.width + cx;
+        if (visited[position]) continue;
+        visited[position] = 1;
+        const index = position * 4;
+        if (!matches(index)) continue;
+        data[index] = replacement[0];
+        data[index + 1] = replacement[1];
+        data[index + 2] = replacement[2];
+        data[index + 3] = replacement[3];
+        if (cx > 0) queue.push([cx - 1, cy]);
+        if (cx < drawingCanvas.width - 1) queue.push([cx + 1, cy]);
+        if (cy > 0) queue.push([cx, cy - 1]);
+        if (cy < drawingCanvas.height - 1) queue.push([cx, cy + 1]);
+      }
+      drawingContext.putImageData(imageData, 0, 0);
+      saveDrawingState();
+    }
+
+    function resetStudioDraft() {
+      if (!drawingCanvas) return;
+      drawing = false;
+      drawingContext.globalCompositeOperation = 'source-over';
+      drawingContext.clearRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+      drawingContext.fillStyle = '#fffdf6';
+      drawingContext.fillRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+      drawingHistory = [];
+      drawingHistoryIndex = -1;
+      uploadedImageDataUrl = null;
+      wallPreviewImage.removeAttribute('src');
+      wallPreviewImage.hidden = true;
+      wallPreviewPlaceholder.hidden = false;
+      saveDrawingState();
+      titleInput.value = '';
+      artistInput.value = '';
+      descriptionInput.value = '';
+      studioStatus.textContent = '';
+    }
+
+    function resizeDrawingCanvas() {
+      if (!drawingCanvas || !drawingCanvas.clientWidth) return;
+      const image = drawingCanvas.toDataURL();
+      const ratio = window.devicePixelRatio || 1;
+      drawingCanvas.width = Math.round(drawingCanvas.clientWidth * ratio);
+      drawingCanvas.height = Math.round(drawingCanvas.clientWidth * (4 / 3) * ratio);
+      drawingContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawingContext.fillStyle = '#fffdf6';
+      drawingContext.fillRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+      if (image !== 'data:,') {
+        const restored = new Image();
+        restored.onload = () => drawingContext.drawImage(restored, 0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+        restored.src = image;
+      }
+    }
+
+    function saveDrawingState() {
+      drawingHistory = drawingHistory.slice(0, drawingHistoryIndex + 1);
+      drawingHistory.push(drawingCanvas.toDataURL());
+      if (drawingHistory.length > 20) drawingHistory.shift();
+      drawingHistoryIndex = drawingHistory.length - 1;
+    }
+
+    function restoreDrawingState(dataUrl) {
+      const restored = new Image();
+      restored.onload = () => {
+        drawingContext.clearRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+        drawingContext.fillStyle = '#fffdf6';
+        drawingContext.fillRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+        drawingContext.drawImage(restored, 0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+      };
+      restored.src = dataUrl;
+    }
+
+    function canvasPoint(event) {
+      const rect = drawingCanvas.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * (drawingCanvas.width / rect.width) / (window.devicePixelRatio || 1),
+        y: (event.clientY - rect.top) * (drawingCanvas.height / rect.height) / (window.devicePixelRatio || 1),
+      };
+    }
+
+    drawingCanvas.addEventListener('pointerdown', (event) => {
+      drawing = true;
+      uploadedImageDataUrl = null;
+      drawingCanvas.setPointerCapture(event.pointerId);
+      const point = canvasPoint(event);
+      if (drawingTool === 'fill') {
+        floodFill(point);
+        event.preventDefault();
+        return;
+      }
+      drawingContext.beginPath();
+      drawingContext.moveTo(point.x, point.y);
+      drawingContext.lineCap = 'round';
+      drawingContext.lineJoin = 'round';
+      drawingContext.lineWidth = Number(brushSizeInput.value);
+      drawingContext.strokeStyle = drawingTool === 'eraser' ? '#fffdf6' : brushColorInput.value;
+      drawingContext.globalCompositeOperation = drawingTool === 'eraser' ? 'destination-out' : 'source-over';
+      drawingContext.lineTo(point.x + 0.01, point.y + 0.01);
+      drawingContext.stroke();
+      event.preventDefault();
+    });
+
+    drawingCanvas.addEventListener('pointermove', (event) => {
+      if (!drawing) return;
+      const point = canvasPoint(event);
+      drawingContext.lineTo(point.x, point.y);
+      drawingContext.stroke();
+      event.preventDefault();
+    });
+
+    function finishDrawing(event) {
+      if (!drawing) return;
+      drawing = false;
+      drawingContext.globalCompositeOperation = 'source-over';
+      saveDrawingState();
+      if (event && drawingCanvas.hasPointerCapture(event.pointerId)) {
+        drawingCanvas.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    drawingCanvas.addEventListener('pointerup', finishDrawing);
+    drawingCanvas.addEventListener('pointercancel', finishDrawing);
+
+    document.getElementById('brush-tool-btn').addEventListener('click', () => {
+      drawingTool = 'brush';
+      updateToolButtons();
+    });
+
+    document.getElementById('fill-tool-btn').addEventListener('click', () => {
+      drawingTool = 'fill';
+      updateToolButtons();
+    });
+
+    document.getElementById('eraser-tool-btn').addEventListener('click', () => {
+      drawingTool = 'eraser';
+      updateToolButtons();
+    });
+
+    function updateToolButtons() {
+      document.querySelectorAll('.studio-tools button').forEach((button) => button.classList.remove('active'));
+      document.getElementById(`${drawingTool}-tool-btn`).classList.add('active');
+    }
+
+    document.getElementById('undo-btn').addEventListener('click', () => {
+      if (drawingHistoryIndex <= 0) return;
+      drawingHistoryIndex -= 1;
+      restoreDrawingState(drawingHistory[drawingHistoryIndex]);
+    });
+
+    document.getElementById('redo-btn').addEventListener('click', () => {
+      if (drawingHistoryIndex >= drawingHistory.length - 1) return;
+      drawingHistoryIndex += 1;
+      restoreDrawingState(drawingHistory[drawingHistoryIndex]);
+    });
+
+    document.getElementById('clear-canvas-btn').addEventListener('click', () => {
+      drawingContext.globalCompositeOperation = 'source-over';
+      drawingContext.fillStyle = '#fffdf6';
+      drawingContext.fillRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+      saveDrawingState();
+    });
+
+    document.getElementById('image-upload').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        uploadedImageDataUrl = reader.result;
+        restoreDrawingState(uploadedImageDataUrl);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('preview-artwork-btn').addEventListener('click', () => {
+      wallPreviewImage.src = uploadedImageDataUrl || drawingCanvas.toDataURL('image/png');
+      wallPreviewImage.hidden = false;
+      wallPreviewPlaceholder.hidden = true;
+      studioStatus.textContent = 'Preview updated on the wall.';
+    });
+
+    document.getElementById('discard-draft-btn').addEventListener('click', resetStudioDraft);
+
+document.getElementById('submit-artwork-btn').addEventListener('click', async () => {
+  const title = titleInput.value.trim();
+  if (!title) {
+    studioStatus.textContent = 'Please give your artwork a title before submitting.';
+    titleInput.focus();
+    return;
+  }
+
+  // Prevent multiple clicks while saving
+  const submitBtn = document.getElementById('submit-artwork-btn');
+  submitBtn.disabled = true;
+  studioStatus.textContent = 'Hanging on the gallery wall...';
+
+  try {
+    // 1 & 2. Wait for Firebase auth and get user UID
+    const user = await authReady;
+    const uid = user.uid;
+
+    // 3. Generate a unique artwork ID
+    const artworkId = `user-${Date.now()}`;
+
+    // 4. Get the final artwork image (Base64 string)
+    const imageDataUrl = uploadedImageDataUrl || drawingCanvas.toDataURL('image/png');
+
+    // 5. Create the Firestore artwork document (Image string is stored directly here)
+    const newArtwork = {
+      id: artworkId,
+      title,
+      artist: artistInput.value.trim() || 'Anonymous',
+      description: descriptionInput.value.trim() || 'A new piece created in the Artist Studio.',
+      image: imageDataUrl, // Base64 string saved directly to Firestore
+      uid: uid,
+      createdAt: serverTimestamp(),
+      status: 'approved',
+    };
+
+    await setDoc(doc(db, 'artworks', artworkId), newArtwork);
+
+    // 6. Add the new artwork to the local array for immediate rendering
+    const localArtwork = { ...newArtwork, createdAt: new Date().toISOString() };
+    artworks.unshift(localArtwork);
+
+    // 7. Rebuild the museum wall and show the gallery
+    buildMuseumWall();
+    calculateBounds();
+    resetStudioDraft();
+    showGallery();
+
+  } catch (error) {
+    studioStatus.textContent = 'The artwork could not be saved to the gallery.';
+    console.error('Artwork save failed.', error);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+    resizeDrawingCanvas();
+    drawingContext.fillStyle = '#fffdf6';
+    drawingContext.fillRect(0, 0, drawingCanvas.clientWidth, drawingCanvas.clientHeight);
+    saveDrawingState();
+    renderPalette();
+    window.addEventListener('resize', resizeDrawingCanvas);
+  </script>
+
+</body>
+</html>

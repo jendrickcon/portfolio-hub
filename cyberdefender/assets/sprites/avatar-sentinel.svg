@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <filter id="sentinel-cyan-glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="sentinel-gold-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.2" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="sentinel-plate-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2c3d" />
+      <stop offset="60%" stop-color="#0e1724" />
+      <stop offset="100%" stop-color="#080e18" />
+    </linearGradient>
+    <linearGradient id="sentinel-core-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="50%" stop-color="#00f0ff" />
+      <stop offset="100%" stop-color="#0077b6" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Glowing Hover Pedestal / Hex Shield Projection -->
+  <g class="sentinel-hover-emitter">
+    <!-- Ground Halo Ring -->
+    <ellipse cx="32" cy="58" rx="18" ry="3.5" fill="none" stroke="#00f0ff" stroke-width="0.8" stroke-dasharray="4 2" filter="url(#sentinel-cyan-glow)" opacity="0.85" />
+    <ellipse cx="32" cy="58" rx="12" ry="2" fill="#00f0ff" fill-opacity="0.15" />
+    <!-- Projection node pips -->
+    <circle cx="14" cy="58" r="1" fill="#ffb703" filter="url(#sentinel-gold-glow)" />
+    <circle cx="50" cy="58" r="1" fill="#ffb703" filter="url(#sentinel-gold-glow)" />
+    <line x1="28" y1="58" x2="36" y2="58" stroke="#00f0ff" stroke-width="1.5" />
+  </g>
+
+  <!-- 2. Lower Thruster / Stabilizer Struts (Hovering above ground) -->
+  <g class="sentinel-struts">
+    <!-- Left Leg Strut -->
+    <polygon points="25,44 29,44 28,52 24,52" fill="#0c1420" stroke="#1f324a" stroke-width="0.75" />
+    <polygon points="24,52 28,52 27,54 23,54" fill="#18283b" stroke="#00f0ff" stroke-width="0.5" />
+    <line x1="26" y1="46" x2="26" y2="51" stroke="#00f0ff" stroke-width="0.7" filter="url(#sentinel-cyan-glow)" />
+
+    <!-- Right Leg Strut -->
+    <polygon points="35,44 39,44 40,52 36,52" fill="#0c1420" stroke="#1f324a" stroke-width="0.75" />
+    <polygon points="36,52 40,52 41,54 37,54" fill="#18283b" stroke="#00f0ff" stroke-width="0.5" />
+    <line x1="38" y1="46" x2="38" y2="51" stroke="#00f0ff" stroke-width="0.7" filter="url(#sentinel-cyan-glow)" />
+
+    <!-- Central Repulsor Vent Glow -->
+    <ellipse cx="32" cy="46" rx="3.5" ry="1.5" fill="#00f0ff" filter="url(#sentinel-cyan-glow)" opacity="0.9" />
+  </g>
+
+  <!-- 3. Armored Torso & Chasis Core -->
+  <!-- Torso Base Plate -->
+  <polygon points="21,24 43,24 38,44 26,44" fill="url(#sentinel-plate-grad)" stroke="#2b4360" stroke-width="1" />
+
+  <!-- Abdominal Kinetic Baffles -->
+  <rect x="27" y="37" width="10" height="2" rx="0.5" fill="#080e17" stroke="#162638" stroke-width="0.5" />
+  <rect x="28" y="40" width="8" height="2" rx="0.5" fill="#080e17" stroke="#162638" stroke-width="0.5" />
+
+  <!-- Chest Reactor Armor Casing -->
+  <polygon points="23,24 41,24 37,35 27,35" fill="#141e2b" stroke="#ffb703" stroke-width="0.75" stroke-opacity="0.7" />
+
+  <!-- Central Power Core (Diamond Reactor) -->
+  <polygon points="32,26 35.5,30 32,34 28.5,30" fill="url(#sentinel-core-grad)" stroke="#00f0ff" stroke-width="0.8" filter="url(#sentinel-cyan-glow)" />
+  <polygon points="32,28 34,30 32,32 30,30" fill="#ffffff" />
+
+  <!-- Energy Conduit Traces -->
+  <line x1="25" y1="26" x2="28.5" y2="30" stroke="#00f0ff" stroke-width="0.8" />
+  <line x1="39" y1="26" x2="35.5" y2="30" stroke="#00f0ff" stroke-width="0.8" />
+  <line x1="32" y1="34" x2="32" y2="37" stroke="#00f0ff" stroke-width="0.8" filter="url(#sentinel-cyan-glow)" />
+
+  <!-- 4. Heavy Tiered Shoulders & Pauldrons -->
+  <!-- Left Shoulder Pauldron -->
+  <polygon points="12,24 22,22 23,31 15,33" fill="#1b2a3c" stroke="#2c4666" stroke-width="0.9" />
+  <polygon points="14,23 20,22 18,27 13,27" fill="#ffb703" opacity="0.85" filter="url(#sentinel-gold-glow)" />
+  <!-- Left Arm / Gauntlet -->
+  <polygon points="15,33 21,32 19,43 14,41" fill="#0e1724" stroke="#1d2e44" stroke-width="0.75" />
+  <circle cx="16.5" cy="42" r="1.5" fill="#00f0ff" filter="url(#sentinel-cyan-glow)" />
+
+  <!-- Right Shoulder Pauldron -->
+  <polygon points="52,24 42,22 41,31 49,33" fill="#1b2a3c" stroke="#2c4666" stroke-width="0.9" />
+  <polygon points="50,23 44,22 46,27 51,27" fill="#ffb703" opacity="0.85" filter="url(#sentinel-gold-glow)" />
+  <!-- Right Arm / Gauntlet -->
+  <polygon points="49,33 43,32 45,43 50,41" fill="#0e1724" stroke="#1d2e44" stroke-width="0.75" />
+  <circle cx="47.5" cy="42" r="1.5" fill="#00f0ff" filter="url(#sentinel-cyan-glow)" />
+
+  <!-- 5. Angular Construct Helm & Diamond Visor Core -->
+  <!-- Cervical Neck Strut -->
+  <rect x="29" y="21" width="6" height="3" fill="#090f19" stroke="#19283b" stroke-width="0.5" />
+
+  <!-- Angular Armored Helm -->
+  <polygon points="32,9 41,14 39,22 32,24 25,22 23,14" fill="#111a26" stroke="#2a4260" stroke-width="1" />
+  
+  <!-- Crown Crest Plate -->
+  <polygon points="32,7 35,11 29,11" fill="#ffb703" filter="url(#sentinel-gold-glow)" />
+
+  <!-- Geometric Optical Visor Core (Diamond Eye) -->
+  <polygon points="32,13 37,17 32,21 27,17" fill="#050a12" stroke="#00f0ff" stroke-width="1" />
+  <polygon points="32,14.5 35.5,17 32,19.5 28.5,17" fill="url(#sentinel-core-grad)" filter="url(#sentinel-cyan-glow)" />
+  <line x1="29" y1="17" x2="35" y2="17" stroke="#ffffff" stroke-width="0.75" stroke-linecap="round" />
+
+  <!-- Side Telemetry Cheek Vents -->
+  <line x1="25" y1="18" x2="26" y2="20" stroke="#00f0ff" stroke-width="0.75" />
+  <line x1="39" y1="18" x2="38" y2="20" stroke="#00f0ff" stroke-width="0.75" />
+</svg>

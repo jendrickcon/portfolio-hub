@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Radial Glows -->
+    <filter id="poly-glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="poly-glow-violet" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <linearGradient id="poly-grad-chassis" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b172a" />
+      <stop offset="50%" stop-color="#1e0b36" />
+      <stop offset="100%" stop-color="#080d1a" />
+    </linearGradient>
+
+    <linearGradient id="poly-mutation-core" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f0ff" />
+      <stop offset="48%" stop-color="#00f0ff" />
+      <stop offset="52%" stop-color="#ff00d4" />
+      <stop offset="100%" stop-color="#ff00d4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Outer Threat Aura -->
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#7928ca" stroke-width="1" stroke-dasharray="4 8" opacity="0.4" />
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#00f0ff" stroke-width="1.2" stroke-dasharray="8 6" opacity="0.6" />
+
+  <!-- Shifting Facet Wings (Left: Cyan Telemetry / Right: Magenta Exploit) -->
+  <!-- Left Wing -->
+  <polygon points="20,44 46,26 40,64 16,56" fill="url(#poly-grad-chassis)" stroke="#00f0ff" stroke-width="2" filter="url(#poly-glow-cyan)" />
+  <polyline points="24,46 36,36 34,58" fill="none" stroke="#00f0ff" stroke-width="1" opacity="0.7" />
+  <polygon points="12,68 36,72 30,94 14,86" fill="url(#poly-grad-chassis)" stroke="#00f0ff" stroke-width="1.8" filter="url(#poly-glow-cyan)" />
+
+  <!-- Right Wing (Glitching / Displaced Facets) -->
+  <polygon points="108,44 82,26 88,64 112,56" fill="url(#poly-grad-chassis)" stroke="#ff00d4" stroke-width="2" filter="url(#poly-glow-violet)" />
+  <polyline points="104,46 92,36 94,58" fill="none" stroke="#ff00d4" stroke-width="1" opacity="0.7" />
+  <polygon points="116,68 92,72 98,94 114,86" fill="url(#poly-grad-chassis)" stroke="#ff00d4" stroke-width="1.8" filter="url(#poly-glow-violet)" />
+
+  <!-- Orbital Data Nodes (Polymorphic Satellite Nodes) -->
+  <polygon points="64,8 70,16 64,24 58,16" fill="#0b172a" stroke="#00f0ff" stroke-width="1.5" />
+  <polygon points="64,104 70,112 64,120 58,112" fill="#1e0b36" stroke="#ff00d4" stroke-width="1.5" />
+  <rect x="8" y="60" width="8" height="8" fill="#00f0ff" opacity="0.8" />
+  <rect x="112" y="60" width="8" height="8" fill="#ff00d4" opacity="0.8" />
+
+  <!-- Main Armored Hexagonal Hull -->
+  <polygon points="64,18 96,38 96,90 64,110 32,90 32,38" fill="url(#poly-grad-chassis)" stroke="#a855f7" stroke-width="2.5" />
+
+  <!-- Internal Circuit Traces -->
+  <line x1="64" y1="22" x2="64" y2="44" stroke="#00f0ff" stroke-width="1.8" stroke-dasharray="2 3" />
+  <line x1="64" y1="84" x2="64" y2="106" stroke="#ff00d4" stroke-width="1.8" stroke-dasharray="2 3" />
+  <line x1="36" y1="64" x2="50" y2="64" stroke="#00f0ff" stroke-width="2" />
+  <line x1="78" y1="64" x2="92" y2="64" stroke="#ff00d4" stroke-width="2" />
+
+  <!-- Inner Transforming Ring -->
+  <polygon points="64,36 84,50 84,78 64,92 44,78 44,50" fill="#060914" stroke="#7928ca" stroke-width="2" />
+
+  <!-- Fractured Polymorphic Dual-Core -->
+  <!-- Left Cyan Core Half -->
+  <path d="M63 48 A 16 16 0 0 0 63 80 Z" fill="#00f0ff" opacity="0.85" filter="url(#poly-glow-cyan)" />
+  <!-- Right Magenta Core Half -->
+  <path d="M65 48 A 16 16 0 0 1 65 80 Z" fill="#ff00d4" opacity="0.85" filter="url(#poly-glow-violet)" />
+  <!-- Central Vertical Mutation Fissure -->
+  <line x1="64" y1="46" x2="64" y2="82" stroke="#ffffff" stroke-width="1.5" />
+
+  <!-- Center Focal Eye (Kernel Mutation Lens) -->
+  <circle cx="64" cy="64" r="6" fill="#ffffff" filter="url(#poly-glow-cyan)" />
+  <circle cx="64" cy="64" r="2.5" fill="#090514" />
+
+  <!-- Glitch Overlay Sparks -->
+  <line x1="48" y1="32" x2="56" y2="32" stroke="#00f0ff" stroke-width="2" />
+  <line x1="72" y1="96" x2="80" y2="96" stroke="#ff00d4" stroke-width="2" />
+  <line x1="88" y1="52" x2="96" y2="52" stroke="#ffffff" stroke-width="1" />
+  <line x1="32" y1="76" x2="40" y2="76" stroke="#00f0ff" stroke-width="1" />
+</svg>
+

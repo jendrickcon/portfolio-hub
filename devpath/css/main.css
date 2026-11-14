@@ -1,0 +1,191 @@
+/* ===================================================
+   PROJECT BLUEPRINT // Core Architecture & Design Tokens
+   Dual-Theme System: Blueprint (Technical CAD) & Root (Biophilic Architecture)
+   =================================================== */
+
+:root {
+  /* Default: Blueprint Theme */
+  --bg-space: #06090e;
+  --bg-grid-primary: #0f1926;
+  --bg-grid-secondary: #0a111a;
+  --bg-panel: rgba(11, 18, 28, 0.94);
+  --bg-panel-solid: #0b121c;
+  --bg-panel-hover: rgba(16, 26, 40, 0.96);
+  --bg-input: rgba(4, 8, 14, 0.88);
+
+  /* Borders & Dividers */
+  --border-subtle: rgba(0, 240, 255, 0.22);
+  --border-medium: rgba(0, 240, 255, 0.38);
+  --border-bright: #00f0ff;
+  --border-dim: rgba(255, 255, 255, 0.12);
+
+  /* Primary Accent & Glow */
+  --accent-primary: #00f0ff;
+  --accent-glow: rgba(0, 240, 255, 0.45);
+  --accent-tint: rgba(0, 240, 255, 0.08);
+
+  /* Secondary & Tertiary Accents */
+  --accent-secondary: #8b5cf6;
+  --accent-secondary-glow: rgba(139, 92, 246, 0.45);
+  --accent-tertiary: #3b82f6;
+
+  /* State Signals */
+  --accent-success: #10b981;
+  --accent-success-glow: rgba(16, 185, 129, 0.4);
+  --accent-warning: #f59e0b;
+
+  /* Typography Colors */
+  --text-bright: #f8fafc;
+  --text-light: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Node Geometry */
+  --node-rx: 8px;
+  --node-ry: 8px;
+
+  /* Font Families */
+  --font-display: 'Consolas', 'Fira Code', 'Courier New', monospace;
+  --font-body: 'Consolas', 'Courier New', monospace;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+
+  /* Elevations */
+  --shadow-node: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 16px var(--accent-glow);
+  --shadow-node-hover: 0 16px 44px rgba(0, 0, 0, 0.85), 0 0 24px var(--accent-glow);
+}
+
+/* ===================================================
+   THEME 1: BLUEPRINT (Technical CAD Architecture)
+   =================================================== */
+html[data-theme="blueprint"] {
+  --bg-space: #06090e;
+  --bg-panel: rgba(11, 18, 28, 0.94);
+  --bg-panel-solid: #0b121c;
+  --bg-panel-hover: rgba(16, 26, 40, 0.96);
+  --bg-input: rgba(4, 8, 14, 0.88);
+
+  --border-subtle: rgba(0, 240, 255, 0.22);
+  --border-medium: rgba(0, 240, 255, 0.38);
+  --border-bright: #00f0ff;
+  --border-dim: rgba(255, 255, 255, 0.12);
+
+  --accent-primary: #00f0ff;
+  --accent-glow: rgba(0, 240, 255, 0.45);
+  --accent-tint: rgba(0, 240, 255, 0.08);
+
+  --accent-secondary: #8b5cf6;
+  --accent-tertiary: #3b82f6;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+
+  --text-bright: #f8fafc;
+  --text-light: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+
+  --node-rx: 8px;
+  --node-ry: 8px;
+
+  --font-display: 'Consolas', 'Fira Code', 'Courier New', monospace;
+  --font-body: 'Consolas', 'Courier New', monospace;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+/* ===================================================
+   THEME 2: ROOT (Biophilic Architecture & Growth)
+   Organic typography, natural clay/soil pigments, living flora
+   =================================================== */
+html[data-theme="root"] {
+  --bg-space: #060b07; /* Deep forest loam / dark soil */
+  --bg-panel: rgba(13, 22, 16, 0.92); /* Dark mossy peat slate */
+  --bg-panel-solid: #0e1911;
+  --bg-panel-hover: rgba(19, 32, 22, 0.96);
+  --bg-input: rgba(7, 13, 9, 0.92);
+
+  --border-subtle: rgba(74, 222, 128, 0.28); /* Soft moss border */
+  --border-medium: rgba(74, 222, 128, 0.48);
+  --border-bright: #34d399; /* Vibrant botanical chlorophyll */
+  --border-dim: rgba(167, 243, 208, 0.14);
+
+  --accent-primary: #34d399; /* Living foliage green */
+  --accent-glow: rgba(52, 211, 153, 0.35);
+  --accent-tint: rgba(52, 211, 153, 0.1);
+
+  --accent-secondary: #d97706; /* Warm earth amber / sap */
+  --accent-secondary-glow: rgba(217, 119, 6, 0.35);
+  --accent-tertiary: #a7f3d0; /* Soft morning sage */
+
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+
+  --text-bright: #f7fee7; /* Warm botanical parchment */
+  --text-light: #ecfdf5; /* Pale moss cream */
+  --text-dim: #99b89e; /* Earthy sage ash */
+  --text-muted: #5a7460; /* Undergrowth slate */
+
+  --node-rx: 22px; /* Smooth organic contours */
+  --node-ry: 22px;
+
+  /* Humanist Serif Headings + Warm Readable Sans Body */
+  --font-display: 'Georgia', 'Cambria', 'Merriweather', serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+
+  /* Natural diffused shadow */
+  --shadow-node: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(52, 211, 153, 0.15);
+  --shadow-node-hover: 0 20px 48px rgba(0, 0, 0, 0.75), 0 0 28px rgba(52, 211, 153, 0.25);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-space);
+  color: var(--text-light);
+  font-family: var(--font-body);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+/* App Root Container */
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background-color: var(--bg-space);
+  overflow: hidden;
+  transition: background-color 0.35s ease;
+}
+
+/* Custom Themed Architectural Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-medium) transparent;
+}
+

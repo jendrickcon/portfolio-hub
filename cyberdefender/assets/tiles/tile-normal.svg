@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect width="48" height="48" fill="#08101a" stroke="#00f0ff" stroke-width="0.5" stroke-opacity="0.3" />
+  <!-- Circuit Trace -->
+  <path d="M0 24 L24 24 L36 36 L48 36" stroke="#00f0ff" stroke-width="1" stroke-opacity="0.25" fill="none" />
+  <circle cx="24" cy="24" r="2" fill="#00f0ff" fill-opacity="0.4" />
+</svg>
+

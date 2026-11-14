@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <defs>
+    <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+  </defs>
+  <!-- Spyware Persistent Surveillance Monitor -->
+  <!-- Hood / Cloak -->
+  <path d="M48 16 C32 16, 26 36, 26 56 C26 72, 38 78, 48 78 C58 78, 70 72, 70 56 C70 36, 64 16, 48 16 Z" fill="#180e14" stroke="#ff0054" stroke-width="2" filter="url(#glow-red)" />
+  <!-- Menacing Optical Lens Eye -->
+  <circle cx="48" cy="46" r="10" fill="#2d0512" stroke="#ff0054" stroke-width="2.5" />
+  <circle cx="48" cy="46" r="4.5" fill="#ff0054" filter="url(#glow-red)" />
+  <circle cx="46" cy="44" r="1.5" fill="#ffffff" />
+  <!-- Mechanical Spider Legs -->
+  <path d="M26 52 L12 66 M28 62 L16 78 M70 52 L84 66 M68 62 L80 78" stroke="#ff0054" stroke-width="2.5" stroke-linecap="round" />
+</svg>
+

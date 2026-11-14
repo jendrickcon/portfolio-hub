@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="blueprint">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevPath — Interactive Software Architecture Builder</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>⬡</text></svg>" />
+  
+  <!-- Architectural & Terminal Stylesheets -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/graph.css" />
+  <link rel="stylesheet" href="css/ui.css" />
+  <link rel="stylesheet" href="css/roadmap.css" />
+</head>
+<body>
+
+  <div id="app">
+    <!-- Minimalist Technical Topbar -->
+    <header class="topbar" role="banner">
+      <div class="brand-group">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2"></polygon>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <h1 class="brand-name">DEV<span>PATH</span></h1>
+          <span class="brand-subtitle">Turn Ideas into Technical Blueprints</span>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <!-- Dual Theme Switcher: Blueprint & Root -->
+        <div class="theme-switcher" role="radiogroup" aria-label="Visual Theme Selector">
+          <button type="button" class="theme-btn active" data-theme="blueprint" aria-label="BLUEPRINT" aria-checked="true" role="radio" title="Blueprint Mode: Technical CAD Architecture">
+            <svg class="theme-btn-svg" viewBox="0 0 16 16">
+              <polygon points="8 1 15 5 15 11 8 15 1 11 1 5 8 1"></polygon>
+            </svg>
+            <span class="theme-name">BLUEPRINT</span>
+          </button>
+          <button type="button" class="theme-btn" data-theme="root" aria-label="ROOT" aria-checked="false" role="radio" title="Root Mode: Biophilic Architecture & Living Growth">
+            <svg class="theme-btn-svg" viewBox="0 0 16 16">
+              <path d="M8 15V8m-3 0c0-3 3-5 6-5 0 3-3 5-6 5z" stroke-linecap="round"></path>
+            </svg>
+            <span class="theme-name">ROOT</span>
+          </button>
+        </div>
+
+        <!-- Live Architecture Breadcrumb -->
+        <nav id="bp-breadcrumb" class="architecture-breadcrumb" aria-label="Architecture Breadcrumb">
+          <span class="bc-label">BUILDING:</span>
+          <span class="bc-item bc-project" id="bc-project-name">PROJECT</span>
+          <span class="bc-sep" id="bc-sep-type" style="display: none;">▸</span>
+          <span class="bc-item bc-type" id="bc-type-name" style="display: none;"></span>
+          <span class="bc-sep" id="bc-sep-focus" style="display: none;">▸</span>
+          <span class="bc-item bc-focus" id="bc-focus-names" style="display: none;"></span>
+          <span class="bc-sep" id="bc-sep-arch" style="display: none;">▸</span>
+          <span class="bc-item bc-arch" id="bc-arch-name" style="display: none;"></span>
+          <span class="bc-sep" id="bc-sep-stack" style="display: none;">▸</span>
+          <span class="bc-item bc-stack" id="bc-stack-names" style="display: none;"></span>
+          <span class="bc-sep" id="bc-sep-infra" style="display: none;">▸</span>
+          <span class="bc-item bc-infra" id="bc-infra-names" style="display: none;"></span>
+        </nav>
+
+        <button type="button" id="bp-btn-back" class="nav-back-btn" style="display: none;" title="Step back in architecture graph" aria-label="Step back in architecture graph">
+          <span>← STEP BACK</span>
+        </button>
+
+        <div class="stage-badge" role="status" aria-label="Current Milestone">
+          <span class="stage-indicator-dot" aria-hidden="true"></span>
+          <span id="bp-stage-badge-text"><span class="badge-stage">STAGE 01 / 07</span><span class="badge-sep"> — </span><span class="badge-label">PROJECT NAME</span></span>
+        </div>
+        <a href="../" class="nav-hub-link" title="Return to Portfolio Hub">◂ HUB</a>
+      </div>
+    </header>
+
+    <!-- Workspace Container (The Graph Canvas IS the Primary Interface) -->
+    <main class="workspace" role="main">
+      <svg id="architecture-graph"
+           class="architecture-graph"
+           xmlns="http://www.w3.org/2000/svg"
+           tabindex="0"
+           role="application"
+           aria-label="Interactive Project Roadmap Graph">
+        <!-- SVG dynamic layers managed by SvgGraphEngine -->
+        <g class="connections" aria-hidden="true"></g>
+        <g class="nodes"></g>
+      </svg>
+
+      <!--
+        Roadmap navigation. The graph grows without shrinking, so these
+        move the CAMERA rather than the page: prev/next walks the offered
+        branches, step walks the path you already committed.
+      -->
+      <nav class="roadmap-nav" role="toolbar" aria-label="Roadmap navigation">
+        <div class="roadmap-nav-group">
+          <span class="roadmap-nav-label">BRANCH</span>
+          <button type="button" id="nav-prev-branch" class="roadmap-nav-btn" title="Previous available branch" aria-label="Previous available branch">◂</button>
+          <button type="button" id="nav-next-branch" class="roadmap-nav-btn" title="Next available branch" aria-label="Next available branch">▸</button>
+        </div>
+        <div class="roadmap-nav-group">
+          <span class="roadmap-nav-label">PATH</span>
+          <button type="button" id="nav-prev-step" class="roadmap-nav-btn" title="Previous step on your path" aria-label="Previous step on your path">↑</button>
+          <button type="button" id="nav-next-step" class="roadmap-nav-btn" title="Next step on your path" aria-label="Next step on your path">↓</button>
+        </div>
+        <div class="roadmap-nav-group">
+          <button type="button" id="nav-fit" class="roadmap-nav-btn roadmap-nav-btn--wide" title="Fit the whole roadmap on screen" aria-label="Fit roadmap">FIT</button>
+          <button type="button" id="nav-reset" class="roadmap-nav-btn roadmap-nav-btn--wide" title="Start a new roadmap" aria-label="Reset roadmap">RESET</button>
+        </div>
+      </nav>
+    </main>
+
+    <!-- Console Toast Feedback Layer -->
+    <div id="bp-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Interactive Blueprint Node Inspector Modal / Drawer -->
+    <div id="bp-inspector-modal" class="bp-inspector-modal" style="display: none;" role="dialog" aria-modal="true" aria-label="Node Inspector"></div>
+  </div>
+
+  <!-- Modular Application Bootstrap (graph-first roadmap) -->
+  <script type="module" src="js/boot.js"></script>
+</body>
+</html>

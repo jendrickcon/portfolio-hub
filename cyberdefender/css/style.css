@@ -1,0 +1,207 @@
+/* ===================================================
+   CYBER DEFENDER — Core Stylesheet
+   Cybersecurity / Dark PCB / Terminal Aesthetics
+   =================================================== */
+
+:root {
+  --bg-space: #04080e;
+  --pcb-surface: #0a111a;
+  --pcb-panel: rgba(12, 22, 34, 0.88);
+  --pcb-panel-border: rgba(0, 240, 255, 0.35);
+  
+  --cyan: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.5);
+  --green: #39ff14;
+  --green-glow: rgba(57, 255, 20, 0.5);
+  --gold: #ffb703;
+  --gold-glow: rgba(255, 183, 3, 0.5);
+  --danger: #ff0054;
+  --danger-glow: rgba(255, 0, 84, 0.6);
+  --dim-text: #6b8299;
+  --bright-text: #e0f2fe;
+
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-display: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  
+  --game-max-width: 1600px;
+  --game-aspect-ratio: 16 / 10;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-space);
+  color: var(--bright-text);
+  font-family: var(--font-mono);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Base Body: Circuit board grid background */
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 70%),
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  background-position: center;
+}
+
+/* Main Game Viewport Frame: Responsive, Centered, Aspect-Ratio Locked */
+#game-frame {
+  position: relative;
+  width: min(98vw, var(--game-max-width));
+  height: min(96vh, calc(min(98vw, var(--game-max-width)) / (var(--game-aspect-ratio))));
+  aspect-ratio: var(--game-aspect-ratio);
+  background-color: var(--pcb-surface);
+  border: 2px solid var(--pcb-panel-border);
+  border-radius: 8px;
+  box-shadow: 
+    0 0 30px rgba(0, 240, 255, 0.15),
+    inset 0 0 40px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Subtle CRT Scanline Overlay */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  opacity: 0.7;
+}
+
+/* Top System Status Bar */
+.system-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(4, 10, 18, 0.85);
+  border-bottom: 1px solid var(--pcb-panel-border);
+  font-size: clamp(11px, 1.2vw, 13px);
+  color: var(--dim-text);
+  z-index: 100;
+}
+
+.system-status-bar .status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-status-bar .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 5px;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Screen / Scene Container Stage */
+.scene-stage {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Individual Scene View Panels */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  opacity: 0;
+  transition: opacity 0.25s ease-in-out;
+}
+
+.scene.scene-active {
+  display: flex;
+  opacity: 1;
+}
+
+/* Typography Helpers */
+.title-glitch {
+  font-size: clamp(28px, 4.5vw, 44px);
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--cyan);
+  text-shadow: 
+    0 0 12px var(--cyan-glow),
+    0 0 24px rgba(0, 240, 255, 0.25);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.subtitle-badge {
+  font-size: clamp(11px, 1.4vw, 14px);
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+  background: rgba(255, 183, 3, 0.1);
+  border: 1px solid rgba(255, 183, 3, 0.4);
+  padding: 4px 14px;
+  border-radius: 4px;
+  margin-bottom: 32px;
+}
+
+/* Responsive Mobile Portrait Optimization */
+@media (max-width: 680px), (max-aspect-ratio: 1/1) {
+  #game-frame {
+    width: 96vw;
+    height: 96vh;
+    aspect-ratio: auto;
+    max-height: 96vh;
+    border-radius: 4px;
+  }
+  
+  .scene {
+    padding: 16px 12px;
+  }
+}
+
+/* Responsive Tablet Optimization (768px – 1024px) */
+@media (min-width: 681px) and (max-width: 1024px) {
+  #game-frame {
+    width: 92vw;
+    max-width: 920px;
+    height: auto;
+    max-height: 92vh;
+    aspect-ratio: 4 / 3;
+    border-radius: 6px;
+  }
+
+  .scene {
+    padding: 20px 18px;
+  }
+}
+
+

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <defs>
+    <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+  </defs>
+  <!-- Trojan Horse Stealth Payload Vector -->
+  <polygon points="48,8 68,24 64,48 76,56 70,84 26,84 20,56 32,48 28,24" fill="#1b120c" stroke="#ffb703" stroke-width="2.5" filter="url(#glow-gold)" />
+  <!-- Menacing Eye / Payload Core -->
+  <circle cx="48" cy="34" r="6" fill="#ff0054" />
+  <circle cx="48" cy="34" r="2" fill="#ffffff" />
+  <!-- Circuit Traces -->
+  <path d="M48 40 L48 72 M36 60 L60 60" stroke="#ffb703" stroke-width="2" stroke-dasharray="3,3" />
+</svg>
+

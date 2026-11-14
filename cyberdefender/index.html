@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CYBER DEFENDER — Cybersecurity Simulation Game</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>🛡</text></svg>" />
+  <link rel="stylesheet" href="css/style.css?v=1.1" />
+  <link rel="stylesheet" href="css/ui.css?v=1.1" />
+  <link rel="stylesheet" href="css/overworld.css?v=1.0" />
+  <link rel="stylesheet" href="css/combat.css?v=1.1" />
+</head>
+<body>
+
+  <!-- Responsive Game Viewport Frame -->
+  <main id="game-frame" role="application" aria-label="Cyber Defender Game Viewport">
+    
+    <!-- Subtle Scanlines Overlay -->
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <!-- Top Persistent System Status Bar -->
+    <header class="system-status-bar" id="system-status-bar">
+      <div class="status-pill">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="hud-system-status">SYS_HEALTH: 100% [NOMINAL]</span>
+      </div>
+      <div class="status-pill">
+        <span id="hud-operator-id">OPERATOR: ADMIN [LVL 1]</span>
+      </div>
+    </header>
+
+    <!-- Scene Stage Container -->
+    <section class="scene-stage" id="scene-stage">
+
+      <!-- 1. BOOT / CUTSCENE SCENE -->
+      <section id="scene-boot" class="scene scene-active" aria-label="System Boot Sequence">
+        <div class="boot-container">
+          <pre id="boot-console-text" class="boot-console-text"></pre>
+          <div class="boot-footer">
+            <button type="button" id="btn-boot-skip" class="cyber-btn cyber-btn--primary">
+              SKIP BOOT ▸
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. MAIN MENU SCENE -->
+      <section id="scene-menu" class="scene" aria-label="Main Menu">
+        <h1 class="title-glitch">CYBER DEFENDER</h1>
+        <div class="subtitle-badge">CYBERSECURITY INCIDENT SIMULATION</div>
+
+        <nav class="menu-actions" aria-label="Game Navigation">
+          <button type="button" id="btn-menu-start" class="cyber-btn cyber-btn--primary">
+            <span>START MISSION</span>
+          </button>
+          <button type="button" id="btn-menu-profile" class="cyber-btn">
+            <span>ADMIN PROFILE</span>
+          </button>
+          <button type="button" id="btn-menu-settings" class="cyber-btn">
+            <span>SYSTEM SETTINGS</span>
+          </button>
+          <button type="button" id="btn-menu-hub" class="cyber-btn cyber-btn--gold" style="margin-top: 4px;">
+            <span>◂ RETURN TO MAIN HUB</span>
+          </button>
+        </nav>
+      </section>
+
+      <!-- 3. DEPLOYMENT SCENE -->
+      <section id="scene-deployment" class="scene" aria-label="Deployment Mission Selection">
+        <h2 class="title-glitch" style="font-size: 28px; margin-bottom: 8px;">SECTOR DEPLOYMENT</h2>
+        <div class="subtitle-badge" style="margin-bottom: 20px;">SELECT HARDWARE TARGET FLOOR</div>
+
+        <div class="deployment-grid">
+          <!-- Floor 1 Card (Beginner) -->
+          <article class="floor-card">
+            <div class="floor-header">
+              <div class="floor-name">SECTOR 01</div>
+              <div class="floor-subtitle">NETWORK INFILTRATION</div>
+            </div>
+            <p class="floor-status">
+              Perimeter security breach detected. Infiltrate the PCB bus and clear self-replicating malware nodes.
+            </p>
+            <button type="button" id="btn-deploy-floor1" class="cyber-btn cyber-btn--primary">
+              DEPLOY TO SECTOR 01
+            </button>
+          </article>
+
+          <!-- Floor 2 Card (Intermediate) -->
+          <article id="card-deploy-floor2" class="floor-card">
+            <div class="floor-header">
+              <div class="floor-name">SECTOR 02</div>
+              <div class="floor-subtitle">HAZARD ZONE</div>
+            </div>
+            <p class="floor-status">
+              Quarantined high-voltage memory sector. Severe environmental hazards. Requires Clearance Level 10.
+            </p>
+            <button type="button" id="btn-deploy-floor2" class="cyber-btn cyber-btn--primary">
+              DEPLOY TO SECTOR 02
+            </button>
+          </article>
+
+          <!-- Advanced Hardcore Card -->
+          <article id="card-deploy-overload" class="floor-card">
+            <div class="floor-header">
+              <div class="floor-name">ADVANCED</div>
+              <div id="overload-status-subtitle" class="floor-subtitle" style="color: #00ff88;">SYSTEM OVERLOAD: OFF</div>
+            </div>
+            <p class="floor-status">
+              Admin overclock routine. Multiplies all malware damage by 1.35x across all sectors. Requires Clearance Level 20.
+            </p>
+            <button type="button" id="btn-toggle-overload" class="cyber-btn cyber-btn--danger">
+              SYSTEM OVERLOAD [LVL 20]
+            </button>
+          </article>
+        </div>
+
+        <button type="button" id="btn-deploy-back" class="cyber-btn" style="min-width: 180px;">
+          ◂ BACK TO MENU
+        </button>
+      </section>
+
+      <!-- 4. OVERWORLD SCENE -->
+      <section id="scene-overworld" class="scene" style="padding: 0;" aria-label="Overworld Exploration Grid">
+        <div class="overworld-container">
+          <!-- Overworld Top HUD Strip -->
+          <div class="overworld-hud">
+            <div class="overworld-hud-info">
+              <span id="hud-overworld-sector" class="overworld-sector-tag">FLOOR 01: NETWORK INFILTRATION</span>
+              <span id="hud-overworld-pos" class="overworld-pos-tag">LOC: [X:1, Y:1]</span>
+            </div>
+            <div class="overworld-hud-actions">
+              <button type="button" id="btn-overworld-stats" class="cyber-btn overworld-stats-btn" aria-label="View Operator Statistics">
+                📊 STATS
+              </button>
+              <button type="button" id="btn-overworld-exit" class="cyber-btn" style="min-width: 110px; padding: 4px 10px; font-size: 11px;">
+                HEADQUARTERS ◂
+              </button>
+              <button type="button" id="btn-overworld-menu" class="cyber-btn" style="min-width: 95px; padding: 4px 10px; font-size: 11px;" title="Save and return to Main Menu (Esc)">
+                MENU [ESC]
+              </button>
+            </div>
+          </div>
+
+          <!-- Overworld Viewport Container -->
+          <div class="overworld-viewport">
+            <div id="overworld-grid-viewport"></div>
+            
+            <!-- Encounter Flash Effect -->
+            <div id="encounter-flash" aria-hidden="true"></div>
+          </div>
+
+          <!-- Virtual Directional D-Pad -->
+          <div class="virtual-dpad" aria-label="Virtual Directional Pad">
+            <button type="button" id="dpad-up" class="dpad-btn dpad-up" aria-label="Move Up">▲</button>
+            <button type="button" id="dpad-left" class="dpad-btn dpad-left" aria-label="Move Left">◀</button>
+            <div class="dpad-center"></div>
+            <button type="button" id="dpad-right" class="dpad-btn dpad-right" aria-label="Move Right">▶</button>
+            <button type="button" id="dpad-down" class="dpad-btn dpad-down" aria-label="Move Down">▼</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. BATTLE SCENE -->
+      <section id="scene-battle" class="scene" style="padding: 0;" aria-label="Combat Arena">
+        <div class="battle-container">
+          
+          <!-- Middle 58%: 2.5D Cybersecurity Simulation Chamber Arena -->
+          <div class="battle-arena" id="battle-arena" data-threat="trojan">
+            <div class="arena-background">
+              <div class="arena-grid-plane"></div>
+              <div class="arena-threat-fx"></div>
+              <div class="battle-data-link">
+                <div class="data-link-line"></div>
+                <div class="data-link-pulse"></div>
+              </div>
+            </div>
+
+            <div class="battlefield-platform">
+              <div class="platform-surface"></div>
+              <div class="platform-glow-edge"></div>
+            </div>
+
+            <!-- Left: Operator / Player Actor -->
+            <div class="battle-actor battle-player-actor">
+              <div class="actor-hud" id="battle-operator-card">
+                <div class="actor-hud-header">
+                  <span id="battle-operator-name" class="battle-operator-name">OPERATOR INTEGRITY</span>
+                  <span id="battle-overclock-pill" class="battle-oc-badge" style="display: none;">OVERCLOCK [x3]</span>
+                </div>
+                <div class="battle-hp-wrapper">
+                  <div class="battle-hp-labels">
+                    <span>BUFFER STATUS</span>
+                    <span id="battle-operator-hp-text">100 / 100 HP</span>
+                  </div>
+                  <div class="battle-hp-track">
+                    <div id="battle-operator-hp-fill" class="battle-hp-fill player-fill" style="width: 100%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="actor-sprite-wrap">
+                <div id="battle-operator-avatar-container" class="battle-operator-avatar-frame"></div>
+              </div>
+              <div class="actor-shadow"></div>
+            </div>
+
+            <!-- Right: Malware / Enemy Actor -->
+            <div class="battle-actor battle-enemy-actor">
+              <div class="actor-hud" id="battle-enemy-card">
+                <div class="actor-hud-header">
+                  <div id="battle-enemy-name" class="battle-enemy-name">MALWARE</div>
+                  <div id="battle-enemy-type" class="battle-enemy-type">SYSTEM THREAT</div>
+                </div>
+                <div class="battle-hp-wrapper">
+                  <div class="battle-hp-labels">
+                    <span>HOST INTEGRITY</span>
+                    <span id="battle-enemy-hp-text">100 / 100 HP</span>
+                  </div>
+                  <div class="battle-hp-track">
+                    <div id="battle-enemy-hp-fill" class="battle-hp-fill" style="width: 100%;"></div>
+                  </div>
+                </div>
+                <div class="battle-enemy-intel">
+                  <span id="badge-weakness" class="intel-badge unknown">WEAK: ???</span>
+                  <span id="badge-resistance" class="intel-badge unknown">RESIST: ???</span>
+                </div>
+              </div>
+              <div class="actor-sprite-wrap">
+                <div class="battle-enemy-sprite-frame">
+                  <img id="battle-enemy-img" class="enemy-svg" src="assets/enemies/trojan-horse.svg" alt="Malware Process" />
+                </div>
+                <!-- Adware Mini Popups Cluster (rendered inside enemy actor, visible only on adware) -->
+                <div class="adware-popup-cluster" aria-hidden="true">
+                  <div class="mini-popup popup-1">ALERT: 100% CPU!</div>
+                  <div class="mini-popup popup-2">FREE RAM [DOWNLOAD]</div>
+                  <div class="mini-popup popup-3">WINNER #1000!</div>
+                </div>
+              </div>
+              <div class="actor-shadow enemy-shadow"></div>
+            </div>
+
+            <!-- Floating Combat Badges & Scan Overlay Layer -->
+            <div id="battle-effects-layer" class="battle-effects-layer"></div>
+          </div>
+
+          <!-- Bottom Deck: Info Deck (Dialogue Box + Fight Log) + Command Deck -->
+          <div class="battle-bottom-deck">
+            
+            <!-- Left: Info Deck (Dialogue Box on top, Fight Log underneath) -->
+            <div class="battle-info-deck">
+              <!-- Dialogue Box -->
+              <div id="battle-dialogue-box" class="battle-dialogue-box">
+                <div class="battle-dialogue-content">
+                  <p id="battle-dialogue-text" class="battle-dialogue-text">What will you do?</p>
+                </div>
+                <span id="battle-dialogue-arrow" class="battle-dialogue-arrow" aria-hidden="true">▼</span>
+              </div>
+
+              <!-- Fight Log / Combat Terminal -->
+              <div id="battle-terminal" class="battle-terminal" role="log" aria-live="polite"></div>
+            </div>
+
+            <!-- Right: Commands Deck (Swaps between Main Actions and Attack Submenu) -->
+            <div class="battle-commands-container">
+              
+              <!-- 1. Main Actions Grid -->
+              <div id="battle-main-actions" class="battle-main-actions-grid">
+                <button type="button" id="btn-cmd-execute" class="battle-main-btn btn-cmd--execute">
+                  <span class="cmd-icon">⚡</span>
+                  <div class="cmd-text-block">
+                    <span class="cmd-title">EXECUTE</span>
+                    <span class="cmd-subtext">STRIKE MALWARE</span>
+                  </div>
+                </button>
+                <button type="button" id="btn-cmd-patches" class="battle-main-btn btn-cmd--patches">
+                  <span class="cmd-icon">🛡</span>
+                  <div class="cmd-text-block">
+                    <span class="cmd-title">PATCHES</span>
+                    <span class="cmd-subtext">RESTORE INTEGRITY</span>
+                  </div>
+                </button>
+                <button type="button" id="btn-cmd-knowledge" class="battle-main-btn btn-cmd--knowledge">
+                  <span class="cmd-icon">👁</span>
+                  <div class="cmd-text-block">
+                    <span class="cmd-title">KNOWLEDGE</span>
+                    <span class="cmd-subtext">ANALYZE THREAT</span>
+                  </div>
+                </button>
+                <button type="button" id="btn-cmd-run" class="battle-main-btn btn-cmd--run">
+                  <span class="cmd-icon">▶</span>
+                  <div class="cmd-text-block">
+                    <span class="cmd-title">RUN</span>
+                    <span class="cmd-subtext">ATTEMPT ESCAPE</span>
+                  </div>
+                </button>
+              </div>
+
+              <!-- 2. Attack Submenu Frame (Audited 15 / 20 / 25 / 18 DMG) -->
+              <div id="battle-attack-actions" class="battle-attack-submenu-frame" style="display: none;">
+                <div class="attack-cards-grid">
+                  
+                  <!-- Top-Left: FIREWALL (15 DMG, DEF + ATK) -->
+                  <button type="button" id="btn-attack-firewall" class="attack-card-btn card-firewall">
+                    <div class="attack-color-strip strip-green"></div>
+                    <div class="attack-card-body">
+                      <div class="attack-card-header">
+                        <span class="attack-card-title">FIREWALL</span>
+                        <span class="attack-card-dmg">15 DMG</span>
+                      </div>
+                      <span class="attack-card-subtitle subtitle-green">DEF + ATK</span>
+                    </div>
+                    <span class="attack-card-arrow">▸</span>
+                  </button>
+
+                  <!-- Top-Right: ANTIVIRUS (20 DMG, HIGH DAMAGE) -->
+                  <button type="button" id="btn-attack-antivirus" class="attack-card-btn card-antivirus">
+                    <div class="attack-color-strip strip-blue"></div>
+                    <div class="attack-card-body">
+                      <div class="attack-card-header">
+                        <span class="attack-card-title">ANTIVIRUS</span>
+                        <span class="attack-card-dmg">20 DMG</span>
+                      </div>
+                      <span class="attack-card-subtitle subtitle-blue">HIGH DAMAGE</span>
+                    </div>
+                    <span class="attack-card-arrow">▸</span>
+                  </button>
+
+                  <!-- Bottom-Left: SQL INJECT (25 DMG, HIGH IMPACT) -->
+                  <button type="button" id="btn-attack-sqlinject" class="attack-card-btn card-sqlinject">
+                    <div class="attack-color-strip strip-gold"></div>
+                    <div class="attack-card-body">
+                      <div class="attack-card-header">
+                        <span class="attack-card-title">SQL INJECT</span>
+                        <span class="attack-card-dmg">25 DMG</span>
+                      </div>
+                      <span class="attack-card-subtitle subtitle-gold">HIGH IMPACT</span>
+                    </div>
+                    <span class="attack-card-arrow">▸</span>
+                  </button>
+
+                  <!-- Bottom-Right: BRUTE FORCE (18 DMG, RELIABLE) -->
+                  <button type="button" id="btn-attack-bruteforce" class="attack-card-btn card-bruteforce">
+                    <div class="attack-color-strip strip-red"></div>
+                    <div class="attack-card-body">
+                      <div class="attack-card-header">
+                        <span class="attack-card-title">BRUTE FORCE</span>
+                        <span class="attack-card-dmg">18 DMG</span>
+                      </div>
+                      <span class="attack-card-subtitle subtitle-red">RELIABLE</span>
+                    </div>
+                    <span class="attack-card-arrow">▸</span>
+                  </button>
+
+                </div>
+
+                <!-- Back Action -->
+                <button type="button" id="btn-attack-back" class="attack-back-btn">
+                  <span>◂ BACK</span>
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 6. PROFILE & STUDIO SCENE -->
+      <section id="scene-profile" class="scene scene-profile" aria-label="Admin Personnel Profile & Studio">
+        <div class="profile-scroll-wrapper">
+          
+          <!-- Dossier ID Card -->
+          <div class="profile-card">
+            <div class="id-header">
+              <div>
+                <div class="id-name" id="profile-operator-title">ADMIN OPERATOR</div>
+                <div style="font-size: 11px; color: var(--dim-text);">SECURITY CLEARANCE ID: 2026-UDM-CCS</div>
+              </div>
+              <div class="id-rank" id="profile-operator-rank">SCRIPT KIDDIE [LVL 1]</div>
+            </div>
+
+            <div class="id-stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">System Experience</div>
+                <div class="stat-val" id="profile-stat-xp">0 / 100 XP</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Operator Health</div>
+                <div class="stat-val" id="profile-stat-hp">100 / 100 HP</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Total Neutralized</div>
+                <div class="stat-val" id="profile-stat-kills">0 Processes</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Overclock Charges</div>
+                <div class="stat-val" id="profile-stat-oc">0 Active</div>
+              </div>
+            </div>
+
+            <!-- Threat Kills Breakdown -->
+            <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 240, 255, 0.15); border-radius: 4px; padding: 10px 14px;">
+              <div style="font-size: 11px; color: var(--dim-text); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">Threat Neutralization Log</div>
+              <div id="profile-kills-breakdown" style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--cyan);">
+                <span>🐴 Trojan: 0</span>
+                <span>🐛 Worm: 0</span>
+                <span>👁 Spyware: 0</span>
+                <span>🚫 Adware: 0</span>
+              </div>
+            </div>
+
+            <!-- Commendations Badges -->
+            <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 183, 3, 0.2); border-radius: 4px; padding: 10px 14px;">
+              <div style="font-size: 11px; color: var(--gold); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">Security Commendations</div>
+              <div id="profile-badges-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
+          </div>
+
+          <!-- Avatar & Cyber Equipment Studio -->
+          <div class="studio-container" id="profile-studio">
+            <div class="studio-header">
+              <h3 class="title-glitch" style="font-size: 18px; margin: 0; color: var(--cyan);">AVATAR &amp; CYBER EQUIPMENT STUDIO</h3>
+              <span style="font-size: 10px; color: var(--gold); letter-spacing: 1px;">CUSTOM GEAR FIRMWARE</span>
+            </div>
+
+            <div class="studio-body">
+              <!-- Hologram Pedestal Preview Stage -->
+              <div class="studio-stage-column">
+                <div class="studio-stage-header">
+                  <span class="studio-stage-title">AVATAR PREVIEW</span>
+                  <span class="studio-stage-subtitle">HOLOGRAPHIC PROJECTION</span>
+                </div>
+                <div class="studio-hologram-stage" id="studio-hologram-stage">
+                  <div class="hologram-scanline"></div>
+                  <div class="pedestal-halo"></div>
+                  <div class="pedestal-base"></div>
+                  <div id="studio-hologram-avatar" class="studio-hologram-avatar-wrap"></div>
+                </div>
+                <div class="studio-loadout-summary">
+                  <div id="studio-summary-chassis" class="summary-chip">Enuhri Terminal Operator</div>
+                  <div id="studio-summary-deck" class="summary-chip">💻 Standard Issued Rig</div>
+                  <div id="studio-summary-shield" class="summary-chip">🛡 Stateful Buffer v1</div>
+                </div>
+              </div>
+
+              <!-- Customizer Controls -->
+              <div class="studio-customizer-column">
+                <!-- Tabs -->
+                <div class="studio-tabs" role="tablist">
+                  <button type="button" class="studio-tab-btn tab-active" id="tab-btn-chassis" data-tab="chassis">AVATAR</button>
+                  <button type="button" class="studio-tab-btn" id="tab-btn-aura" data-tab="aura">AURA</button>
+                  <button type="button" class="studio-tab-btn" id="tab-btn-decks" data-tab="decks">DECKS</button>
+                  <button type="button" class="studio-tab-btn" id="tab-btn-shields" data-tab="shields">SHIELDS</button>
+                </div>
+
+                <!-- Tab Panels -->
+                <div class="studio-panels">
+                  <!-- Chassis Panel -->
+                  <div class="studio-panel-content panel-active" id="panel-chassis">
+                    <div class="gear-cards-grid" id="grid-chassis"></div>
+                  </div>
+
+                  <!-- Aura Panel -->
+                  <div class="studio-panel-content" id="panel-aura" style="display: none;">
+                    <div class="aura-swatches-grid" id="grid-aura"></div>
+                  </div>
+
+                  <!-- Cyber Decks Panel -->
+                  <div class="studio-panel-content" id="panel-decks" style="display: none;">
+                    <div class="gear-cards-grid" id="grid-decks"></div>
+                  </div>
+
+                  <!-- Security Shields Panel -->
+                  <div class="studio-panel-content" id="panel-shields" style="display: none;">
+                    <div class="gear-cards-grid" id="grid-shields"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="btn-profile-back" class="cyber-btn">
+            ◂ BACK TO MENU
+          </button>
+        </div>
+      </section>
+
+      <!-- 7. SETTINGS SCENE -->
+      <section id="scene-settings" class="scene" aria-label="System Settings">
+        <div class="settings-panel">
+          <h2 class="title-glitch" style="font-size: 22px; text-align: left; margin-bottom: 0;">SYSTEM SETTINGS</h2>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Master Audio Volume</span>
+              <span id="val-master-vol">80%</span>
+            </div>
+            <input type="range" id="slider-master-volume" min="0" max="1" step="0.05" value="0.8" aria-label="Master Audio Volume" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Sound Effects (SFX)</span>
+              <span id="val-sfx-vol">80%</span>
+            </div>
+            <input type="range" id="slider-sfx-volume" min="0" max="1" step="0.05" value="0.8" aria-label="SFX Volume" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Ambient / Music</span>
+              <span id="val-music-vol">60%</span>
+            </div>
+            <input type="range" id="slider-music-volume" min="0" max="1" step="0.05" value="0.6" aria-label="Music Volume" />
+          </div>
+
+          <div class="setting-row" style="margin-top: 8px;">
+            <button type="button" id="btn-settings-reset" class="cyber-btn cyber-btn--danger" style="width: 100%;">
+              RESET ALL SAVE DATA
+            </button>
+          </div>
+
+          <button type="button" id="btn-settings-back" class="cyber-btn" style="align-self: flex-start; min-width: 140px;">
+            ◂ BACK
+          </button>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- Modal Overlay Container -->
+    <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true"></div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  </main>
+
+  <!-- Modular JavaScript Engine Entry Point -->
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>

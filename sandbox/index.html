@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>Sandbox — Enuhri</title>
+  <link rel="stylesheet" href="css/sandbox.css" />
+</head>
+<body>
+
+  <div class="scanline-overlay" aria-hidden="true"></div>
+
+  <div class="sandbox-app">
+
+    <header class="sandbox-header">
+      <span class="sandbox-title">SANDBOX</span>
+      <div class="header-right">
+        <button type="button" id="btn-discoveries" class="header-btn small">DISCOVERIES</button>
+        <button type="button" id="btn-reset" class="header-btn small">RESET</button>
+      </div>
+    </header>
+
+    <div id="canvas-wrap" class="canvas-wrap">
+      <canvas id="sim-canvas"></canvas>
+      <div id="inspect-tooltip" class="inspect-tooltip" role="tooltip" aria-hidden="true"></div>
+    </div>
+
+    <div id="toolbar" class="toolbar">
+      <div id="drag-hint" class="drag-hint">
+        <span class="drag-hint-icon">✥</span>
+        <span class="drag-hint-text">TAP an element to draw &nbsp;·&nbsp; PRESS &amp; DRAG it onto the world to drop a card &nbsp;·&nbsp; drop a card ONTO another to COMBINE them</span>
+        <button type="button" id="btn-hint-close" class="drag-hint-close" aria-label="Dismiss tip">✕</button>
+      </div>
+
+      <div id="material-groups" class="material-groups" role="group" aria-label="Elements"></div>
+
+      <div class="tool-row tool-row--actions">
+        <button type="button" id="btn-air" class="tool-btn air-btn">AIR</button>
+        <button type="button" id="btn-erase" class="tool-btn erase-btn">ERASE</button>
+        <button type="button" id="btn-code" class="tool-btn digital-btn">CODE</button>
+        <button type="button" id="btn-void" class="tool-btn void-btn">VOID</button>
+      </div>
+
+      <div class="tool-row tool-row--actions">
+        <button type="button" id="btn-human" class="tool-btn human-btn">HUMAN</button>
+        <button type="button" id="btn-fish" class="tool-btn creature-btn">FISH</button>
+        <button type="button" id="btn-bird" class="tool-btn creature-btn">BIRD</button>
+        <button type="button" id="btn-angel" class="tool-btn cosmic-btn">ANGEL</button>
+        <button type="button" id="btn-devil" class="tool-btn cosmic-btn">DEVIL</button>
+        <button type="button" id="btn-blackhole" class="tool-btn cosmic-btn">HOLE</button>
+      </div>
+
+      <div class="tool-row tool-row--actions">
+        <button type="button" id="btn-tab-sandbox" class="tool-btn mode-btn active">SANDBOX</button>
+        <button type="button" id="btn-tab-explore" class="tool-btn mode-btn">EXPLORE</button>
+        <button type="button" id="btn-tab-presets" class="tool-btn mode-btn">PRESETS</button>
+      </div>
+
+      <div class="tool-row tool-row--actions">
+        <button type="button" id="btn-pause" class="tool-btn">PAUSE</button>
+        <button type="button" id="btn-step" class="tool-btn" disabled>STEP</button>
+        <button type="button" id="btn-brush-down" class="tool-btn small">BRUSH -</button>
+        <span id="brush-label" class="brush-label">3</span>
+        <button type="button" id="btn-brush-up" class="tool-btn small">BRUSH +</button>
+      </div>
+    </div>
+
+    <!-- Auto-hide control: a small always-visible tab that brings the toolbar
+         back, so the player never gets stuck with the UI tucked away. -->
+    <button type="button" id="ui-reveal" class="ui-reveal" aria-label="Show controls">&#9776;</button>
+
+    <div id="preset-panel" class="preset-panel">
+      <div class="preset-panel-header">
+        <span>SELECT A WORLD</span>
+        <button type="button" id="btn-close-presets" class="header-btn small">CLOSE</button>
+      </div>
+      <div id="preset-row" class="tool-row"></div>
+    </div>
+
+    <div id="discovery-toast" class="discovery-toast" aria-live="polite"></div>
+
+    <div id="discoveries-panel" class="discoveries-panel">
+      <div class="preset-panel-header">
+        <span>DISCOVERIES</span>
+        <button type="button" id="btn-close-discoveries" class="header-btn small">CLOSE</button>
+      </div>
+      <div id="discoveries-grid" class="discoveries-grid"></div>
+    </div>
+
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

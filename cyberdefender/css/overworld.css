@@ -1,0 +1,367 @@
+/* ===================================================
+   CYBER DEFENDER — Overworld & Tile Grid Styles
+   =================================================== */
+
+.overworld-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Overworld Top HUD Strip */
+.overworld-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(6, 12, 20, 0.92);
+  border-bottom: 1px solid var(--pcb-panel-border);
+  font-size: clamp(11px, 1.2vw, 13px);
+  z-index: 20;
+}
+
+.overworld-hud-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.overworld-sector-tag {
+  color: var(--cyan);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.overworld-pos-tag {
+  color: var(--dim-text);
+  font-size: 11px;
+}
+
+.overworld-hud-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.overworld-stats-btn {
+  min-width: 90px;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+/* Overworld Viewport & Camera Center */
+.overworld-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at 50% 50%, #06101c 0%, #02060b 85%);
+}
+
+/* Camera viewport: a fixed-size window clipping the world. The world (the
+   .tile-grid "map") is almost always larger than this and is positioned
+   inside it via a translate() camera offset in overworld.js, rather than
+   being scaled down to fit — this is what makes the map scrollable instead
+   of "one big visible board". */
+#overworld-grid-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Logical Grid Stage (the "world") */
+.tile-grid {
+  --tile-size: 44px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  background-color: #03060a;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(0, 240, 255, 0.25);
+  border: 2px solid rgba(0, 240, 255, 0.4);
+  border-radius: 6px;
+  box-sizing: content-box;
+  will-change: transform;
+  transition: transform 0.11s ease-out;
+}
+
+/* When the whole map is smaller than the viewport (e.g. a small floor on a
+   large desktop window), it's centered instead of camera-locked to a corner. */
+.tile-grid.camera-centered {
+  transition: none;
+}
+
+/* Tile Cell */
+.tile-cell {
+  position: relative;
+  width: var(--tile-size, 44px);
+  height: var(--tile-size, 44px);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+}
+
+/* Specific Tile Types */
+.tile-0 {
+  background-image: url('../assets/tiles/tile-normal.svg');
+}
+
+.tile-1 {
+  background-image: url('../assets/tiles/tile-corrupted.svg');
+  animation: pulseCorrupted 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseCorrupted {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(255, 0, 84, 0.4)); }
+  50% { filter: drop-shadow(0 0 4px rgba(255, 0, 84, 0.9)); }
+}
+
+.tile-2 {
+  background-image: url('../assets/tiles/tile-wall.svg');
+}
+
+.tile-3, .tile-4, .tile-5, .tile-6 {
+  background-image: url('../assets/tiles/tile-terminal.svg');
+}
+
+.tile-6 {
+  /* Honeypot subtle glitch */
+  animation: honeypotGlitch 3s infinite;
+}
+
+@keyframes honeypotGlitch {
+  0%, 94%, 100% { filter: none; }
+  95% { filter: hue-rotate(90deg) brightness(1.4); }
+  98% { filter: invert(0.3) saturate(2); }
+}
+
+.tile-7 {
+  /* Switch */
+  background-color: #0d2218;
+  border: 1px solid var(--green);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tile-7::after {
+  content: "⚡";
+  font-size: calc(var(--tile-size, 44px) * 0.42);
+  color: var(--green);
+}
+
+.tile-8 {
+  /* Blast Door */
+  background-color: #240a12;
+  border: 2px solid var(--danger);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tile-8::after {
+  content: "⛔";
+  font-size: calc(var(--tile-size, 44px) * 0.42);
+}
+.tile-8.door-open {
+  background-color: #0a1824;
+  border-color: var(--cyan);
+}
+.tile-8.door-open::after {
+  content: "🔓";
+}
+
+.tile-9 {
+  /* Extraction */
+  background-color: #081a2b;
+  border: 1px dashed var(--cyan);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.tile-9::before {
+  content: "EXIT";
+  font-family: var(--font-mono);
+  font-size: calc(var(--tile-size, 44px) * 0.2);
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+
+/* Locked state: exit is visible but not yet usable (Terminal B not activated) */
+.tile-9.exit-locked {
+  background-color: #200b10;
+  border: 1px dashed var(--danger, #ff0054);
+  animation: exitLockedPulse 2.4s infinite ease-in-out;
+}
+.tile-9.exit-locked::after {
+  content: "LOCKED";
+  font-family: var(--font-mono);
+  font-size: calc(var(--tile-size, 44px) * 0.16);
+  font-weight: 700;
+  color: var(--danger, #ff0054);
+}
+@keyframes exitLockedPulse {
+  0%, 100% { box-shadow: inset 0 0 6px rgba(255, 0, 84, 0.35); }
+  50% { box-shadow: inset 0 0 14px rgba(255, 0, 84, 0.7); }
+}
+
+/* Granted state: Terminal B activated, exit is usable */
+.tile-9.exit-granted {
+  background-color: #081a2b;
+  border: 1px solid var(--cyan);
+  animation: exitGrantedPulse 2s infinite ease-in-out;
+}
+.tile-9.exit-granted::after {
+  content: "GRANTED";
+  font-family: var(--font-mono);
+  font-size: calc(var(--tile-size, 44px) * 0.14);
+  font-weight: 700;
+  color: var(--green, #00ff88);
+}
+@keyframes exitGrantedPulse {
+  0%, 100% { box-shadow: inset 0 0 6px rgba(0, 240, 255, 0.35); }
+  50% { box-shadow: inset 0 0 16px rgba(0, 255, 136, 0.6); }
+}
+
+/* Player Entity Sprite on Grid */
+.player-entity {
+  position: absolute;
+  width: var(--tile-size, 44px);
+  height: var(--tile-size, 44px);
+  pointer-events: none;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: left 0.12s linear, top 0.12s linear;
+}
+
+/* Pixel Art Operator Sprite */
+.player-sprite-pixel {
+  width: var(--tile-size, 44px);
+  height: var(--tile-size, 44px);
+  background-size: calc(var(--tile-size, 44px) * 4) var(--tile-size, 44px);
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 0 8px var(--aura-color, #00f0ff));
+  transition: filter 0.25s ease;
+}
+
+.player-sprite-pixel.facing-down {
+  background-image: url('../assets/sprites/player-walk-down.png');
+}
+
+.player-sprite-pixel.facing-up {
+  background-image: url('../assets/sprites/player-walk-up.png');
+}
+
+.player-sprite-pixel.facing-left {
+  background-image: url('../assets/sprites/player-walk-left.png');
+}
+
+.player-sprite-pixel.facing-right {
+  background-image: url('../assets/sprites/player-walk-right.png');
+}
+
+.player-sprite-pixel:not(.walking) {
+  background-position: 0 0;
+}
+
+.player-sprite-pixel.walking {
+  animation: operatorWalkCycle 0.35s steps(4) infinite;
+}
+
+@keyframes operatorWalkCycle {
+  from { background-position: 0 0; }
+  to { background-position: calc(var(--tile-size, 44px) * -4) 0; }
+}
+
+/* Vector / Visor Chassis Fallback */
+.player-sprite-vector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.player-sprite-vector img {
+  width: calc(var(--tile-size, 44px) * 0.82);
+  height: calc(var(--tile-size, 44px) * 0.82);
+  filter: drop-shadow(0 0 6px var(--aura-color, #00f0ff));
+}
+
+/* Encounter Transition Flash Overlay */
+#encounter-flash {
+  position: absolute;
+  inset: 0;
+  background: #ff0054;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 300;
+  transition: opacity 0.15s ease-in-out;
+}
+
+#encounter-flash.flash-active {
+  opacity: 0.85;
+}
+
+/* Virtual Directional D-Pad (Touch / Mobile / Desktop fallback) */
+.virtual-dpad {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  z-index: 25;
+  background: rgba(4, 10, 18, 0.6);
+  border: 1px solid var(--pcb-panel-border);
+  border-radius: 50%;
+  padding: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.dpad-btn {
+  background: rgba(12, 24, 38, 0.8);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: var(--cyan);
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.dpad-btn:active {
+  background: var(--cyan);
+  color: #000;
+  box-shadow: 0 0 10px var(--cyan);
+}
+
+.dpad-up { grid-column: 2; grid-row: 1; }
+.dpad-left { grid-column: 1; grid-row: 2; }
+.dpad-center { grid-column: 2; grid-row: 2; border-radius: 50%; background: transparent; border: none; cursor: default; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-down { grid-column: 2; grid-row: 3; }
+

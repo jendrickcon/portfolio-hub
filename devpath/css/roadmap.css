@@ -1,0 +1,338 @@
+/**
+ * DEVPATH // Graph-First Roadmap Styles
+ * ------------------------------------------------------------------
+ * Complements graph.css. Everything here is scoped to the roadmap
+ * experience: choice cards, the branch/path navigator, and the
+ * kind-based accent system that makes a genre, a mechanic and a
+ * technology visually distinct on the same canvas.
+ * ------------------------------------------------------------------
+ */
+
+/* ══════════════════════════════════════════
+   KIND ACCENT SYSTEM
+   Each node kind maps to an accent. Set via a class on the card so
+   the same canvas can show product decisions and technical ones
+   without confusing them.
+   ══════════════════════════════════════════ */
+.choice-card-inner {
+  --kind-accent: var(--accent-cyan, #00f0ff);
+  --kind-tint: rgba(0, 240, 255, 0.06);
+}
+
+.choice-kind--start,
+.choice-kind--project-type { --kind-accent: #7dd3fc; --kind-tint: rgba(125, 211, 252, 0.08); }
+
+/* Intent / domain — cool blues */
+.choice-kind--domain,
+.choice-kind--goal,
+.choice-kind--audience { --kind-accent: #60a5fa; --kind-tint: rgba(96, 165, 250, 0.07); }
+
+/* What it IS — violets */
+.choice-kind--concept,
+.choice-kind--genre,
+.choice-kind--theme { --kind-accent: #a78bfa; --kind-tint: rgba(167, 139, 250, 0.08); }
+
+/* What it DOES — greens */
+.choice-kind--feature,
+.choice-kind--mechanic,
+.choice-kind--gameplay,
+.choice-kind--system { --kind-accent: #34d399; --kind-tint: rgba(52, 211, 153, 0.07); }
+.choice-kind--rule,
+.choice-kind--behavior { --kind-accent: #10b981; --kind-tint: rgba(16, 185, 129, 0.06); }
+
+/* What it CONTAINS — ambers */
+.choice-kind--entity,
+.choice-kind--content,
+.choice-kind--data,
+.choice-kind--asset { --kind-accent: #fbbf24; --kind-tint: rgba(251, 191, 36, 0.07); }
+
+/* How it FLOWS — oranges */
+.choice-kind--flow,
+.choice-kind--screen,
+.choice-kind--integration { --kind-accent: #fb923c; --kind-tint: rgba(251, 146, 60, 0.07); }
+
+/* How it's BUILT — slate/steel */
+.choice-kind--architecture,
+.choice-kind--technology,
+.choice-kind--language,
+.choice-kind--framework,
+.choice-kind--engine,
+.choice-kind--database,
+.choice-kind--service,
+.choice-kind--platform { --kind-accent: #94a3b8; --kind-tint: rgba(148, 163, 184, 0.07); }
+
+/* How it RUNS — reds */
+.choice-kind--infrastructure,
+.choice-kind--deployment,
+.choice-kind--distribution,
+.choice-kind--security,
+.choice-kind--monitoring { --kind-accent: #f87171; --kind-tint: rgba(248, 113, 113, 0.07); }
+
+/* Constraints — muted */
+.choice-kind--constraint,
+.choice-kind--scope,
+.choice-kind--outcome { --kind-accent: #cbd5e1; --kind-tint: rgba(203, 213, 225, 0.05); }
+
+/* ══════════════════════════════════════════
+   CHOICE CARD
+   ══════════════════════════════════════════ */
+.choice-card-bg {
+  fill: var(--kind-tint, rgba(0, 240, 255, 0.05));
+  stroke: var(--kind-accent, #00f0ff);
+  stroke-width: 1.25;
+  stroke-opacity: 0.55;
+  transition: stroke-opacity 0.2s ease, fill 0.2s ease;
+}
+
+.graph-node:hover .choice-card-bg {
+  stroke-opacity: 1;
+  fill: color-mix(in srgb, var(--kind-accent) 14%, transparent);
+}
+
+.choice-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  color: var(--text-primary, #e6f1ff);
+  outline: none;
+  border-left: 3px solid var(--kind-accent);
+  background: linear-gradient(
+    135deg,
+    var(--kind-tint) 0%,
+    transparent 65%
+  );
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.choice-card-inner:hover,
+.choice-card-inner:focus-visible {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kind-accent) 18%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.choice-card-inner:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--kind-accent);
+}
+
+.choice-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.choice-card-icon {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  color: var(--kind-accent);
+  flex-shrink: 0;
+}
+
+.choice-card-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.choice-card-kind {
+  font-size: 8.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--kind-accent);
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.choice-tech-badge {
+  margin-left: auto;
+  font-size: 7.5px;
+  letter-spacing: 0.09em;
+  padding: 1px 5px;
+  border: 1px solid var(--kind-accent);
+  border-radius: 2px;
+  color: var(--kind-accent);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.choice-card-title {
+  margin: 1px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--text-primary, #e6f1ff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.choice-card-tagline {
+  margin: 0;
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: var(--text-secondary, #8ba3c7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.choice-card-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.choice-card-add {
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--kind-accent);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.choice-card-inner:hover .choice-card-add,
+.choice-card-inner:focus-visible .choice-card-add {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ══════════════════════════════════════════
+   ROADMAP NAVIGATOR
+   Fixed to the canvas so it is always reachable while the graph
+   grows below the fold.
+   ══════════════════════════════════════════ */
+.roadmap-nav {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle, rgba(0, 240, 255, 0.22));
+  border-radius: 6px;
+  background: var(--surface-glass, rgba(8, 16, 28, 0.86));
+  backdrop-filter: blur(9px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+}
+
+.roadmap-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roadmap-nav-label {
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary, #8ba3c7);
+  width: 42px;
+  flex-shrink: 0;
+}
+
+.roadmap-nav-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-primary, #e6f1ff);
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(0, 240, 255, 0.28));
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.roadmap-nav-btn:hover,
+.roadmap-nav-btn:focus-visible {
+  background: rgba(0, 240, 255, 0.13);
+  border-color: var(--accent-cyan, #00f0ff);
+  color: var(--accent-cyan, #00f0ff);
+  outline: none;
+}
+
+.roadmap-nav-btn:active {
+  transform: translateY(1px);
+}
+
+.roadmap-nav-btn--wide {
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  flex: 1;
+}
+
+/* Highlight for the node the navigator is currently on. */
+.graph-node.nav-focused .choice-card-bg,
+.graph-node.nav-focused .node-card-bg {
+  stroke-opacity: 1;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 7px var(--kind-accent, #00f0ff));
+}
+
+/* ══════════════════════════════════════════
+   ROOT THEME OVERRIDES
+   ══════════════════════════════════════════ */
+[data-theme="root"] .roadmap-nav {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(12, 22, 16, 0.88);
+}
+
+[data-theme="root"] .roadmap-nav-btn:hover,
+[data-theme="root"] .roadmap-nav-btn:focus-visible {
+  background: rgba(74, 222, 128, 0.16);
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
+/* ══════════════════════════════════════════
+   MOBILE
+   ══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .roadmap-nav {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px;
+  }
+
+  .roadmap-nav-group {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .roadmap-nav-label {
+    width: auto;
+    font-size: 7px;
+  }
+
+  .roadmap-nav-btn {
+    min-width: 34px;
+    height: 34px;
+  }
+
+  .choice-card-title { font-size: 12px; }
+  .choice-card-tagline { font-size: 9px; }
+}

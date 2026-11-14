@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <defs>
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+  </defs>
+  <!-- Worm Self-Replicating Network Infiltrator -->
+  <path d="M16 68 Q 28 32, 48 52 T 80 44" fill="none" stroke="#39ff14" stroke-width="8" stroke-linecap="round" filter="url(#glow-green)" />
+  <circle cx="80" cy="44" r="8" fill="#112918" stroke="#39ff14" stroke-width="2.5" />
+  <circle cx="82" cy="42" r="2.5" fill="#ff0054" />
+  <path d="M76 38 L72 32 M84 38 L88 32" stroke="#39ff14" stroke-width="2" />
+</svg>
+

@@ -1,4 +1,4 @@
-/* One decorative, theme-aware routing field for the complete portfolio. */
+/* One decorative, theme-aware routing field with line-local glow for the complete portfolio. */
 (() => {
   const canvas = document.getElementById('page-field');
   if (!canvas) return;
@@ -11,11 +11,20 @@
   let width = 0, height = 0, nodes = [], routes = [];
   let connected = false, frame = 0, lastDraw = 0;
   let lastScrollY = scrollY, lastScrollTime = performance.now(), lastScrollAt = 0;
-  let scrollInput = 0, workVelocity = 0, contactCalm = 0;
+  let scrollInput = 0, workVelocity = 0, contactCalm = 0, localActive = false;
   const pointer = { x: 0, y: 0, strength: 0, lastMove: 0, inside: false };
   const seed = n => { const value = Math.sin(n * 91.437) * 43758.5453; return value - Math.floor(value); };
   const animated = () => connected && !document.hidden && !reduced.matches && !coarse.matches && width >= 769 && height >= 300;
   const light = () => html.getAttribute('data-theme') === 'light';
+
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const l2 = dx * dx + dy * dy;
+    if (l2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
 
   function buildField() {
     const cols = width >= 1450 ? 10 : width >= 769 ? 9 : 6;
@@ -31,50 +40,148 @@
           tone: seed(id + 201), phase: seed(id + 301) * Math.PI * 2,
           drawX: 0, drawY: 0, active: 0
         });
-        if (x > 0 && (x + y) % 3 !== 0) routes.push([id - 1, id]);
-        if (y > 0 && (x + y * 2) % 4 === 0) routes.push([id - cols, id]);
+        if (x > 0 && (x + y) % 3 !== 0) routes.push({ u: id - 1, v: id, active: 0 });
+        if (y > 0 && (x + y * 2) % 4 === 0) routes.push({ u: id - cols, v: id, active: 0 });
       }
+    }
+  }
+
+  function traceRoutePath(route, drift) {
+    const a = nodes[route.u], b = nodes[route.v];
+    ctx.moveTo(a.drawX, a.drawY);
+    if (Math.abs(a.x - b.x) > Math.abs(a.y - b.y)) {
+      const mid = (a.drawX + b.drawX) / 2 - workVelocity * drift * 2;
+      ctx.lineTo(mid, a.drawY);
+      ctx.lineTo(mid, b.drawY);
+    } else {
+      const mid = (a.drawY + b.drawY) / 2;
+      ctx.lineTo(a.drawX, mid);
+      ctx.lineTo(b.drawX, mid);
+    }
+    ctx.lineTo(b.drawX, b.drawY);
+  }
+
+  function routeDistance(route, px, py, drift) {
+    const a = nodes[route.u], b = nodes[route.v];
+    if (Math.abs(a.x - b.x) > Math.abs(a.y - b.y)) {
+      const mid = (a.drawX + b.drawX) / 2 - workVelocity * drift * 2;
+      const d1 = distToSegment(px, py, a.drawX, a.drawY, mid, a.drawY);
+      const d2 = distToSegment(px, py, mid, a.drawY, mid, b.drawY);
+      const d3 = distToSegment(px, py, mid, b.drawY, b.drawX, b.drawY);
+      return Math.min(d1, d2, d3);
+    } else {
+      const mid = (a.drawY + b.drawY) / 2;
+      const d1 = distToSegment(px, py, a.drawX, a.drawY, a.drawX, mid);
+      const d2 = distToSegment(px, py, a.drawX, mid, b.drawX, mid);
+      const d3 = distToSegment(px, py, b.drawX, mid, b.drawX, b.drawY);
+      return Math.min(d1, d2, d3);
     }
   }
 
   function paint(now, moving) {
     ctx.clearRect(0, 0, width, height);
     const isLight = light(), drift = moving ? 1 - contactCalm : 0;
+    localActive = false;
+
+    // 1. Calculate node positions
     for (const node of nodes) {
       node.drawX = node.x + drift * (Math.sin(now / 1100 + node.phase) * 1.25 - workVelocity * 3.2 * (.4 + node.tone * .6));
       node.drawY = node.y + drift * Math.cos(now / 1400 + node.phase) * .8;
-      node.active = pointer.strength ? Math.max(0, 1 - Math.hypot(node.x - pointer.x, node.y - pointer.y) / 145) * pointer.strength : 0;
+      node.active = 0;
     }
-    ctx.lineWidth = 1;
+
+    // 2. Calculate route activation directly from pointer distance to route geometry
+    const activeRadius = 52;
     for (const route of routes) {
-      const a = nodes[route[0]], b = nodes[route[1]], active = Math.max(a.active, b.active);
-      const alpha = isLight ? .15 + active * .13 : .075 + active * .08;
-      ctx.strokeStyle = (isLight ? 'rgba(52, 82, 138, ' : 'rgba(151, 173, 193, ') + alpha + ')';
-      ctx.beginPath();
-      ctx.moveTo(a.drawX, a.drawY);
-      if (Math.abs(a.x - b.x) > Math.abs(a.y - b.y)) {
-        const mid = (a.drawX + b.drawX) / 2 - workVelocity * drift * 2;
-        ctx.lineTo(mid, a.drawY); ctx.lineTo(mid, b.drawY);
-      } else {
-        const mid = (a.drawY + b.drawY) / 2;
-        ctx.lineTo(a.drawX, mid); ctx.lineTo(b.drawX, mid);
+      let target = 0;
+      if (pointer.inside && pointer.strength > 0) {
+        const dist = routeDistance(route, pointer.x, pointer.y, drift);
+        if (dist < activeRadius) {
+          target = (1 - dist / activeRadius) * pointer.strength;
+        }
       }
-      ctx.lineTo(b.drawX, b.drawY);
-      ctx.stroke();
+      route.active = moving ? route.active + (target - route.active) * .22 : 0;
+      if (!target && route.active < .003) route.active = 0;
+      if (route.active > 0) {
+        localActive = true;
+        nodes[route.u].active = Math.max(nodes[route.u].active, route.active);
+        nodes[route.v].active = Math.max(nodes[route.v].active, route.active);
+      }
     }
+
+    // 3. Draw flat inactive routes in one crisp batch (zero shadow)
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = isLight ? 'rgba(52, 82, 138, 0.16)' : 'rgba(151, 173, 193, 0.08)';
+    ctx.beginPath();
+    for (const route of routes) {
+      if (route.active <= 0.01) traceRoutePath(route, drift);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw active routes: Line-local soft glow pass (narrow halo)
+    const glowColor = isLight ? 'rgba(49, 95, 202, ' : 'rgba(127, 166, 255, ';
+    for (const route of routes) {
+      if (route.active > 0.01) {
+        ctx.save();
+        ctx.strokeStyle = glowColor + (isLight ? (0.14 * route.active) : (0.20 * route.active)) + ')';
+        ctx.shadowColor = glowColor + (isLight ? (0.28 * route.active) : (0.38 * route.active)) + ')';
+        ctx.shadowBlur = isLight ? 7 : 8;
+        ctx.lineWidth = 1 + 2.2 * route.active;
+        ctx.beginPath();
+        traceRoutePath(route, drift);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 5. Draw active routes: Crisp top stroke pass (no shadow)
+    const topColor = isLight ? 'rgba(49, 95, 202, ' : 'rgba(180, 205, 235, ';
+    for (const route of routes) {
+      if (route.active > 0.01) {
+        ctx.save();
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 1;
+        const topAlpha = isLight ? (0.22 + 0.40 * route.active) : (0.12 + 0.45 * route.active);
+        ctx.strokeStyle = topColor + topAlpha + ')';
+        ctx.beginPath();
+        traceRoutePath(route, drift);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 6. Draw nodes
     for (const node of nodes) {
       const pulse = drift * (Math.sin(now / 1300 + node.phase) + 1) * .025;
-      if (isLight) {
-        ctx.fillStyle = node.tone > .86
-          ? 'rgba(45, 106, 79, ' + (.36 + pulse + node.active * .20) + ')'
-          : 'rgba(52, 82, 138, ' + (.28 + pulse + node.active * .18) + ')';
+      if (node.active > 0.01) {
+        // Glowing active node
+        ctx.save();
+        ctx.shadowColor = glowColor + (isLight ? 0.3 * node.active : 0.4 * node.active) + ')';
+        ctx.shadowBlur = isLight ? 6 : 7;
+        ctx.fillStyle = isLight
+          ? 'rgba(49, 95, 202, ' + (.45 + pulse + node.active * .40) + ')'
+          : 'rgba(127, 166, 255, ' + (.30 + pulse + node.active * .45) + ')';
+        const size = node.tone > .86 ? 3.5 : 2.5;
+        ctx.fillRect(node.drawX - size / 2, node.drawY - size / 2, size, size);
+        ctx.restore();
       } else {
-        ctx.fillStyle = node.tone > .86
-          ? 'rgba(125, 184, 150, ' + (.17 + pulse + node.active * .20) + ')'
-          : 'rgba(161, 182, 200, ' + (.12 + pulse + node.active * .16) + ')';
+        // Flat inactive node
+        ctx.shadowBlur = 0;
+        if (isLight) {
+          ctx.fillStyle = node.tone > .86
+            ? 'rgba(45, 106, 79, ' + (.36 + pulse) + ')'
+            : 'rgba(52, 82, 138, ' + (.28 + pulse) + ')';
+        } else {
+          ctx.fillStyle = node.tone > .86
+            ? 'rgba(125, 184, 150, ' + (.17 + pulse) + ')'
+            : 'rgba(161, 182, 200, ' + (.12 + pulse) + ')';
+        }
+        const size = node.tone > .86 ? 3 : 2;
+        ctx.fillRect(node.drawX - size / 2, node.drawY - size / 2, size, size);
       }
-      const size = node.tone > .86 ? 3 : 2;
-      ctx.fillRect(node.drawX - size / 2, node.drawY - size / 2, size, size);
     }
   }
 
@@ -100,7 +207,7 @@
       if (!calmTarget && contactCalm < .005) contactCalm = 0;
       paint(now, true);
     }
-    if (contactCalm < 1 || pointer.strength || (pointer.inside && now - pointer.lastMove < 800) || workVelocity) {
+    if (contactCalm < 1 || pointer.strength || localActive || (pointer.inside && now - pointer.lastMove < 800) || workVelocity) {
       frame = requestAnimationFrame(tick);
     }
   }

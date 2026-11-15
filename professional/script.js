@@ -6,10 +6,451 @@
   const stage = run.querySelector('.stage');
   const footer = document.querySelector('footer');
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
-  const secs = ['about','work','capabilities','journey','contact'].map(id => document.getElementById(id));
+  const secs = ['about','profile','work','capabilities','journey','contact'].map(id => document.getElementById(id));
+
+  /* Theme Controller: Light, Dark only */
+  const themeKey = 'portfolio-theme';
+  const themeOpts = [...document.querySelectorAll('.theme-opt')];
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let currentTheme = 'dark';
+  try {
+    let saved = localStorage.getItem(themeKey);
+    if (saved === 'system') {
+      saved = 'dark';
+      localStorage.setItem(themeKey, 'dark');
+    }
+    if (saved === 'light' || saved === 'dark') {
+      currentTheme = saved;
+    }
+  } catch (e) {}
+
+  let themeTransitionTimer = null;
+  function applyTheme(pref, { animate = false } = {}) {
+    let workPosition = null;
+    if (animate && enh) {
+      const start = top(run) - hdr.offsetHeight;
+      if (scrollY >= start && scrollY <= start + span()) {
+        const x = curX();
+        const nearest = panelStarts.reduce((best, position, i) =>
+          Math.abs(position - x) < Math.abs(panelStarts[best] - x) ? i : best, 0);
+        workPosition = { progress: clamp(x / maxX), nearest, wasEnhanced: true };
+      }
+    } else if (animate) {
+      const start = top(run), line = scrollY + hdr.offsetHeight + innerHeight * .35;
+      if (line >= start && line < start + run.offsetHeight) {
+        let nearest = -1;
+        panels.forEach((panel, i) => { if (top(panel) <= line) nearest = i; });
+        if (nearest >= 0) workPosition = { progress: null, nearest, wasEnhanced: false };
+      }
+    }
+    const resolved = (pref === 'light' || pref === 'dark') ? pref : 'dark';
+    currentTheme = resolved;
+
+    if (animate && !motion.matches) {
+      html.classList.add('theme-transitioning');
+      clearTimeout(themeTransitionTimer);
+      themeTransitionTimer = setTimeout(() => {
+        html.classList.remove('theme-transitioning');
+      }, 240);
+    }
+
+    html.setAttribute('data-theme', resolved);
+    html.removeAttribute('data-theme-preference');
+    html.style.colorScheme = resolved;
+    if (metaTheme) metaTheme.content = resolved === 'dark' ? '#11151b' : '#f4f6f5';
+
+    themeOpts.forEach(btn => {
+      const active = btn.dataset.themeVal === resolved;
+      btn.setAttribute('aria-pressed', String(active));
+    });
+
+    try {
+      localStorage.setItem(themeKey, resolved);
+    } catch (e) {}
+
+    // Notify field canvas for smooth palette interpolation
+    if (typeof window.onFieldThemeChange === 'function') {
+      window.onFieldThemeChange(resolved, animate && !motion.matches);
+    }
+
+    // Work layout recomputation after theme switch
+    if (animate) requestAnimationFrame(() => {
+      finishAllPreviewResizes();
+      layout();
+      if (workPosition && (workPosition.wasEnhanced || enh)) {
+        const destination = enh
+          ? top(run) - hdr.offsetHeight + (workPosition.progress === null
+            ? panelStarts[workPosition.nearest] / maxX : workPosition.progress) * span()
+          : top(panels[workPosition.nearest]) - hdr.offsetHeight - 8;
+        scrollTo({ top: Math.max(0, destination), behavior: 'instant' });
+        update();
+      }
+    });
+  }
+
+  themeOpts.forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyTheme(btn.dataset.themeVal, { animate: true });
+    });
+  });
+
+  applyTheme(currentTheme, { animate: false });
+
+  /* Project-Linked Toolkit: Adaptive Natural Height & Spatial Takeover Lifecycle */
+  (() => {
+    const shelves = $$('.toolkit-shelf');
+    if (!shelves.length) return;
+
+    let activeEntry = null;
+    let closingEntry = null;
+    let isTransitioning = false;
+    let openTimer1 = null, openTimer2 = null, openTimer3 = null;
+    let closeTimer1 = null, closeTimer2 = null;
+
+    function clearAllTimers() {
+      clearTimeout(openTimer1);
+      clearTimeout(openTimer2);
+      clearTimeout(openTimer3);
+      clearTimeout(closeTimer1);
+      clearTimeout(closeTimer2);
+    }
+
+    function cancelActiveCleanly() {
+      clearAllTimers();
+      const cur = activeEntry || closingEntry;
+      activeEntry = null;
+      closingEntry = null;
+      isTransitioning = false;
+
+      // Unconditionally ensure all shelves are in clean collapsed state
+      shelves.forEach(s => {
+        const t = s.querySelector('.tool-takeover');
+        if (t) {
+          t.hidden = true;
+          t.classList.remove('is-active', 'is-revealed');
+          t.setAttribute('aria-hidden', 'true');
+          t.style.transform = 'none';
+          t.style.transition = 'none';
+        }
+        const stg = s.querySelector('.tool-stage');
+        if (stg) stg.style.height = '';
+
+        const toggles = s.querySelectorAll('.tool-toggle');
+        toggles.forEach(b => b.setAttribute('aria-expanded', 'false'));
+
+        const cards = s.querySelectorAll('.tool-card');
+        cards.forEach(c => {
+          c.inert = false;
+          c.removeAttribute('aria-hidden');
+          c.style.visibility = '';
+          c.classList.remove('is-sibling-exiting', 'is-sibling-entering', 'is-selected-source');
+        });
+      });
+    }
+
+    // Build takeover element contents and card toggles
+    shelves.forEach((shelf, gi) => {
+      const stage = shelf.querySelector('.tool-stage');
+      const grid = shelf.querySelector('.toolkit-grid');
+      const takeover = shelf.querySelector('.tool-takeover');
+      if (!stage || !grid || !takeover) return;
+
+      const takeoverId = 'tool-takeover-' + gi;
+      takeover.id = takeoverId;
+
+      // Build takeover skeleton
+      takeover.innerHTML = `
+        <button type="button" class="tool-takeover-head" aria-label="Collapse tool details">
+          <span class="tool-takeover-main">
+            <span class="tool-takeover-title"></span>
+            <span class="tool-takeover-refs mono"></span>
+          </span>
+          <span class="tool-takeover-chev" aria-hidden="true"></span>
+        </button>
+        <div class="tool-takeover-body" role="region" aria-labelledby="${takeoverId}-head">
+          <p class="tool-takeover-desc"></p>
+          <div class="tool-takeover-footer">
+            <span class="tool-takeover-proof mono"></span>
+            <button type="button" class="tool-takeover-close-btn mono">
+              <span>Close details</span>
+              <svg class="tool-takeover-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+
+      const takeoverHead = takeover.querySelector('.tool-takeover-head');
+      takeoverHead.id = `${takeoverId}-head`;
+      const takeoverClose = takeover.querySelector('.tool-takeover-close-btn');
+
+      takeoverHead.addEventListener('click', () => closeActive(true));
+      takeoverClose.addEventListener('click', e => {
+        e.stopPropagation();
+        closeActive(true);
+      });
+
+      const cards = [...grid.querySelectorAll(':scope > .tool-card')];
+      cards.forEach((card, ci) => {
+        const head = card.querySelector('.tool-card-head');
+        const desc = card.querySelector('.tool-desc');
+        const refs = card.querySelector('.tool-refs');
+        if (!head || !desc || !refs) return;
+
+        const name = head.textContent.trim();
+        const refText = refs.textContent.trim();
+        const descText = desc.textContent.trim();
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tool-toggle';
+        btn.id = `tool-btn-${gi}-${ci}`;
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', takeoverId);
+
+        const toggleMain = document.createElement('span');
+        toggleMain.className = 'tool-toggle-main';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'tool-name';
+        nameSpan.textContent = name;
+        const usedSpan = document.createElement('span');
+        usedSpan.className = 'tool-used mono';
+        usedSpan.textContent = refText;
+        toggleMain.append(nameSpan, usedSpan);
+
+        const chev = document.createElement('span');
+        chev.className = 'tool-chev';
+        chev.setAttribute('aria-hidden', 'true');
+        btn.append(toggleMain, chev);
+
+        card.replaceChildren(btn);
+
+        card._toolData = {
+          name,
+          refs: refText,
+          desc: descText,
+          card,
+          grid,
+          stage,
+          shelf,
+          takeover,
+          btn,
+          cardIndex: ci
+        };
+
+        btn.addEventListener('click', () => {
+          if (activeEntry && activeEntry.card === card) {
+            closeActive(true);
+          } else {
+            performOpen(card);
+          }
+        });
+      });
+    });
+
+    function performOpen(card) {
+      if (activeEntry || closingEntry) {
+        cancelActiveCleanly();
+      }
+      isTransitioning = true;
+      clearAllTimers();
+
+      const d = card._toolData;
+      const stage = d.stage;
+      const grid = d.grid;
+      const takeover = d.takeover;
+      const siblings = [...grid.querySelectorAll('.tool-card')].filter(c => c !== card);
+
+      // Step 1: Measure current collapsed grid height
+      const gridH = grid.offsetHeight;
+      stage.style.height = gridH + 'px';
+
+      // Step 2: Measure starting geometry relative to stage
+      const cardRect = card.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const startX = cardRect.left - stageRect.left;
+      const startY = cardRect.top - stageRect.top;
+      const startW = cardRect.width;
+      const startH = cardRect.height;
+      const endW = stageRect.width;
+
+      // Step 3: Populate takeover content
+      takeover.querySelector('.tool-takeover-title').textContent = d.name;
+      takeover.querySelector('.tool-takeover-refs').textContent = d.refs;
+      takeover.querySelector('.tool-takeover-desc').textContent = d.desc;
+      takeover.querySelector('.tool-takeover-proof').innerHTML = '<span class="tool-takeover-proof-label">Evidence:</span> ' + d.refs;
+      takeover.querySelector('.tool-takeover-close-btn').setAttribute('aria-label', `Close ${d.name} details`);
+      takeover.querySelector('.tool-takeover-head').setAttribute('aria-expanded', 'true');
+
+      // Step 4: Measure required expanded height in DOM
+      takeover.hidden = false;
+      takeover.style.width = '100%';
+      takeover.style.transition = 'none';
+      takeover.style.transform = 'none';
+      takeover.classList.remove('is-revealed', 'is-active');
+
+      const naturalExpH = takeover.offsetHeight;
+      const expH = Math.min(naturalExpH, 360);
+      const targetStageH = Math.max(gridH, expH);
+      const sx = endW > 0 ? startW / endW : 1;
+      const sy = expH > 0 ? startH / expH : 1;
+
+      // Invert: position takeover exactly matching clicked card
+      takeover.style.transform = `translate(${startX}px, ${startY}px) scale(${sx}, ${sy})`;
+      takeover.classList.add('is-active');
+      takeover.setAttribute('aria-hidden', 'false');
+
+      // Exit siblings
+      card.classList.add('is-selected-source');
+      siblings.forEach(s => s.classList.add('is-sibling-exiting'));
+
+      openTimer1 = setTimeout(() => {
+        siblings.forEach(s => {
+          s.inert = true;
+          s.setAttribute('aria-hidden', 'true');
+          s.style.visibility = 'hidden';
+        });
+      }, 120);
+
+      // Force reflow
+      void takeover.offsetHeight;
+
+      // Step 5: Animate stage height to target expanded height (following group moves down once)
+      if (targetStageH > gridH && !motion.matches) {
+        stage.style.height = targetStageH + 'px';
+      } else if (targetStageH > gridH) {
+        stage.style.height = targetStageH + 'px';
+      }
+
+      // Step 6: Play FLIP takeover animation
+      if (motion.matches) {
+        takeover.style.transform = 'translate(0px, 0px) scale(1, 1)';
+        takeover.classList.add('is-revealed');
+        isTransitioning = false;
+      } else {
+        takeover.style.transition = 'transform 260ms cubic-bezier(.2,.7,.2,1)';
+        takeover.style.transform = 'translate(0px, 0px) scale(1, 1)';
+
+        openTimer2 = setTimeout(() => {
+          takeover.classList.add('is-revealed');
+        }, 140);
+
+        openTimer3 = setTimeout(() => {
+          isTransitioning = false;
+        }, 280);
+      }
+
+      d.btn.setAttribute('aria-expanded', 'true');
+      activeEntry = {
+        card,
+        stage,
+        grid,
+        takeover,
+        siblings,
+        startX,
+        startY,
+        sx,
+        sy,
+        trigger: d.btn,
+        expandedH: targetStageH
+      };
+    }
+
+    function closeActive(restoreFocus = true, callback = null) {
+      if (!activeEntry) {
+        if (typeof callback === 'function') callback();
+        return;
+      }
+
+      const current = activeEntry;
+      closingEntry = current;
+      activeEntry = null;
+      isTransitioning = true;
+      clearAllTimers();
+
+      // Phase A: Hide detail text immediately
+      current.takeover.classList.remove('is-revealed');
+
+      // Phase B: Temporary height floor - keep stage height held at current expanded height!
+      const currentStageH = current.stage.offsetHeight;
+      current.stage.style.height = currentStageH + 'px';
+
+      function finishClose() {
+        // Hide takeover shell
+        current.takeover.hidden = true;
+        current.takeover.classList.remove('is-active');
+        current.takeover.setAttribute('aria-hidden', 'true');
+        current.takeover.style.transform = 'none';
+        current.takeover.style.transition = 'none';
+
+        // Restore siblings while height floor remains held
+        current.card.classList.remove('is-selected-source');
+        current.siblings.forEach(s => {
+          s.inert = false;
+          s.removeAttribute('aria-hidden');
+          s.style.visibility = '';
+          s.classList.remove('is-sibling-exiting');
+          s.classList.add('is-sibling-entering');
+        });
+
+        // Force layout settle and measure true collapsed grid height
+        void current.stage.offsetHeight;
+        requestAnimationFrame(() => {
+          current.siblings.forEach(s => s.classList.remove('is-sibling-entering'));
+
+          const finalCollapsedH = current.grid.offsetHeight;
+
+          if (motion.matches || Math.abs(currentStageH - finalCollapsedH) <= 1) {
+            current.stage.style.height = '';
+            current.trigger.setAttribute('aria-expanded', 'false');
+            if (restoreFocus) current.trigger.focus({ preventScroll: true });
+            isTransitioning = false;
+            closingEntry = null;
+            if (typeof callback === 'function') callback();
+          } else {
+            // Animate group height ONCE from held expanded height to final collapsed height
+            current.stage.style.height = finalCollapsedH + 'px';
+            closeTimer2 = setTimeout(() => {
+              current.stage.style.height = '';
+              current.trigger.setAttribute('aria-expanded', 'false');
+              if (restoreFocus) current.trigger.focus({ preventScroll: true });
+              isTransitioning = false;
+              closingEntry = null;
+              if (typeof callback === 'function') callback();
+            }, 260);
+          }
+        });
+      }
+
+      if (motion.matches) {
+        finishClose();
+      } else {
+        // Reverse takeover shell animation to source card geometry (260ms)
+        // Stage height is rock-solid at currentStageH during this entire return!
+        current.takeover.style.transition = 'transform 260ms cubic-bezier(.2,.7,.2,1)';
+        current.takeover.style.transform = `translate(${current.startX}px, ${current.startY}px) scale(${current.sx}, ${current.sy})`;
+
+        closeTimer1 = setTimeout(finishClose, 260);
+      }
+    }
+
+    if (shelves.length) html.classList.add('toolkit-ready');
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && activeEntry) {
+        closeActive(true);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (activeEntry && !isTransitioning) {
+        activeEntry.stage.style.height = activeEntry.takeover.offsetHeight + 'px';
+      }
+    }, { passive: true });
+  })();
+
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');
   const clamp = v => Math.max(0, Math.min(1, v));
-  const smooth = (from, to, value) => { const t = clamp((value - from) / (to - from)); return t * t * (3 - 2 * t); };
   const top = el => el.getBoundingClientRect().top + scrollY;
   let enh = false, queued = false;
 
@@ -339,7 +780,6 @@
   const islandWrap = document.getElementById('work-island-wrap');
   const workRuler = document.getElementById('work-ruler');
   const workTicks = $$('[data-work-tick]');
-  const ovEdge = document.getElementById('ov-trans-edge');
 
   function measureOverview() {
     const main = document.querySelector('.ov-main');
@@ -472,6 +912,7 @@
     let a = 0;
     secs.forEach((s, i) => { if (top(s) <= line) a = i; });
     if (atEnd || (footerVisible && contact.getBoundingClientRect().top < innerHeight - hh)) a = secs.length - 1;
+    if (html.dataset.activeSection !== secs[a].id) html.dataset.activeSection = secs[a].id;
     links.forEach((l, i) => {
       const s = secs[i];
       const p = i === secs.length - 1 && atEnd ? 1 :
@@ -505,22 +946,8 @@
         islandWrap.setAttribute('aria-hidden', isWorkActive ? 'false' : 'true');
       }
 
-      // A bell-shaped local transition: gently enter and widen, then recede.
-      // At the first project's exact destination the blend is fully absent.
-      if (ovEdge) {
-        const t = clamp(x / Math.max(1, panelStarts[1]));
-        const edgeOpacity = smooth(0, .22, t) * (1 - smooth(.62, 1, t));
-        const baseWidth = Math.max(96, Math.min(180, stage.clientWidth * .11));
-        // Fade the blend's extent, not its opaque Ink join: fading the whole
-        // layer exposes Paper at the chapter boundary and creates a pale seam.
-        const blendWidth = baseWidth * (.8 + .42 * Math.sin(Math.PI * t)) * edgeOpacity;
-        ovEdge.style.opacity = t > 0 && t < 1 ? '1' : '0';
-        ovEdge.style.setProperty('--blend-width', blendWidth.toFixed(1) + 'px');
-      }
     } else {
       workRuler.style.setProperty('--work-p', '0');
-
-      if (ovEdge) ovEdge.style.opacity = '0';
       if (islandWrap) {
         islandWrap.classList.remove('visible');
         islandWrap.setAttribute('aria-hidden', 'true');
@@ -547,7 +974,6 @@
     }, { threshold: [0, 1] }).observe(footer);
   }
 
-  const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let navigationId = 0;
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 

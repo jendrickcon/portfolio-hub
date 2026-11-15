@@ -4,34 +4,46 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#11151b">
 <link rel="icon" href="data:,">
+<script>
+(()=>{const k='portfolio-theme',el=document.documentElement;let saved=null;try{saved=localStorage.getItem(k);if(saved==='system'){saved='dark';localStorage.setItem(k,'dark');}}catch(_){}const theme=(saved==='light'||saved==='dark')?saved:'dark';el.setAttribute('data-theme',theme);el.style.colorScheme=theme;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=theme==='dark'?'#11151b':'#f4f6f5';})();
+</script>
 <title>Jendrick Coniconde | Professional Portfolio</title>
 <meta name="description" content="Selected work in UI design, front-end development, QA and systems integration by Jendrick Coniconde.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<canvas id="page-field" class="page-field" aria-hidden="true"></canvas>
 <a class="skip" href="#main">Skip to content</a>
 <header class="hdr" id="hdr"><div class="wrap">
  <a class="brand" href="#about">JENDRICK<span>/ ENUHRI</span></a>
  <nav class="nav" aria-label="Portfolio sections">
-  <a class="nl mono" data-sec="about" href="#about">About<span class="rule" aria-hidden="true"><i></i></span></a>
+  <a class="nl mono" data-sec="about" href="#about">Intro<span class="rule" aria-hidden="true"><i></i></span></a>
+  <a class="nl mono" data-sec="profile" href="#profile">Profile<span class="rule" aria-hidden="true"><i></i></span></a>
   <a class="nl mono" data-sec="work" href="#work">Work<span class="rule" aria-hidden="true"><i></i></span></a>
   <a class="nl mono" data-sec="capabilities" href="#capabilities">Capabilities<span class="rule" aria-hidden="true"><i></i></span></a>
   <a class="nl mono" data-sec="journey" href="#journey">Journey<span class="rule" aria-hidden="true"><i></i></span></a>
   <a class="nl mono" data-sec="contact" href="#contact">Contact<span class="rule" aria-hidden="true"><i></i></span></a>
  </nav>
- <div class="res-top"><a class="btn btn-secondary" href="#resume-note">Request résumé ↗</a></div>
+ <div class="hdr-right">
+  <div class="theme-control" role="group" aria-label="Theme preference">
+   <button type="button" class="theme-opt" data-theme-val="light" aria-pressed="false" title="Light theme (Drafting Paper)"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="theme-text">Light</span></button>
+   <button type="button" class="theme-opt" data-theme-val="dark" aria-pressed="false" title="Dark theme (Ink)"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-text">Dark</span></button>
+  </div>
+  <div class="res-top"><a class="btn btn-secondary" href="#profile-resume"><span>Request résumé</span><svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></a></div>
+ </div>
 </div></header>
 
 <main id="main">
 <!-- ==============================================
      ABOUT SECTION (Full viewport, no Work bleed)
      ============================================== -->
-<section id="about" class="ink about"><canvas class="about-field" aria-hidden="true"></canvas><div class="wrap">
+<section id="about" class="ink about"><div class="wrap">
  <div>
   <p class="eyebrow">Jendrick A. Coniconde</p>
-  <h1>I decide what gets built, then check that it holds up.</h1>
-  <p class="intro">I’m a BSIT student focused on UI design, front-end development, QA, and systems integration. I lead project decisions, shape the user experience, coordinate implementation, and test the result.</p>
+  <h1>From foundational vision, I shape digital work built with purpose.</h1>
+  <p class="intro">I’m a BSIT student focused on UI, front-end development, QA, and systems integration.</p>
   <div class="acts">
    <a class="btn btn-primary" href="#overview">
     <span>View selected work</span>
@@ -51,10 +63,193 @@
 </div></section>
 
 <!-- ==============================================
+     PROFILE & TOOLKIT SECTION
+     ============================================== -->
+<section id="profile" class="sec profile-sec" aria-labelledby="profile-heading"><div class="wrap">
+ <div class="profile-layout">
+
+  <!-- Left Column: Portrait & Personal Facts -->
+  <aside class="profile-sidebar" aria-label="Personal details and portrait">
+   <div class="profile-portrait-wrap">
+    <img src="assets/profile/jendrick-profile-4x5.webp"
+         alt="Portrait of Jendrick A. Coniconde in formal attire"
+         width="800" height="1000"
+         loading="lazy" decoding="async"
+         class="profile-portrait-img">
+   </div>
+
+   <dl class="profile-facts" aria-label="Quick profile facts">
+    <div class="profile-fact-row">
+     <dt class="profile-fact-label mono">Name</dt>
+     <dd class="profile-fact-value"><strong>Jendrick A. Coniconde</strong></dd>
+    </div>
+    <div class="profile-fact-row">
+     <dt class="profile-fact-label mono">Focus</dt>
+     <dd class="profile-fact-value">UI-focused front-end development, project leadership, systems integration, and QA</dd>
+    </div>
+    <div class="profile-fact-row">
+     <dt class="profile-fact-label mono">Location</dt>
+     <dd class="profile-fact-value">Metro Manila, Philippines</dd>
+    </div>
+    <div class="profile-fact-row">
+     <dt class="profile-fact-label mono">Education</dt>
+     <dd class="profile-fact-value">BS Information Technology<br><span class="mute">Universidad de Manila</span></dd>
+    </div>
+    <div class="profile-fact-row">
+     <dt class="profile-fact-label mono">Languages</dt>
+     <dd class="profile-fact-value">English · Filipino</dd>
+    </div>
+    <div class="profile-fact-row">
+     <dt class="profile-fact-label mono">Availability</dt>
+     <dd class="profile-fact-value"><span class="fact-avail-dot" aria-hidden="true"></span> 486-hour OJT beginning December 2026</dd>
+    </div>
+   </dl>
+   <aside class="profile-resume-block" id="profile-resume" aria-label="Résumé information">
+    <div class="resume-meta">
+     <span class="resume-tag mono">RÉSUMÉ</span>
+     <p class="resume-title">Public OJT résumé</p>
+     <p class="resume-status">A phone-free public copy is being prepared.</p>
+    </div>
+    <div class="resume-actions">
+     <a class="btn btn-primary" href="mailto:conicondejendrick@gmail.com?subject=R%C3%A9sum%C3%A9%20Request%20-%20Jendrick%20Coniconde">
+      <span>Request by email</span>
+      <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+     </a>
+     <a class="btn-ghost" href="#contact">Contact</a>
+    </div>
+   </aside>
+  </aside>
+
+  <!-- Right Column: Personal Statement and Project-Linked Toolkit -->
+  <div class="profile-main">
+   <header class="profile-head">
+    <p class="eyebrow mono">HOW I WORK</p>
+    <h2 id="profile-heading">Giving structure to the idea, clarity to the interface, and scrutiny to the result.</h2>
+    <p class="profile-intro">I begin by defining the problem, setting the scope, and deciding how the experience should work. From there, I guide implementation, review what gets built, test complete workflows, and refine the result.</p>
+   </header>
+
+   <!-- Project-Linked Toolkit -->
+   <section class="toolkit-wrap" aria-labelledby="toolkit-heading">
+    <div class="toolkit-head">
+     <h3 id="toolkit-heading" class="toolkit-main-title">Project-Linked Toolkit</h3>
+     <p class="toolkit-sub mono">Tools and capabilities linked directly to actual project evidence</p>
+    </div>
+
+    <!-- Shelf 1: Design & Interface -->
+    <div class="toolkit-shelf">
+     <h4 class="toolkit-shelf-title mono"><svg class="tool-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>Interface &amp; Front End</h4>
+     <div class="tool-stage">
+      <div class="toolkit-grid">
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">UI structure &amp; hierarchy</span></div>
+        <p class="tool-desc">Deciding screen structure, labels and navigation, then reviewing the built result against the intent.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR · StudyQuest</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">HTML &amp; CSS</span></div>
+        <p class="tool-desc">Page structure and responsive layout in interfaces I helped direct and review.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR · StudyQuest · Portfolio Hub</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">JavaScript</span></div>
+        <p class="tool-desc">Browser interactions in StudyQuest and the Portfolio Hub, reviewed and tested as part of implementation.</p>
+        <div class="tool-refs mono"><span>StudyQuest · Portfolio Hub</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Responsive &amp; accessibility checks</span></div>
+        <p class="tool-desc">Keyboard use, visible focus, reduced motion and layouts at several widths. Coverage is partial; there has been no screen-reader audit yet.</p>
+        <div class="tool-refs mono"><span>This portfolio · Portfolio Hub</span></div>
+       </article>
+      </div>
+      <div class="tool-takeover" hidden aria-hidden="true"></div>
+     </div>
+    </div>
+
+    <!-- Shelf 2: Application & Data -->
+    <div class="toolkit-shelf">
+     <h4 class="toolkit-shelf-title mono"><svg class="tool-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Application &amp; Data</h4>
+     <div class="tool-stage">
+      <div class="toolkit-grid">
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">PHP</span></div>
+        <p class="tool-desc">Part of UDM-RADAR’s server side; I directed the features and reviewed the implementation.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">MySQL</span></div>
+        <p class="tool-desc">Holds UDM-RADAR’s records, using mock data only.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Python</span></div>
+        <p class="tool-desc">Used in UDM-RADAR’s stack for the advisory estimate component, which I reviewed as project leader.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Airtable</span></div>
+        <p class="tool-desc">Connected the Mini PCS site to Airtable records during the practical assessment.</p>
+        <div class="tool-refs mono"><span>Mini PCS</span></div>
+       </article>
+      </div>
+      <div class="tool-takeover" hidden aria-hidden="true"></div>
+     </div>
+    </div>
+
+    <!-- Shelf 3: Platforms & Workflow -->
+    <div class="toolkit-shelf">
+     <h4 class="toolkit-shelf-title mono"><svg class="tool-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/><path d="M12 12v3"/></svg>Platforms &amp; Workflow</h4>
+     <div class="tool-stage">
+      <div class="toolkit-grid">
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Git &amp; GitHub</span></div>
+        <p class="tool-desc">Branches, commits and pull requests. My account has a public test change in each of UDM-RADAR and StudyQuest.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR · StudyQuest · Portfolio Hub</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Azure VM &amp; IIS</span></div>
+        <p class="tool-desc">Hosted the Portfolio Hub on a Windows Azure VM with IIS during development. The move to static hosting is still planned.</p>
+        <div class="tool-refs mono"><span>Portfolio Hub</span></div>
+       </article>
+      </div>
+      <div class="tool-takeover" hidden aria-hidden="true"></div>
+     </div>
+    </div>
+
+    <!-- Shelf 4: Quality & Direction -->
+    <div class="toolkit-shelf">
+     <h4 class="toolkit-shelf-title mono"><svg class="tool-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>Quality &amp; Direction</h4>
+     <div class="tool-stage">
+      <div class="toolkit-grid">
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Browser DevTools</span></div>
+        <p class="tool-desc">Inspecting layout and console output while testing.</p>
+        <div class="tool-refs mono"><span>This portfolio · Portfolio Hub</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Browser testing</span></div>
+        <p class="tool-desc">Manual and AI-assisted checks at several screen sizes. Broader cross-browser and device coverage is still pending.</p>
+        <div class="tool-refs mono"><span>This portfolio · Portfolio Hub</span></div>
+       </article>
+       <article class="tool-card">
+        <div class="tool-card-head"><span class="tool-name">Prompt Structuring &amp; AI Review</span></div>
+        <p class="tool-desc">Writing structured prompts, reviewing what comes back, and deciding what stays.</p>
+        <div class="tool-refs mono"><span>UDM-RADAR · StudyQuest · Mini PCS</span></div>
+       </article>
+      </div>
+      <div class="tool-takeover" hidden aria-hidden="true"></div>
+     </div>
+    </div>
+   </section>
+
+  </div>
+ </div>
+</div></section>
+
+<!-- ==============================================
      WORK SECTION (Pinned horizontal stage)
      ============================================== -->
 <div id="work">
-<nav class="work-inline mono" aria-label="Work chapters"><a href="#overview"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>Overview</a><a href="#udm-radar"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="m7 15 4-4 3 2 5-6"/><circle cx="7" cy="15" r=".8"/><circle cx="11" cy="11" r=".8"/><circle cx="14" cy="13" r=".8"/><circle cx="19" cy="7" r=".8"/></svg>UDM-RADAR</a><a href="#studyquest"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>StudyQuest</a><a href="#mini-pcs"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 9h.1m3 0h4m-7 4h.1m3 0h4m-7 4h.1m3 0h4"/></svg>Mini PCS</a><a href="#other-projects"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M3.5 7V5h17v2M9 11h6"/></svg>Other Projects</a></nav>
+<nav class="work-inline mono" aria-label="Work projects"><a href="#overview"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>Overview</a><a href="#udm-radar"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="m7 15 4-4 3 2 5-6"/><circle cx="7" cy="15" r=".8"/><circle cx="11" cy="11" r=".8"/><circle cx="14" cy="13" r=".8"/><circle cx="19" cy="7" r=".8"/></svg>UDM-RADAR</a><a href="#studyquest"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>StudyQuest</a><a href="#mini-pcs"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 9h.1m3 0h4m-7 4h.1m3 0h4m-7 4h.1m3 0h4"/></svg>Mini PCS</a><a href="#other-projects"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M3.5 7V5h17v2M9 11h6"/></svg>Other Projects</a></nav>
 <section id="story" class="ink runway wk" aria-label="Work: overview and project stories">
  <div class="stage">
 
@@ -91,7 +286,7 @@
       <div>
        <h2 id="ov-t">Selected projects</h2>
       </div>
-      <p class="ov-cue mono">Choose a project, or keep scrolling →</p>
+      <p class="ov-cue mono">Choose a project, or keep scrolling <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></p>
      </div>
 
      <!-- Mobile Quick Tab Selector -->
@@ -121,7 +316,7 @@
           <p class="frow-desc">Functional capstone system for predictive academic analytics and decision support.</p>
           <div class="frow-act">
            <span class="state mono">Previewing</span>
-           <span class="jump mono">Open chapter</span>
+           <span class="jump mono"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg><span>Open project</span></span>
           </div>
          </div>
         </a>
@@ -138,7 +333,7 @@
           <p class="frow-desc">A gamified web platform that turns study material into structured courses.</p>
           <div class="frow-act">
            <span class="state mono">Hover to preview</span>
-           <span class="jump mono">Open chapter</span>
+           <span class="jump mono"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg><span>Open project</span></span>
           </div>
          </div>
         </a>
@@ -155,7 +350,7 @@
           <p class="frow-desc">A small production-control site connected to an Airtable database.</p>
           <div class="frow-act">
            <span class="state mono">Hover to preview</span>
-           <span class="jump mono">Open chapter</span>
+           <span class="jump mono"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg><span>Open project</span></span>
           </div>
          </div>
         </a>
@@ -202,7 +397,7 @@
 
         <div class="snippet-foot">
          <span class="snippet-caption">CCS light-theme portal reconstruction · synthetic example.</span>
-         <a class="snippet-jump" id="snippet-jump-link" href="#udm-radar">Chapter Details →</a>
+         <a class="snippet-jump" id="snippet-jump-link" href="#udm-radar"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span>Project details</span></a>
         </div>
        </div>
       </div>
@@ -243,7 +438,6 @@
      </div>
     </div>
     <!-- Local right-edge gradient (Paper to Ink transition) - Controlled dynamically via JS -->
-    <div class="ov-trans-edge" id="ov-trans-edge" aria-hidden="true"></div>
    </article>
 
    <!-- ==============================================
@@ -256,7 +450,7 @@
  <div class="demo-main"><div class="demo-profile"><b>Juan Dela Cruz · BS Information Technology</b><span>AY 2026–2027 · Semester 1 · DEMO DATA</span></div>
  <div data-demo-view="dashboard"><div class="demo-heading"><strong>Analytics Dashboard</strong><span>Student portal</span></div><div class="demo-advisory"><b>ⓘ Decision-Support Advisory</b><span>Estimates are advisory; human review is required.</span></div><div class="demo-metrics"><div><small>TERM ESTIMATE</small><b>1.63</b></div><div><small>UNITS COMPLETED</small><b>18 / 24</b></div><div><small>STATUS</small><b>On track</b></div></div><div class="demo-card"><b>Current subjects</b><span>Fundamentals of Programming <em>Estimate · 1.63</em></span><span>Web Systems and Technologies <em>Review available</em></span><span>Data Structures and Algorithms <em>Review available</em></span><span>Database Management Systems <em>Review available</em></span><span>Networking Fundamentals <em>Review available</em></span></div></div>
  <div data-demo-view="trend" hidden><div class="demo-heading"><strong>Performance Trend</strong><span>Student portal</span></div><p class="demo-sub">Fundamentals of Programming · current term</p><div class="demo-metrics"><div><small>PRELIM</small><b>1.75</b></div><div><small>MIDTERM</small><b>1.50</b></div><div><small>ESTIMATE</small><b>1.63</b></div></div><div class="demo-card demo-chart"><b>Current progress</b><div class="demo-trend-stages"><span>Prelim · 1.75</span><span>Midterm · 1.50</span><span>Estimate · 1.63</span></div><small>18 / 24 units completed · Advisory only</small></div></div>
- <div data-demo-view="grades" hidden><div class="demo-heading"><strong>Grades &amp; Academic History</strong><span>Student portal</span></div><p class="demo-sub">Current semester · 18 / 24 units completed · Showing 1 of 5 subjects</p><div class="demo-card demo-table"><b>Fundamentals of Programming</b><span>Prelim · 1.75 &nbsp; | &nbsp; Midterm · 1.50</span><span>Current estimate · 1.63 &nbsp; | &nbsp; Advisory only</span></div><div class="demo-card"><b>Academic history</b><span>Semester 1 · Review available</span></div></div></div></div></div></figure><div class="case" data-case><div class="case-state case-summary" id="sum-udm-radar"><dl class="f"><div><dt>Role</dt><dd>Project Leader · academic team project</dd></div><div><dt>Contribution</dt><dd>As Project Leader, I set the scope, coordinated tasks, directed the portal and analytics experience, and reviewed and tested the implementation.</dd></div><div><dt>Decision</dt><dd>Present projections as decision support, with human review rather than automatic academic decisions.</dd></div><div><dt>Limit</dt><dd>The system is functional and uses synthetic academic data because real student records are private. It has not been deployed on live institutional records, and predictive outputs remain advisory.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Academic capstone</dd></div><div><dt>Stack</dt><dd>PHP · MySQL · Python</dd></div><div><dt>Status</dt><dd>Functional capstone system</dd></div></dl><div class="rail"><div class="rail-l"><a class="act" href="https://github.com/jendrickcon/udm-radar" target="_blank" rel="noopener noreferrer" aria-label="View UDM-RADAR repository, opens in a new tab"><svg class="action-icon" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.64 7.64 0 0 1 8 4.61c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View repository</a></div><button type="button" class="case-toggle" aria-expanded="false" aria-controls="det-udm-radar" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Read how it was built</button><a class="act rail-next" href="#studyquest"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Next: StudyQuest</a></div></div><section class="case-state case-detail" id="det-udm-radar" aria-labelledby="det-udm-radar-h"><h3 id="det-udm-radar-h" tabindex="-1">UDM-RADAR · how it was built</h3><div class="case-copy"><p><strong>Workflow:</strong> Students review grades, trends and estimates; faculty and administrators review academic records and support.</p><p><strong>My work:</strong> As Project Leader, I set scope, coordinated tasks, directed the portal and analytics experience, and reviewed and tested the work.</p><p><strong>Why it matters:</strong> The trend page separates recorded results from progress and estimates. Estimates are advisory; synthetic data protects privacy.</p><p><strong>Testing:</strong> Role-based workflow and browser checks support the review; results apply only to the tested revision.</p><p><strong>Takeaway:</strong> Clear labels and role-specific views support interpretation. Institutional use and real-world outcomes remain unverified.</p></div><button type="button" class="case-back" aria-controls="sum-udm-radar" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8" fill="currentColor"/><circle cx="4.5" cy="12" r=".8" fill="currentColor"/><circle cx="4.5" cy="18" r=".8" fill="currentColor"/></svg>Back to summary</button></section></div></div></div></article>
+ <div data-demo-view="grades" hidden><div class="demo-heading"><strong>Grades &amp; Academic History</strong><span>Student portal</span></div><p class="demo-sub">Current semester · 18 / 24 units completed · Showing 1 of 5 subjects</p><div class="demo-card demo-table"><b>Fundamentals of Programming</b><span>Prelim · 1.75 &nbsp; | &nbsp; Midterm · 1.50</span><span>Current estimate · 1.63 &nbsp; | &nbsp; Advisory only</span></div><div class="demo-card"><b>Academic history</b><span>Semester 1 · Review available</span></div></div></div></div></div></figure><div class="case" data-case><div class="case-state case-summary" id="sum-udm-radar"><dl class="f"><div><dt>Role</dt><dd>Project Leader · academic team project</dd></div><div><dt>Contribution</dt><dd>As Project Leader, I set the scope, coordinated tasks, directed the portal and analytics experience, and reviewed and tested the implementation.</dd></div><div><dt>Decision</dt><dd>Present projections as decision support, with human review rather than automatic academic decisions.</dd></div><div><dt>Limit</dt><dd>The system is functional and uses synthetic academic data because real student records are private. It has not been deployed on live institutional records, and predictive outputs remain advisory.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Academic capstone</dd></div><div><dt>Stack</dt><dd>PHP · MySQL · Python</dd></div><div><dt>Status</dt><dd>Functional capstone system</dd></div></dl><div class="rail"><div class="rail-l"><a class="act" href="https://github.com/jendrickcon/udm-radar" target="_blank" rel="noopener noreferrer" aria-label="View repository: UDM-RADAR, opens in a new tab"><svg class="action-icon" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.64 7.64 0 0 1 8 4.61c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View repository</a></div><button type="button" class="case-toggle" aria-expanded="false" aria-controls="det-udm-radar" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Read how it was built</button><a class="act rail-next" href="#studyquest"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Next: StudyQuest</a></div></div><section class="case-state case-detail" id="det-udm-radar" aria-labelledby="det-udm-radar-h"><h3 id="det-udm-radar-h" tabindex="-1">UDM-RADAR · how it was built</h3><div class="case-copy"><p><strong>Workflow:</strong> Students review grades, trends and estimates; faculty and administrators review academic records and support.</p><p><strong>My work:</strong> As Project Leader, I set scope, coordinated tasks, directed the portal and analytics experience, and reviewed and tested the work.</p><p><strong>Why it matters:</strong> The trend page separates recorded results from progress and estimates. Estimates are advisory; synthetic data protects privacy.</p><p><strong>Testing:</strong> Role-based workflow and browser checks support the review; results apply only to the tested revision.</p><p><strong>Takeaway:</strong> Clear labels and role-specific views support interpretation. Institutional use and real-world outcomes remain unverified.</p></div><button type="button" class="case-back" aria-controls="sum-udm-radar" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8" fill="currentColor"/><circle cx="4.5" cy="12" r=".8" fill="currentColor"/><circle cx="4.5" cy="18" r=".8" fill="currentColor"/></svg>Back to summary</button></section></div></div></div></article>
 
    <!-- ==============================================
         PANEL: STUDYQUEST
@@ -267,7 +461,7 @@
  <div data-demo-view="create" hidden><small>COURSE FORGE</small><strong>Create a New Course</strong><p>Turn study materials into a structured course.</p><div class="study-tile"><b>Fundamentals of Programming</b><span>Programming fundamentals · Study materials</span><span>Study Mode · Practice Assessment Formats</span><em>Create Course →</em></div></div>
  <div data-demo-view="path" hidden><small>YOUR LEARNING PATH</small><strong>Fundamentals of Programming</strong><p>Alex Reyes · 3 / 5 chapters reached</p><div class="study-tile study-row"><b>01</b><span>Variables and Data Types<br><small>Completed</small></span></div><div class="study-tile study-row"><b>02</b><span>Conditional Statements<br><small>Completed</small></span></div><div class="study-tile study-row"><b>03</b><span>Loops and Iteration<br><small>Current · Chapter review</small></span></div><p>Next: Functions and Parameters · Arrays and Collections</p></div>
  <div data-demo-view="review" hidden><small>CHAPTER REVIEW · 3 OF 5</small><strong>Loops and Iteration</strong><p>Fundamentals of Programming</p><div class="study-tile"><b>Key terms</b><span>Loop · condition · iteration</span><b>Key takeaway</b><span>Loops repeat a block of instructions.</span><em>Continue to assessment →</em></div></div>
- <div data-demo-view="quiz" hidden><small>CHAPTER ASSESSMENT · 8 QUESTIONS</small><strong>Loops and Iteration</strong><p>Fundamentals of Programming</p><div class="study-tile"><b>Which loop suits a known number of iterations?</b><span>○ &nbsp; for loop &nbsp; · &nbsp; ○ &nbsp; while loop</span><span>○ &nbsp; do-while loop &nbsp; · &nbsp; ○ &nbsp; recursive call</span><em>Check Answer →</em></div></div></div></div></figure><div class="case" data-case><div class="case-state case-summary" id="sum-studyquest"><dl class="f"><div><dt>Role</dt><dd>Lead Developer · team project</dd></div><div><dt>Contribution</dt><dd>As Lead Developer, I shaped the product concept, directed the UI/UX structure, prioritized features, and reviewed the resulting implementation.</dd></div><div><dt>Decision</dt><dd>Organize learning around structured chapters, assessments and progression.</dd></div><div><dt>Limit</dt><dd>In development; learning outcomes and production use are not established.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Learning application</dd></div><div><dt>Stack</dt><dd>Django · Python · JavaScript</dd></div><div><dt>Status</dt><dd>In development</dd></div></dl><div class="rail"><div class="rail-l"><a class="act" href="https://github.com/zap1104/studyquest" target="_blank" rel="noopener noreferrer" aria-label="View StudyQuest repository, opens in a new tab"><svg class="action-icon" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.64 7.64 0 0 1 8 4.61c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View repository</a></div><button type="button" class="case-toggle" aria-expanded="false" aria-controls="det-studyquest" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Read how it was built</button><a class="act rail-next" href="#mini-pcs"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 9h.1m3 0h4m-7 4h.1m3 0h4m-7 4h.1m3 0h4"/></svg>Next: Mini PCS</a></div></div><section class="case-state case-detail" id="det-studyquest" aria-labelledby="det-studyquest-h"><h3 id="det-studyquest-h" tabindex="-1">StudyQuest · how it was built</h3><div class="case-copy"><p><strong>Workflow:</strong> Learners upload study material, review chapters and complete assessments. Progression includes XP and streaks.</p><p><strong>My work:</strong> As Lead Developer, I shaped the concept, directed the UI/UX structure, prioritized features and reviewed work with the team.</p><p><strong>Decision:</strong> Organize chapters and assessments so learners can see where to continue.</p><p><strong>Testing:</strong> An account-attributed change checks processing presentation and draft removal; current passing results are unverified.</p><p><strong>Takeaway:</strong> Processing, navigation and recovery states deserve care alongside the ideal path. Learning outcomes remain unverified.</p></div><button type="button" class="case-back" aria-controls="sum-studyquest" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8" fill="currentColor"/><circle cx="4.5" cy="12" r=".8" fill="currentColor"/><circle cx="4.5" cy="18" r=".8" fill="currentColor"/></svg>Back to summary</button></section></div></div></div></article>
+ <div data-demo-view="quiz" hidden><small>CHAPTER ASSESSMENT · 8 QUESTIONS</small><strong>Loops and Iteration</strong><p>Fundamentals of Programming</p><div class="study-tile"><b>Which loop suits a known number of iterations?</b><span>○ &nbsp; for loop &nbsp; · &nbsp; ○ &nbsp; while loop</span><span>○ &nbsp; do-while loop &nbsp; · &nbsp; ○ &nbsp; recursive call</span><em>Check Answer →</em></div></div></div></div></figure><div class="case" data-case><div class="case-state case-summary" id="sum-studyquest"><dl class="f"><div><dt>Role</dt><dd>Lead Developer · team project</dd></div><div><dt>Contribution</dt><dd>As Lead Developer, I shaped the product concept, directed the UI/UX structure, prioritized features, and reviewed the resulting implementation.</dd></div><div><dt>Decision</dt><dd>Organize learning around structured chapters, assessments and progression.</dd></div><div><dt>Limit</dt><dd>In development; learning outcomes and production use are not established.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Learning application</dd></div><div><dt>Stack</dt><dd>Django · Python · JavaScript</dd></div><div><dt>Status</dt><dd>In development</dd></div></dl><div class="rail"><div class="rail-l"><a class="act" href="https://github.com/zap1104/studyquest" target="_blank" rel="noopener noreferrer" aria-label="View repository: StudyQuest, opens in a new tab"><svg class="action-icon" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.64 7.64 0 0 1 8 4.61c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View repository</a></div><button type="button" class="case-toggle" aria-expanded="false" aria-controls="det-studyquest" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Read how it was built</button><a class="act rail-next" href="#mini-pcs"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 9h.1m3 0h4m-7 4h.1m3 0h4m-7 4h.1m3 0h4"/></svg>Next: Mini PCS</a></div></div><section class="case-state case-detail" id="det-studyquest" aria-labelledby="det-studyquest-h"><h3 id="det-studyquest-h" tabindex="-1">StudyQuest · how it was built</h3><div class="case-copy"><p><strong>Workflow:</strong> Learners upload study material, review chapters and complete assessments. Progression includes XP and streaks.</p><p><strong>My work:</strong> As Lead Developer, I shaped the concept, directed the UI/UX structure, prioritized features and reviewed work with the team.</p><p><strong>Decision:</strong> Organize chapters and assessments so learners can see where to continue.</p><p><strong>Testing:</strong> An account-attributed change checks processing presentation and draft removal; current passing results are unverified.</p><p><strong>Takeaway:</strong> Processing, navigation and recovery states deserve care alongside the ideal path. Learning outcomes remain unverified.</p></div><button type="button" class="case-back" aria-controls="sum-studyquest" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8" fill="currentColor"/><circle cx="4.5" cy="12" r=".8" fill="currentColor"/><circle cx="4.5" cy="18" r=".8" fill="currentColor"/></svg>Back to summary</button></section></div></div></div></article>
 
    <!-- ==============================================
         PANEL: MINI PCS
@@ -275,7 +469,7 @@
    <article class="panel" id="mini-pcs" data-panel><div class="wrap feature-layout"><header class="feature-head"><div><h2 class="feature-title">Mini PCS</h2></div><p class="feature-intro">Built as a practical assessment, this production-control site helps a worker review assigned batches, see task availability and complete eligible work. It connects the workflow to Airtable; the reconstruction below uses fictional records.</p></header><div class="feature-body"><figure class="chapter-preview"><figcaption>Rebuilt from the real interface, using fictional demo data.</figcaption><div class="project-demo demo-pcs" data-demo-project="pcs">
  <div class="demo-topbar"><strong>✦ &nbsp; mini pcs</strong><span>DEMO DATA · Fictional batch</span></div><div class="demo-pcs-nav-static" aria-hidden="true">Assigned batches &nbsp; · &nbsp; Task details</div><div class="demo-tabs" aria-label="Mini PCS preview pages" hidden><button type="button" data-demo-target="batches" aria-pressed="true">Assigned batches</button><button type="button" data-demo-target="tasks" aria-pressed="false">Task details</button></div>
  <div class="demo-pcs-body"><div data-demo-view="batches"><small>THE WORKBENCH</small><strong>Assigned batches</strong><p>Production · My batches</p><div class="pcs-batches"><div class="pcs-card"><b>BATCH-DEMO-041</b><span>Northstar Runner X1</span><small>120 units · Due 20 Nov 2026</small><div class="pcs-progress-label">In progress · 4 / 7 tasks completed</div><em>Continue batch →</em></div><div class="pcs-card"><b>Sync status</b><span>Demo connected</span><small>Last sync · 10:42 AM</small><span>7 tasks · 2 pending updates</span></div></div></div>
- <div data-demo-view="tasks" hidden><small>BATCH DETAILS</small><strong>BATCH-DEMO-041</strong><p>Northstar Runner X1 · 120 units · Due 20 Nov 2026</p><div class="pcs-filters">In progress &nbsp; · &nbsp; 4 / 7 tasks completed</div><div class="pcs-task"><b>Packaging</b><span>Available</span><em>Mark Done</em></div><div class="pcs-task"><b>Dispatch preparation</b><span>Locked</span><small>Earlier steps required</small></div><div class="pcs-task"><b>Inventory update</b><span>Locked</span></div></div><small class="demo-pcs-note">Fictional records · Demo sync state, no live connection.</small></div></div><div class="chapter-proof"><span>Assessment records are private.</span></div></figure><div class="case" data-case><div class="case-state case-summary" id="sum-mini-pcs"><dl class="f"><div><dt>Role</dt><dd>Assessment Project Developer</dd></div><div><dt>Contribution</dt><dd>Built for a practical assessment using permitted AI-assisted development, with the Airtable connection and final workflow configured and reviewed by me.</dd></div><div><dt>Decision</dt><dd>Make task states and available actions clear to the worker.</dd></div><div><dt>Limit</dt><dd>Assessment material and records are not displayed; no assessment outcome is claimed.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Practical assessment</dd></div><div><dt>Stack</dt><dd>Next.js · TypeScript · Airtable</dd></div><div><dt>Status</dt><dd>Assessment project</dd></div></dl><div class="rail"><div class="rail-l"><a class="act" href="#contact" aria-label="Ask about Mini PCS"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h8M8 13h5"/></svg>Ask about it</a></div><button type="button" class="case-toggle" aria-expanded="false" aria-controls="det-mini-pcs" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Read how it was built</button><a class="act rail-next" href="#other-projects"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M3.5 7V5h17v2M9 11h6"/></svg>Next: Other Projects</a></div></div><section class="case-state case-detail" id="det-mini-pcs" aria-labelledby="det-mini-pcs-h"><h3 id="det-mini-pcs-h" tabindex="-1">Mini PCS · how it was built</h3><div class="case-copy"><p><strong>Workflow:</strong> A worker reviews batches and task states, starts a batch and marks eligible work done through the Airtable-connected site.</p><p><strong>My work:</strong> I connected Airtable and guided the layout and labels for the assessment.</p><p><strong>Decision:</strong> Show task availability clearly; prerequisites keep locked work unavailable.</p><p><strong>Testing:</strong> Mocked checks cover task locks, record handling and Airtable pagination; they were not rerun for this portfolio.</p><p><strong>Takeaway:</strong> Responsive layouts and clear task states support the workflow. Assessment instructions, records and configuration remain private.</p></div><button type="button" class="case-back" aria-controls="sum-mini-pcs" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8" fill="currentColor"/><circle cx="4.5" cy="12" r=".8" fill="currentColor"/><circle cx="4.5" cy="18" r=".8" fill="currentColor"/></svg>Back to summary</button></section></div></div></div></article>
+ <div data-demo-view="tasks" hidden><small>BATCH DETAILS</small><strong>BATCH-DEMO-041</strong><p>Northstar Runner X1 · 120 units · Due 20 Nov 2026</p><div class="pcs-filters">In progress &nbsp; · &nbsp; 4 / 7 tasks completed</div><div class="pcs-task"><b>Packaging</b><span>Available</span><em>Mark Done</em></div><div class="pcs-task"><b>Dispatch preparation</b><span>Locked</span><small>Earlier steps required</small></div><div class="pcs-task"><b>Inventory update</b><span>Locked</span></div></div><small class="demo-pcs-note">Fictional records · Demo sync state, no live connection.</small></div></div><div class="chapter-proof"><span>Assessment records are private.</span></div></figure><div class="case" data-case><div class="case-state case-summary" id="sum-mini-pcs"><dl class="f"><div><dt>Role</dt><dd>Assessment Project Developer</dd></div><div><dt>Contribution</dt><dd>Built for a practical assessment using permitted AI-assisted development, with the Airtable connection and final workflow configured and reviewed by me.</dd></div><div><dt>Decision</dt><dd>Make task states and available actions clear to the worker.</dd></div><div><dt>Limit</dt><dd>Assessment material and records are not displayed; no assessment outcome is claimed.</dd></div></dl><dl class="pf"><div><dt>Type</dt><dd>Practical assessment</dd></div><div><dt>Stack</dt><dd>Next.js · TypeScript · Airtable</dd></div><div><dt>Status</dt><dd>Assessment project</dd></div></dl><div class="rail"><div class="rail-l"><a class="act" href="#contact" aria-label="Ask about it: Mini PCS"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h8M8 13h5"/></svg>Ask about it</a></div><button type="button" class="case-toggle" aria-expanded="false" aria-controls="det-mini-pcs" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.7 4.8 6.5 4.5 3.5 5.4v13.1c3-.9 6.2-.6 8.5 1.1 2.3-1.7 5.5-2 8.5-1.1V5.4c-3-.9-6.2-.6-8.5 1.1Z"/><path d="M12 6.5v13"/></svg>Read how it was built</button><a class="act rail-next" href="#other-projects"><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M3.5 7V5h17v2M9 11h6"/></svg>Next: Other Projects</a></div></div><section class="case-state case-detail" id="det-mini-pcs" aria-labelledby="det-mini-pcs-h"><h3 id="det-mini-pcs-h" tabindex="-1">Mini PCS · how it was built</h3><div class="case-copy"><p><strong>Workflow:</strong> A worker reviews batches and task states, starts a batch and marks eligible work done through the Airtable-connected site.</p><p><strong>My work:</strong> I connected Airtable and guided the layout and labels for the assessment.</p><p><strong>Decision:</strong> Show task availability clearly; prerequisites keep locked work unavailable.</p><p><strong>Testing:</strong> Mocked checks cover task locks, record handling and Airtable pagination; they were not rerun for this portfolio.</p><p><strong>Takeaway:</strong> Responsive layouts and clear task states support the workflow. Assessment instructions, records and configuration remain private.</p></div><button type="button" class="case-back" aria-controls="sum-mini-pcs" hidden><svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8" fill="currentColor"/><circle cx="4.5" cy="12" r=".8" fill="currentColor"/><circle cx="4.5" cy="18" r=".8" fill="currentColor"/></svg>Back to summary</button></section></div></div></div></article>
 
    <!-- ==============================================
         PANEL: OTHER PROJECTS
@@ -283,16 +477,16 @@
    <article class="panel" id="other-projects" data-panel><div class="wrap media-index">
     <div class="media-title"><div><h2>Smaller builds</h2></div><p>Personal projects and Hub experiments.</p></div>
     <section aria-labelledby="personal-heading"><h3 class="media-heading" id="personal-heading">Personal projects</h3><div class="media-personal">
-     <article class="media-entry media-feature"><figure><a class="audiary-image-link" href="assets/evidence/supporting/audiary-explore.webp" aria-label="Open the full Audiary screenshot"><img src="assets/evidence/supporting/audiary-explore.webp" alt="Audiary Explore screen showing its offline demo collection" width="495" height="1100" loading="lazy"></a><figcaption>Real screenshot · Select to enlarge</figcaption></figure><div class="media-copy"><span class="media-status">Android demo</span><h4>Audiary</h4><p>Music discovery and song-linked memories with an offline demo.</p><a href="https://github.com/jendrickcon/Audiary" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
-     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Android prerelease</span><h4>LAYA</h4><p>AR garden and balance-puzzle prototype; device verification pending.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/LAYA" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
-     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Android MVP</span><h4>Waffle’s Nine Lives</h4><p>A top-down action roguelike with rooms, enemies and nine lives.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/waffles-nine-lives-demo" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
+     <article class="media-entry media-feature"><figure><a class="audiary-image-link" href="assets/evidence/supporting/audiary-explore.webp" aria-label="Open the full Audiary screenshot"><img src="assets/evidence/supporting/audiary-explore.webp" alt="Audiary Explore screen showing its offline demo collection" width="495" height="1100" loading="lazy"></a><figcaption>Real screenshot · Select to enlarge</figcaption></figure><div class="media-copy"><span class="media-status">Android demo</span><h4>Audiary</h4><p>Music discovery and song-linked memories with an offline demo.</p><a href="https://github.com/jendrickcon/Audiary" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
+     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Android prerelease</span><h4>LAYA</h4><p>AR garden and balance-puzzle prototype; device verification pending.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/LAYA" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
+     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Android MVP</span><h4>Waffle’s Nine Lives</h4><p>A top-down action roguelike with rooms, enemies and nine lives.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/waffles-nine-lives-demo" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
     </div></section>
     <section aria-labelledby="experiments-heading"><h3 class="media-heading" id="experiments-heading">Hub experiments</h3><div class="media-experiments">
-     <article class="media-entry media-gallery"><figure><img src="assets/evidence/supporting/art-gallery-studio.webp" alt="Enuhri Art Gallery drawing studio interface, captured from its project recording" width="1100" height="546" loading="lazy"><figcaption>Real screenshot · Project recording</figcaption></figure><div class="media-copy"><span class="media-status">Experiment · Work remains</span><h4>Enuhri Art Gallery</h4><p>Interactive gallery with Firebase/Firestore features; security and rendering work remains.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/art-gallery" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
-     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Web reimagining</span><h4>CyberDefender</h4><p>Web reimagining of the original Godot prototype.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/cyberdefender" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
-     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Experiment</span><h4>Sandbox</h4><p>A falling-sand and cellular-automata simulation.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/sandbox" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
-     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Development paused</span><h4>DevPath</h4><p>Architecture and decision-graph prototype; broader domains are incomplete.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/devpath" target="_blank" rel="noopener noreferrer">View repository ↗</a></div></article>
-    </div></section><a class="next media-next" href="#capabilities">Next: Capabilities ↓</a>
+     <article class="media-entry media-gallery"><figure><img src="assets/evidence/supporting/art-gallery-studio.webp" alt="Enuhri Art Gallery drawing studio interface, captured from its project recording" width="1100" height="546" loading="lazy"><figcaption>Real screenshot · Project recording</figcaption></figure><div class="media-copy"><span class="media-status">Experiment · Work remains</span><h4>Enuhri Art Gallery</h4><p>Interactive gallery with Firebase/Firestore features; security and rendering work remains.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/art-gallery" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
+     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Web reimagining</span><h4>CyberDefender</h4><p>Web reimagining of the original Godot prototype.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/cyberdefender" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
+     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Experiment</span><h4>Sandbox</h4><p>A falling-sand and cellular-automata simulation.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/sandbox" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
+     <article class="media-entry media-compact"><div class="media-copy"><span class="media-status">Development paused</span><h4>DevPath</h4><p>Architecture and decision-graph prototype; broader domains are incomplete.</p><p class="media-pending">No capture yet.</p><a href="https://github.com/jendrickcon/portfolio-hub/tree/main/devpath" target="_blank" rel="noopener noreferrer">View repository <svg class="ico ext" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></a></div></article>
+    </div></section><a class="next media-next" href="#capabilities">Next: Capabilities <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></a>
     <dialog class="media-lightbox" aria-labelledby="audiary-dialog-title"><div class="media-lightbox-bar"><p id="audiary-dialog-title">Audiary · Full screenshot</p><button type="button" aria-label="Close screenshot">Close ✕</button></div><img src="assets/evidence/supporting/audiary-explore.webp" alt="Full Audiary Explore screen showing its offline demo collection" width="495" height="1100" loading="lazy"></dialog>
    </div></article>
 
@@ -305,7 +499,6 @@
      CAPABILITIES SECTION
      ============================================== -->
 <section id="capabilities" class="paper sec">
- <div class="cap-top-trans" aria-hidden="true"></div>
  <div class="wrap">
   <h2>What I handle</h2>
   <ul class="cap">
@@ -316,7 +509,6 @@
    <li><h3>Planning &amp; leadership</h3><p>Scope and task coordination in UDM-RADAR.</p></li>
    <li><h3>Cloud and platform exploration</h3><p>Experimenting with platforms and continuing to learn.</p></li>
   </ul>
-  <div class="work-method"><h3>How I work</h3><p>I use AI-assisted development as part of my workflow, alongside hands-on planning, prompt design, review, testing, and iteration.</p></div>
  </div>
 </section>
 
@@ -331,7 +523,7 @@
   <li><span class="mono">Recognition</span><p>Academic distinctions · SHS 2022–2023 and college from 2023</p></li>
   <li><span class="mono">Certification</span><p>TESDA · Computer Systems Servicing NC II · June 2023</p></li>
   <li><span class="mono">Course</span><p>AWS · Foundations of Prompt Engineering (completion) · October 2026</p></li>
-  <li><span class="mono">Participation</span><p>UMAK ITSO · Python participant · November 2026</p></li>
+  <li><span class="mono">Participation</span><p><strong>University of Makati IT Skills Olympics 2026 (ITSO)</strong><br>Python Category Participant · November 2026</p></li>
  </ul>
 </div></section>
 
@@ -343,21 +535,21 @@
  <p class="contact-intro">I’m preparing for a 486-hour OJT placement focused on UI/UX, front-end development, QA, or related technology work.</p>
  <div class="links">
   <a class="btn btn-primary" href="mailto:conicondejendrick@gmail.com">
+   <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
    <span>Email conicondejendrick@gmail.com</span>
-   <span class="btn-arrow" aria-hidden="true">↗</span>
-  </a>
+   </a>
   <a class="contact-link" href="https://github.com/jendrickcon" target="_blank" rel="noopener noreferrer">
+   <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.72.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.05 1.53 1.05.89 1.57 2.34 1.12 2.91.86.09-.66.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.05 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.71.12 2.51.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.92-2.34 4.78-4.57 5.04.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.8 0 .27.18.59.69.49A10.25 10.25 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
    <span>GitHub</span>
-   <span class="btn-arrow" aria-hidden="true">↗</span>
-  </a>
+   </a>
   <a class="contact-link" href="https://www.linkedin.com/in/jendrickcon/" target="_blank" rel="noopener noreferrer">
+   <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4V21H3zM9.5 9.75h3.8v1.6h.06c.53-1 1.83-2.06 3.76-2.06 4.02 0 4.76 2.65 4.76 6.1V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.69V21h-4z"/></svg>
    <span>LinkedIn</span>
-   <span class="btn-arrow" aria-hidden="true">↗</span>
-  </a>
+   </a>
   <a class="contact-link" href="#resume-note">
+   <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
    <span>Request résumé</span>
-   <span class="btn-arrow" aria-hidden="true">↗</span>
-  </a>
+   </a>
  </div>
  <p class="note" id="resume-note" tabindex="-1">Résumé available on request. Please contact me by email.</p>
 </div></section>

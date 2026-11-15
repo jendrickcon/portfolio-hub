@@ -132,6 +132,14 @@
 
   // The unenhanced page keeps both narratives in normal document flow.
   // Once initialized, each case replaces its summary with its own detail.
+  function revealCaseControl(control) {
+    if (enh) return;
+    const rect = control.getBoundingClientRect();
+    const safeTop = hdr.offsetHeight + 12;
+    const safeBottom = innerHeight - 12;
+    const delta = rect.top < safeTop ? rect.top - safeTop : rect.bottom > safeBottom ? rect.bottom - safeBottom : 0;
+    if (delta) window.scrollBy({ top: delta, behavior: reducePreviewMotion.matches ? 'instant' : 'smooth' });
+  }
   const caseItems = $$('[data-case]').map(root => {
     const summary = root.querySelector('.case-summary');
     const detail = root.querySelector('.case-detail');
@@ -148,6 +156,7 @@
     const change = showDetail => {
       if (item.busy || (showDetail && !detail.hidden) || (!showDetail && !summary.hidden)) return;
       item.busy = true;
+      const scrollAtActivation = scrollY;
       const outgoing = showDetail ? summary : detail;
       const incoming = showDetail ? detail : summary;
       open.setAttribute('aria-expanded', String(showDetail));
@@ -163,9 +172,11 @@
         if (showDetail) {
           copy.scrollTop = 0;
           if (restoreFocus) heading.focus({ preventScroll: true });
+          if (restoreFocus || (document.activeElement === document.body && Math.abs(scrollY - scrollAtActivation) < 8)) revealCaseControl(heading);
           requestAnimationFrame(() => updateCaseCopyFocus(item));
         } else if (restoreFocus) {
           open.focus({ preventScroll: true });
+          revealCaseControl(open);
         }
         item.busy = false;
       };
@@ -210,9 +221,11 @@
       caseItems.forEach(item => { item.root.style.removeProperty('--case-h'); updateCaseCopyFocus(item); });
       return false;
     }
-    const available = Math.max(0, innerHeight - hdr.offsetHeight - 110);
     let summaryTooTall = false;
     caseItems.forEach(item => {
+      const header = item.root.closest('.feature-layout')?.querySelector('.feature-head');
+      const headerHeight = header ? header.getBoundingClientRect().height : 0;
+      const available = Math.max(0, innerHeight - hdr.offsetHeight - headerHeight - 110);
       const summaryH = naturalCaseHeight(item, item.summary);
       const detailH = naturalCaseHeight(item, item.detail);
       if (summaryH > available) summaryTooTall = true;

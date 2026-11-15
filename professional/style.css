@@ -327,7 +327,7 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 .case{min-width:0}.case-detail{display:flex;flex-direction:column;margin-top:24px}
 .case-detail h3{font-size:clamp(22px,2.6vh,28px);margin:0 0 8px;color:var(--tink)}
 .case-detail .case-copy{max-width:none;padding-bottom:6px;font-size:14px}
-.case-detail .case-copy p{margin:0 0 9px;line-height:1.5}
+.case-detail .case-copy p{margin:0 0 6px;line-height:1.5}
 .case-toggle,.case-back{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:12px;padding:8px 14px;background:rgba(127,166,255,.09);color:#c7d9ff;border:0;border-radius:var(--radius-control);font:600 14px var(--sans);cursor:pointer}
 
 .case-toggle:hover,.case-back:hover{background:rgba(127,166,255,.18)}
@@ -336,12 +336,12 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 .case-state.is-out{opacity:0;transform:translateY(-10px);transition:opacity 130ms cubic-bezier(.2,.7,.2,1),transform 130ms cubic-bezier(.2,.7,.2,1)}
 .case-state.is-in{animation:caseIn 180ms cubic-bezier(.2,.7,.2,1) both}
 @keyframes caseIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.enh .case-ready{height:var(--case-h,auto);position:relative}
-.enh .case-ready .case-state{height:100%}
-.enh .case-ready .case-summary{display:flex;flex-direction:column}
-.enh .case-ready .case-detail{display:flex;flex-direction:column;margin-top:0;min-height:0}
-.enh .case-ready .case-detail .case-copy{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#8096b7 transparent}
-.enh .case-ready .case-detail .case-copy:focus-visible{outline:3px solid var(--blue-i);outline-offset:-3px}
+@media(min-width:961px){
+ .has-case-controls .case-ready{height:var(--case-h,auto);position:relative}
+ .has-case-controls .case-ready .case-state{height:100%}
+ .has-case-controls .case-ready .case-summary,.has-case-controls .case-ready .case-detail{display:flex;flex-direction:column;justify-content:flex-start}
+ .has-case-controls .case-ready .case-detail{margin-top:0}
+}
 @media(max-width:540px){.rail{align-items:flex-start}.rail-next{margin-left:0}.rail .act{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.case-state.is-out,.case-state.is-in{animation:none!important;transition:none!important;transform:none;opacity:1}}
 
@@ -350,14 +350,12 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 .action-icon{display:block;flex:none;width:16px;height:16px}
 .rail .case-toggle,.rail .act,.case-back{gap:7px}
 .case-summary .pf{border-top:0;margin-top:8px;padding-top:6px}
-.case-detail .case-copy p + p{border-top:1px solid var(--line-i);padding-top:9px}
+.case-detail .case-copy p + p{border-top:1px solid var(--line-i);padding-top:7px}
 @media(max-width:540px){.rail{justify-content:flex-start}}
 
 @media(min-width:961px) and (max-width:1150px){.rail .act,.rail .case-toggle{padding-inline:8px}}
 @media(min-width:961px) and (max-width:1150px){.rail{column-gap:6px}}
 
-/* Allow the detail text to shrink when a fixed desktop case needs it. */
-.enh .case-ready .case-detail .case-copy{flex:0 1 auto}
 /* Visible, project-specific demo labels and fictional profile. */
 .demo-profile{display:flex;flex-direction:column;gap:2px;padding:0 0 7px;font-size:9px;line-height:1.3;color:#486581}
 .demo-profile b{color:#173e5d}.demo-profile span{font-size:9px}
@@ -367,19 +365,41 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 /* A little more breathing room around each reconstructed window. */
 .snippet-body,.chapter-preview{padding-block:14px}
 /* Blend the About section into the light Work surface. */
-.about::after{content:"";position:absolute;left:0;right:0;bottom:0;height:clamp(52px,8vh,88px);background:linear-gradient(to bottom,rgba(236,237,234,0) 0%,rgba(236,237,234,.2) 35%,var(--paper) 100%);z-index:0;pointer-events:none}
+.about::after{content:"";position:absolute;left:0;right:0;bottom:0;height:clamp(36px,5vh,56px);background:linear-gradient(to bottom,rgba(236,237,234,0) 0%,rgba(236,237,234,.06) 45%,rgba(236,237,234,.36) 78%,var(--paper) 100%);z-index:0;pointer-events:none}
 html:not(.enh) .work-inline{background:var(--paper)}
 html:not(.enh) .work-inline a{color:var(--blue-p)}
 /* Keep small-screen metadata clear of the light transition. */
 @media(max-width:540px){.about{padding-bottom:calc(clamp(52px,8vh,88px) + 12px)}}
 
 /* Featured headings introduce the two aligned evidence and detail columns. */
-.feature-layout,.enh .panel>.wrap.feature-layout{display:flex;flex-direction:column;justify-content:center;gap:clamp(14px,2vh,22px)}
+.feature-layout,.enh .panel>.wrap.feature-layout{display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(24px,4vh,48px)}
 .feature-head,.feature-body{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);column-gap:clamp(24px,3.5vw,48px)}
-.feature-head{align-items:center;border-bottom:1px solid var(--line-i);padding-bottom:clamp(14px,2vh,20px)}
+.feature-head{align-items:center;border-bottom:1px solid var(--line-i);padding-bottom:clamp(16px,2vh,24px)}
 .panel .feature-title{display:inline;font-size:clamp(50px,5.2vw,76px);line-height:1.05;letter-spacing:-.035em;color:#f2f3f5;background:linear-gradient(transparent 72%,rgba(127,166,255,.17) 72%);box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .feature-intro{font-size:clamp(14px,1.12vw,16px);line-height:1.5;color:var(--mute-i);max-width:63ch}
-.feature-body{align-items:end}
-.feature-body>.chapter-preview,.feature-body>.case{min-width:0;align-self:end}
-.enh .case-ready .case-summary,.enh .case-ready .case-detail{justify-content:flex-end}
+.feature-body{align-items:center}
+.feature-body>.chapter-preview,.feature-body>.case{min-width:0;align-self:center}
 @media(max-width:960px){.feature-head,.feature-body{grid-template-columns:1fr;row-gap:16px}.panel .feature-title{font-size:clamp(46px,10vw,66px)}.feature-intro{font-size:15px}.feature-layout,.enh .panel>.wrap.feature-layout{gap:18px}.feature-head{align-items:start}}
+
+/* The shared stage wrapper has a 24px top inset; subtract it from the measured navigator clearance. */
+.enh .panel>.wrap.feature-layout{padding-top:var(--feature-top,max(0px,calc(var(--work-nav-space,82px) - 24px + clamp(16px,2vh,24px))))}
+.feature-layout dl.f div{padding:7px 0}.feature-layout .pf{gap:8px 18px}.feature-layout .rail{margin-top:12px}
+.enh .case-ready .case-detail h3,.enh .case-ready .case-detail .case-back{flex-shrink:0}
+/* Inline SVGs carry meaning alongside the existing text labels. */
+.nav-icon,.btn-icon{display:block;flex:none;width:17px;height:17px}
+.project-icon{display:block;flex:none;width:23px;height:23px;color:var(--blue-p)}
+.mk,.mtab,.work-inline a{display:inline-flex;align-items:center;gap:7px}
+.mk .nav-icon{color:currentColor}.mk[aria-current="step"] .nav-icon{color:var(--blue-i)}
+.mtab .nav-icon,.work-inline .nav-icon{color:currentColor}
+.btn-icon{width:17px;height:17px}
+
+/* Hold a shared center while the evidence window changes its natural height. */
+@media(min-width:961px){
+ .has-case-controls .feature-body{height:var(--feature-body-h,auto);flex:none}
+ /* Without scripting, keep both narratives visible and let the page grow. */
+ html:not(.has-case-controls) .feature-body{grid-template-columns:1fr;row-gap:24px}
+}
+
+/* Keep the vertical Work overview inset and its labels readable on phones. */
+html:not(.enh) .ov-wrap{width:min(1240px,92vw)}
+.ov-subhead{flex-wrap:wrap;gap:4px 8px}

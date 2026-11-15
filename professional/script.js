@@ -27,31 +27,39 @@
   // Transition between measured content heights, then restore intrinsic sizing.
   const previewBody = document.querySelector('.snippet-body');
   const reducePreviewMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  let previewTimer, previewFrame;
-  function finishPreviewResize() {
-    clearTimeout(previewTimer);
-    cancelAnimationFrame(previewFrame);
-    previewBody.style.transition = '';
-    previewBody.style.height = '';
-    previewBody.style.overflow = '';
+  const previewResizes = new Map();
+  function finishPreviewResize(container) {
+    const resize = previewResizes.get(container);
+    if (!resize) return;
+    clearTimeout(resize.timer);
+    cancelAnimationFrame(resize.frame);
+    container.style.transition = resize.transition;
+    container.style.height = resize.height;
+    container.style.overflow = resize.overflow;
+    previewResizes.delete(container);
   }
-  function resizePreview(change) {
-    const from = previewBody.getBoundingClientRect().height;
-    finishPreviewResize();
+  function finishAllPreviewResizes() {
+    [...previewResizes.keys()].forEach(finishPreviewResize);
+  }
+  function resizePreview(container, change) {
+    const from = container.getBoundingClientRect().height;
+    finishPreviewResize(container);
     change();
     if (reducePreviewMotion.matches) return;
-    const to = previewBody.getBoundingClientRect().height;
+    const to = container.getBoundingClientRect().height;
     if (Math.abs(from - to) < 1) return;
-    previewBody.style.overflow = 'hidden';
-    previewBody.style.transition = 'none';
-    previewBody.style.height = from + 'px';
-    void previewBody.offsetHeight;
-    previewBody.style.transition = 'height 280ms cubic-bezier(.2,.7,.2,1)';
-    previewFrame = requestAnimationFrame(() => { previewBody.style.height = to + 'px'; });
-    previewTimer = setTimeout(finishPreviewResize, 320);
+    const resize = { transition: container.style.transition, height: container.style.height, overflow: container.style.overflow };
+    previewResizes.set(container, resize);
+    container.style.overflow = 'hidden';
+    container.style.transition = 'none';
+    container.style.height = from + 'px';
+    void container.offsetHeight;
+    container.style.transition = 'height 280ms cubic-bezier(.2,.7,.2,1)';
+    resize.frame = requestAnimationFrame(() => { container.style.height = to + 'px'; });
+    resize.timer = setTimeout(() => finishPreviewResize(container), 320);
   }
-  window.addEventListener('resize', finishPreviewResize);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { finishPreviewResize(); layout(); });
+  window.addEventListener('resize', finishAllPreviewResizes);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { finishAllPreviewResizes(); layout(); });
 
   function setSnippet(key) {
     if (!snippetData[key]) return;
@@ -66,7 +74,7 @@
       b.setAttribute('aria-pressed', String(b.dataset.tab === key));
     });
     if (!document.getElementById('view-' + key).classList.contains('active')) {
-      resizePreview(() => views.forEach(v => {
+      resizePreview(previewBody, () => views.forEach(v => {
         v.classList.toggle('active', v.id === 'view-' + key);
       }));
     }
@@ -102,7 +110,8 @@
         buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
         pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
       };
-      if (demo.closest('.snippet-body')) resizePreview(change);
+      const container = demo.closest('.snippet-body, .chapter-preview');
+      if (container) resizePreview(container, change);
       else change();
     };
     buttons.forEach(button => {
@@ -146,8 +155,7 @@
     const open = root.querySelector('.case-toggle');
     const back = root.querySelector('.case-back');
     const heading = detail.querySelector('h3');
-    const copy = detail.querySelector('.case-copy');
-    const item = { root, summary, detail, open, back, heading, copy, busy: false };
+    const item = { root, summary, detail, open, back, heading, busy: false };
     detail.hidden = true;
     open.hidden = false;
     back.hidden = false;
@@ -170,10 +178,8 @@
           setTimeout(() => incoming.classList.remove('is-in'), 200);
         }
         if (showDetail) {
-          copy.scrollTop = 0;
           if (restoreFocus) heading.focus({ preventScroll: true });
           if (restoreFocus || (document.activeElement === document.body && Math.abs(scrollY - scrollAtActivation) < 8)) revealCaseControl(heading);
-          requestAnimationFrame(() => updateCaseCopyFocus(item));
         } else if (restoreFocus) {
           open.focus({ preventScroll: true });
           revealCaseControl(open);
@@ -191,6 +197,8 @@
     return item;
   });
 
+  if (caseItems.length) html.classList.add('has-case-controls');
+
   // Measure invisible clones so the current state, focus and layout stay intact.
   function naturalCaseHeight(item, state) {
     const clone = state.cloneNode(true);
@@ -206,33 +214,64 @@
     clone.remove();
     return height;
   }
-  function updateCaseCopyFocus(item) {
-    const needsScroll = enh && !item.detail.hidden && item.copy.scrollHeight > item.copy.clientHeight + 1;
-    if (needsScroll) {
-      item.copy.tabIndex = 0;
-      item.copy.setAttribute('aria-label', item.heading.textContent + ' details');
-    } else {
-      item.copy.removeAttribute('tabindex');
-      item.copy.removeAttribute('aria-label');
-    }
+  function naturalPreviewHeights(figure) {
+    const clone = figure.cloneNode(true);
+    clone.setAttribute('aria-hidden', 'true');
+    clone.inert = true;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    Object.assign(clone.style, {
+      position: 'absolute', left: '0', top: '0', width: figure.getBoundingClientRect().width + 'px',
+      height: 'auto', visibility: 'hidden', pointerEvents: 'none'
+    });
+    figure.parentElement.appendChild(clone);
+    const pages = [...clone.querySelectorAll('[data-demo-view]')];
+    const heights = pages.map(page => {
+      pages.forEach(other => { other.hidden = other !== page; });
+      return Math.ceil(clone.getBoundingClientRect().height);
+    });
+    clone.remove();
+    return heights;
   }
   function measureCases() {
-    if (!enh) {
-      caseItems.forEach(item => { item.root.style.removeProperty('--case-h'); updateCaseCopyFocus(item); });
+    if (!matchMedia('(min-width:961px)').matches) {
+      caseItems.forEach(item => {
+        item.root.style.removeProperty('--case-h');
+        const layout = item.root.closest('.feature-layout');
+        layout.style.removeProperty('--feature-top');
+        layout.style.removeProperty('--feature-body-h');
+      });
       return false;
     }
-    let summaryTooTall = false;
+    let needsVerticalLayout = false;
     caseItems.forEach(item => {
-      const header = item.root.closest('.feature-layout')?.querySelector('.feature-head');
-      const headerHeight = header ? header.getBoundingClientRect().height : 0;
-      const available = Math.max(0, innerHeight - hdr.offsetHeight - headerHeight - 110);
+      const layout = item.root.closest('.feature-layout');
+      const header = layout.querySelector('.feature-head');
+      layout.style.removeProperty('--feature-top');
+      const style = getComputedStyle(layout);
+      const minTop = parseFloat(style.paddingTop) || 0;
+      const bottom = parseFloat(style.paddingBottom) || 0;
+      const gap = parseFloat(style.rowGap) || 0;
+      const headerHeight = header.getBoundingClientRect().height;
       const summaryH = naturalCaseHeight(item, item.summary);
       const detailH = naturalCaseHeight(item, item.detail);
-      if (summaryH > available) summaryTooTall = true;
-      item.root.style.setProperty('--case-h', Math.min(Math.max(summaryH, detailH), available) + 'px');
-      updateCaseCopyFocus(item);
+      const caseH = Math.max(summaryH, detailH);
+      const figure = item.root.closest('.feature-body').querySelector('.chapter-preview');
+      const previews = naturalPreviewHeights(figure);
+      const largestRow = Math.max(caseH, ...previews);
+
+      // Reserve one shared center for the preview and details, keeping both
+      // narratives visible and the right column still as preview pages change.
+      item.root.style.setProperty('--case-h', caseH + 'px');
+      layout.style.setProperty('--feature-body-h', largestRow + 'px');
+      if (enh) {
+        const available = layout.clientHeight - bottom - headerHeight - gap;
+        const centeredTop = minTop + Math.max(0, (available - minTop - largestRow) / 2);
+        if (available - largestRow < minTop - 1) needsVerticalLayout = true;
+        layout.style.setProperty('--feature-top', centeredTop + 'px');
+      }
     });
-    return summaryTooTall;
+    return needsVerticalLayout;
   }
 
   /* Math & Track Geometry */
@@ -243,11 +282,26 @@
   const workTicks = $$('[data-work-tick]');
   const ovEdge = document.getElementById('ov-trans-edge');
 
+  function updateWorkNavigationSpace() {
+    // The navigator is absolutely positioned. Measure it without displaying it
+    // so chapter introductions can start below it at every supported width.
+    const hidden = getComputedStyle(islandWrap).display === 'none';
+    const oldDisplay = islandWrap.style.display;
+    const oldVisibility = islandWrap.style.visibility;
+    if (hidden) { islandWrap.style.visibility = 'hidden'; islandWrap.style.display = 'flex'; }
+    const topInset = parseFloat(getComputedStyle(islandWrap).top) || 0;
+    const bottom = Math.ceil(topInset + islandWrap.getBoundingClientRect().height);
+    islandWrap.style.display = oldDisplay;
+    islandWrap.style.visibility = oldVisibility;
+    html.style.setProperty('--work-nav-space', bottom + 'px');
+  }
+
   function layout() {
     const hh = hdr.offsetHeight;
     html.style.setProperty('--hh', hh + 'px');
     enh = mq.matches;
     html.classList.toggle('enh', enh);
+    if (enh) updateWorkNavigationSpace();
     const caseOverflow = measureCases();
 
     if (enh) {

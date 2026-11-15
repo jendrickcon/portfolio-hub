@@ -78,6 +78,40 @@
     });
   });
 
+  // A single persistent preview for supporting work; links remain independent.
+  const supportData = {
+    audiary: ['AUDIARY', 'SOURCE-FAITHFUL RECONSTRUCTION', 'Audiary Explore interface and README · illustrative offline collection.'],
+    laya: ['LAYA', 'PLACEHOLDER', 'LAYA repository · device verification pending.'],
+    waffle: ['WAFFLE’S NINE LIVES', 'SOURCE-FAITHFUL RECONSTRUCTION', 'Waffle’s Nine Lives Renderer.kt and Palette.kt · illustrative gameplay.'],
+    gallery: ['ENUHRI ART GALLERY', 'PLACEHOLDER', 'Portfolio Hub Art Gallery source · security and rendering work remains.'],
+    cyber: ['CYBERDEFENDER', 'SOURCE-FAITHFUL RECONSTRUCTION', 'CyberDefender web battle interface · illustrative encounter.'],
+    sandbox: ['SANDBOX', 'SOURCE-FAITHFUL RECONSTRUCTION', 'Sandbox canvas and toolbar source · static illustration.'],
+    devpath: ['DEVPATH', 'PLACEHOLDER', 'DevPath source · development paused.']
+  };
+  const supportCards = $$('[data-support-card]'), supportViews = $$('[data-support-view]');
+  function selectSupport(key) {
+    const data = supportData[key];
+    if (!data) return;
+    supportCards.forEach(card => {
+      const selected = card.dataset.supportCard === key;
+      card.classList.toggle('active', selected);
+      card.querySelector('[data-support-target]').setAttribute('aria-pressed', String(selected));
+    });
+    supportViews.forEach(view => { view.hidden = view.dataset.supportView !== key; });
+    document.getElementById('support-name').textContent = data[0];
+    document.getElementById('support-evidence').textContent = data[1];
+    document.getElementById('support-caption').textContent = data[2];
+  }
+  supportCards.forEach(card => {
+    const button = card.querySelector('[data-support-target]');
+    button.hidden = false;
+    card.addEventListener('pointerenter', event => {
+      if (event.pointerType === 'mouse' || event.pointerType === 'pen') selectSupport(card.dataset.supportCard);
+    });
+    card.addEventListener('focusin', () => selectSupport(card.dataset.supportCard));
+    button.addEventListener('click', () => selectSupport(card.dataset.supportCard));
+  });
+
   /* Math & Track Geometry */
   let maxX = 1, panelStarts = [], footerVisible = false;
   const END_TOLERANCE = 4;

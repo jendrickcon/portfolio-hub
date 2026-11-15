@@ -8,16 +8,15 @@
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
   const secs = ['about','profile','work','capabilities','journey','contact'].map(id => document.getElementById(id));
 
-  /* Theme Controller: System, Light, Dark */
+  /* Theme Controller: Light, Dark (default Dark) */
   const themeKey = 'portfolio-theme';
   const themeOpts = [...document.querySelectorAll('.theme-opt')];
-  const systemScheme = matchMedia('(prefers-color-scheme: dark)');
   const metaTheme = document.querySelector('meta[name="theme-color"]');
-  let currentPref = html.getAttribute('data-theme-preference') || 'system';
+  let currentPref = html.getAttribute('data-theme-preference') === 'light' ? 'light' : 'dark';
 
   function applyTheme(pref, { animate = false } = {}) {
-    currentPref = (pref === 'light' || pref === 'dark' || pref === 'system') ? pref : 'system';
-    const isDark = currentPref === 'system' ? systemScheme.matches : currentPref === 'dark';
+    currentPref = pref === 'light' ? 'light' : 'dark';
+    const isDark = currentPref === 'dark';
     const resolved = isDark ? 'dark' : 'light';
 
     if (animate && !motion.matches) {
@@ -46,15 +45,55 @@
     });
   });
 
-  systemScheme.addEventListener('change', () => {
-    if (currentPref === 'system') applyTheme('system', { animate: true });
-  });
+
 
   applyTheme(currentPref, { animate: false });
 
+  /* Compact toolkit: one expanded entry at a time; it replaces the other
+     entries in its row and fills the row's full width (left, centre or right). */
+  (() => {
+    const grids = $$('.toolkit-grid');
+    const colsOf = g => Math.max(1, getComputedStyle(g).gridTemplateColumns.split(' ').length);
+    const cardsOf = g => [...g.querySelectorAll(':scope > .tool-card')];
+    let open = null;
+    function collapse(restoreFocus) {
+      if (!open) return;
+      const o = open; open = null;
+      o.desc.hidden = true; o.btn.setAttribute('aria-expanded', 'false'); o.card.classList.remove('is-open');
+      cardsOf(o.grid).forEach(c => { c.hidden = false; });
+      if (restoreFocus) o.btn.focus({ preventScroll: true });
+    }
+    function expand(entry) {
+      collapse(false);
+      const cards = cardsOf(entry.grid), n = colsOf(entry.grid), row = Math.floor(cards.indexOf(entry.card) / n);
+      cards.forEach((c, i) => { if (c !== entry.card && Math.floor(i / n) === row) c.hidden = true; });
+      entry.card.classList.add('is-open'); entry.desc.hidden = false;
+      entry.btn.setAttribute('aria-expanded', 'true');
+      entry.cols = n; open = entry;
+    }
+    grids.forEach((grid, gi) => cardsOf(grid).forEach((card, ci) => {
+      const head = card.querySelector('.tool-card-head'), desc = card.querySelector('.tool-desc'), refs = card.querySelector('.tool-refs');
+      if (!head || !desc || !refs) return;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'tool-toggle';
+      desc.id = 'tool-' + gi + '-' + ci + '-detail';
+      btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', desc.id);
+      btn.innerHTML = '<span class="tool-name"></span><span class="tool-used"></span><span class="tool-chev" aria-hidden="true"></span>';
+      btn.children[0].textContent = head.textContent.trim();
+      btn.children[1].textContent = refs.textContent.trim();
+      head.remove(); refs.remove(); card.prepend(btn); desc.hidden = true;
+      const entry = { grid, card, btn, desc, cols: 0 };
+      btn.addEventListener('click', () => { if (open && open.card === card) collapse(false); else expand(entry); });
+    }));
+    if (grids.length) html.classList.add('toolkit-ready');
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && open && e.target.closest && e.target.closest('.toolkit-wrap')) collapse(true);
+    });
+    addEventListener('resize', () => { if (open && colsOf(open.grid) !== open.cols) collapse(false); });
+  })();
+
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');
   const clamp = v => Math.max(0, Math.min(1, v));
-  const smooth = (from, to, value) => { const t = clamp((value - from) / (to - from)); return t * t * (3 - 2 * t); };
   const top = el => el.getBoundingClientRect().top + scrollY;
   let enh = false, queued = false;
 
@@ -384,7 +423,6 @@
   const islandWrap = document.getElementById('work-island-wrap');
   const workRuler = document.getElementById('work-ruler');
   const workTicks = $$('[data-work-tick]');
-  const ovEdge = document.getElementById('ov-trans-edge');
 
   function measureOverview() {
     const main = document.querySelector('.ov-main');
@@ -517,6 +555,7 @@
     let a = 0;
     secs.forEach((s, i) => { if (top(s) <= line) a = i; });
     if (atEnd || (footerVisible && contact.getBoundingClientRect().top < innerHeight - hh)) a = secs.length - 1;
+    if (html.dataset.activeSection !== secs[a].id) html.dataset.activeSection = secs[a].id;
     links.forEach((l, i) => {
       const s = secs[i];
       const p = i === secs.length - 1 && atEnd ? 1 :
@@ -550,22 +589,8 @@
         islandWrap.setAttribute('aria-hidden', isWorkActive ? 'false' : 'true');
       }
 
-      // A bell-shaped local transition: gently enter and widen, then recede.
-      // At the first project's exact destination the blend is fully absent.
-      if (ovEdge) {
-        const t = clamp(x / Math.max(1, panelStarts[1]));
-        const edgeOpacity = smooth(0, .22, t) * (1 - smooth(.62, 1, t));
-        const baseWidth = Math.max(96, Math.min(180, stage.clientWidth * .11));
-        // Fade the blend's extent, not its opaque Ink join: fading the whole
-        // layer exposes Paper at the chapter boundary and creates a pale seam.
-        const blendWidth = baseWidth * (.8 + .42 * Math.sin(Math.PI * t)) * edgeOpacity;
-        ovEdge.style.opacity = t > 0 && t < 1 ? '1' : '0';
-        ovEdge.style.setProperty('--blend-width', blendWidth.toFixed(1) + 'px');
-      }
     } else {
       workRuler.style.setProperty('--work-p', '0');
-
-      if (ovEdge) ovEdge.style.opacity = '0';
       if (islandWrap) {
         islandWrap.classList.remove('visible');
         islandWrap.setAttribute('aria-hidden', 'true');

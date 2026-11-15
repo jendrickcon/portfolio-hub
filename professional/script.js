@@ -20,7 +20,8 @@
     'mini-pcs': { tag: 'Mini PCS · Batch workflow', href: '#mini-pcs', caption: 'Batch and task workflow · fictional demo records.' }
   };
   const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
-  document.querySelector('.mobile-tabs').hidden = false;
+  const mobileTabs = document.querySelector('.mobile-tabs');
+  if (mobileTabs) mobileTabs.hidden = false;
   const snippetTag = document.getElementById('snippet-tag');
   const snippetJump = document.getElementById('snippet-jump-link');
 
@@ -266,43 +267,69 @@
     return heights;
   }
   function measureCases() {
-    if (!matchMedia('(min-width:961px)').matches) {
+    if (!matchMedia('(min-width:961px)').matches || !enh) {
       caseItems.forEach(item => {
         item.root.style.removeProperty('--case-h');
         const layout = item.root.closest('.feature-layout');
-        layout.style.removeProperty('--feature-top');
-        layout.style.removeProperty('--feature-body-h');
+        if (layout) {
+          layout.style.removeProperty('--feature-top');
+          layout.style.removeProperty('--feature-head-h');
+          layout.style.removeProperty('--feature-body-h');
+        }
       });
       return false;
     }
-    let needsVerticalLayout = false;
+
+    // Reset properties before measuring intrinsic dimensions
     caseItems.forEach(item => {
       const layout = item.root.closest('.feature-layout');
+      if (layout) {
+        layout.style.removeProperty('--feature-top');
+        layout.style.removeProperty('--feature-head-h');
+        layout.style.removeProperty('--feature-body-h');
+      }
+    });
+
+    const caseMetrics = caseItems.map(item => {
+      const layout = item.root.closest('.feature-layout');
       const header = layout.querySelector('.feature-head');
-      layout.style.removeProperty('--feature-top');
       const style = getComputedStyle(layout);
       const minTop = parseFloat(style.paddingTop) || 0;
       const bottom = parseFloat(style.paddingBottom) || 0;
       const gap = parseFloat(style.rowGap) || 0;
-      const headerHeight = header.getBoundingClientRect().height;
+      const headerHeight = Math.ceil(header.getBoundingClientRect().height);
       const summaryH = naturalCaseHeight(item, item.summary);
       const detailH = naturalCaseHeight(item, item.detail);
       const caseH = Math.max(summaryH, detailH);
       const figure = item.root.closest('.feature-body').querySelector('.chapter-preview');
       const previews = naturalPreviewHeights(figure);
       const largestRow = Math.max(caseH, ...previews);
-
-      // Reserve one shared center for the preview and details, keeping both
-      // narratives visible and the right column still as preview pages change.
-      item.root.style.setProperty('--case-h', caseH + 'px');
-      layout.style.setProperty('--feature-body-h', largestRow + 'px');
-      if (enh) {
-        const available = layout.clientHeight - bottom - headerHeight - gap;
-        const centeredTop = minTop + Math.max(0, (available - minTop - largestRow) / 2);
-        if (available - largestRow < minTop - 1) needsVerticalLayout = true;
-        layout.style.setProperty('--feature-top', centeredTop + 'px');
-      }
+      return { item, layout, minTop, bottom, gap, headerHeight, caseH, largestRow };
     });
+
+    // Compute single shared header height and body baseline across all chapters
+    const sharedHeaderH = Math.max(...caseMetrics.map(m => m.headerHeight));
+    const sharedBodyH = Math.max(...caseMetrics.map(m => m.largestRow));
+    const maxMinTop = Math.max(...caseMetrics.map(m => m.minTop));
+    const maxBottom = Math.max(...caseMetrics.map(m => m.bottom));
+    const maxGap = Math.max(...caseMetrics.map(m => m.gap));
+    const clientH = caseMetrics[0] ? caseMetrics[0].layout.clientHeight : 0;
+    const available = clientH - maxBottom - sharedHeaderH - maxGap;
+    const centeredTop = Math.round(maxMinTop + Math.max(0, (available - maxMinTop - sharedBodyH) / 2));
+
+    let needsVerticalLayout = false;
+    // Disable horizontal enhancement if shared layout cannot fit viewport safely or header exceeds reasonable maximum
+    if (available - sharedBodyH < maxMinTop - 1 || sharedHeaderH > 180) {
+      needsVerticalLayout = true;
+    }
+
+    caseMetrics.forEach(m => {
+      m.item.root.style.setProperty('--case-h', m.caseH + 'px');
+      m.layout.style.setProperty('--feature-head-h', sharedHeaderH + 'px');
+      m.layout.style.setProperty('--feature-body-h', sharedBodyH + 'px');
+      m.layout.style.setProperty('--feature-top', centeredTop + 'px');
+    });
+
     return needsVerticalLayout;
   }
 

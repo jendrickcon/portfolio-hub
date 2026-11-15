@@ -31,8 +31,6 @@ a{color:inherit}
 .btn-secondary:hover{background:rgba(255,255,255,.09);border-color:var(--blue-i)}
 .btn-arrow{display:inline-block;font-family:var(--sans);font-size:13px;transition:transform .15s ease}
 .btn:hover .btn-arrow{transform:translateX(2px)}
-.btn-sec-paper{background:transparent;color:var(--blue-p);border:1px solid var(--blue-p);min-height:40px;padding:8px 16px}
-.btn-sec-paper:hover{background:rgba(31,79,184,.08)}
 
 /* =======================================================
    HEADER
@@ -74,10 +72,8 @@ a{color:inherit}
 .island-title{font-size:11px;color:var(--blue-i);font-weight:700;letter-spacing:.12em;padding-right:10px;border-right:1px solid var(--line-i)}
 .island-rail{display:flex;align-items:center;gap:clamp(6px,1.2vw,14px)}
 .mk{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;color:var(--mute-i);font-size:11px;text-decoration:none;border-radius:4px;opacity:.72;transition:color .15s ease,opacity .15s ease;min-height:30px}
-.mk span{font-size:10px;opacity:.7}
 .mk:hover,.mk:focus-visible{color:var(--tink);opacity:1}
 .mk[aria-current="step"]{color:var(--tink);font-weight:700;opacity:1}
-.mk[aria-current="step"] span{color:var(--blue-i);font-weight:700;opacity:1}
 .mk.past{color:#C8CED8;opacity:.88}
 .work-ruler{grid-column:1/-1;position:relative;height:2px;background:#343D4D}
 .work-ruler-fill{position:absolute;inset:0;background:var(--blue-i);transform:scaleX(var(--work-p,0));transform-origin:left center}
@@ -93,23 +89,7 @@ a{color:inherit}
 /* base panels (vertical fallback when horizontal disabled) */
 .panel{padding:clamp(40px,5vw,70px) 0;border-top:1px solid var(--line-i);position:relative}
 .panel h2{font-size:clamp(36px,4.4vw,60px);margin:8px 0 12px}
-.lead{color:var(--mute-i);max-width:34rem;margin-bottom:14px}
 .pgrid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:clamp(24px,4vw,56px);align-items:start}
-
-/* Evidence capacity, without adding invented content:
-   .evg / .ev: real screenshots, cropped UI details, and testing evidence.
-   .f: contribution timeline, key decisions, integration details, limitations,
-       and lessons learned when verified content is supplied.
-   .pf: team context and evidence status. .act: verified evidence links.
-   Existing placeholders reserve these areas; do not add decorative filler. */
-.evg{display:grid;gap:12px}
-.ev{background:var(--paper);color:var(--ink);border:1px solid var(--line-p);padding:18px;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;background-image:none}
-.ev .mono{color:var(--blue-p);font-size:11px}
-.ev strong{font:400 clamp(20px,2.4vh,28px)/1.15 var(--serif)}
-.ev p{font-size:13px;color:var(--mute-p)}
-.e1{grid-template-columns:1.6fr 1fr}.e1 .big{grid-row:span 2}
-.e2{grid-template-columns:1fr 1fr}.e2 .big{grid-column:span 2}
-.e3{grid-template-columns:1fr 1fr}
 
 dl.f{margin-top:4px}
 dl.f div{display:grid;grid-template-columns:105px 1fr;gap:14px;padding:8px 0;border-bottom:1px solid var(--line-i);font-size:13px}
@@ -122,13 +102,6 @@ dd{margin:0}
 .act{display:inline-flex;align-items:center;margin-top:14px;color:var(--blue-i);font-weight:600;font-size:13px;text-decoration:none;min-height:36px}
 .act:hover{text-decoration:underline}
 .next{display:inline-flex;align-items:center;margin-top:14px;font-weight:600;color:var(--blue-i);padding:8px 0;text-decoration:none;min-height:40px}
-
-/* other projects panel */
-.oplist{display:grid;gap:12px}
-.oplist li{padding:16px;border:1px solid var(--line-i);background:rgba(255,255,255,.02)}
-.oplist h3{font-size:24px;margin-bottom:4px}
-.oplist p{font-size:14px;color:var(--mute-i)}
-.oplist .mono{color:var(--blue-i);margin-top:6px}
 
 /* =======================================================
    OVERVIEW PANEL (Panel 00) — Spacing & Layout Corrected
@@ -155,7 +128,6 @@ dd{margin:0}
 .frow{display:grid;grid-template-columns:36px 1fr;gap:10px;padding:clamp(8px,1.2vh,11px) 12px;border:0;border-left:3px solid transparent;border-bottom:1px solid var(--line-p);background:transparent;border-radius:0;cursor:pointer;text-decoration:none;color:inherit;transition:background .15s ease,border-color .15s ease}
 .frow:hover,.frow:focus-visible{background:rgba(255,255,255,.55);border-left-color:var(--blue-p)}
 .frow.active{background:rgba(255,255,255,.7);border-left-color:var(--blue-p);box-shadow:none}
-.frow .num{font:12px var(--sans);color:var(--blue-p);font-weight:700;padding-top:2px}
 .frow-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .frow h3{font-size:clamp(18px,2vh,25px);letter-spacing:-.01em}
 .frow-tag{font:13px var(--sans);color:var(--mute-p);background:rgba(0,0,0,.06);padding:2px 5px;border-radius:2px}
@@ -190,7 +162,6 @@ dd{margin:0}
 .ov-other-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .oc{display:block;padding:6px 8px;border:0;border-top:1px solid var(--line-p);background:transparent;border-radius:0;text-decoration:none;color:inherit;transition:background .15s}
 .oc:hover,.oc:focus-visible{background:#fff;border-color:var(--blue-p)}
-.oc .oc-num{font:11px var(--sans);color:var(--blue-p);padding-top:2px}
 .oc h4{font-size:13px;margin-bottom:2px}
 .oc p{font-size:13px;color:var(--mute-p);line-height:1.3}
 .oc .oc-tag{font:13px var(--sans);color:var(--mute-p);display:block;margin-top:1px}
@@ -236,7 +207,7 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 }
 
 /* Accessible chapter navigation and fallbacks */
-.work-inline{display:flex;flex-wrap:wrap;gap:0;background:var(--ink);padding:8px 4%;} .work-inline a{color:#dce5f7;padding:12px;min-height:44px;display:inline-flex;align-items:center;text-decoration:underline}.enh .work-inline{display:none}.oplist a{color:inherit;text-decoration:underline}.act{display:inline-flex;align-items:center;min-height:44px;margin-right:12px}.skip:focus{z-index:1000}html{scroll-padding-top:calc(var(--hh, 72px) + 12px)}
+.work-inline{display:flex;flex-wrap:wrap;gap:0;background:var(--ink);padding:8px 4%;} .work-inline a{color:#dce5f7;padding:12px;min-height:44px;display:inline-flex;align-items:center;text-decoration:underline}.enh .work-inline{display:none}.act{display:inline-flex;align-items:center;min-height:44px;margin-right:12px}.skip:focus{z-index:1000}html{scroll-padding-top:calc(var(--hh, 72px) + 12px)}
 
 [hidden]{display:none!important}.mk{opacity:1;color:#b8c2d2;min-height:40px}
 
@@ -288,7 +259,6 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 /* Identity foundation: navigation and status use sans; sequence numbers use mono. */
 .eyebrow{color:var(--mute-i);font:600 13px/1.4 var(--sans)}
 .nav .nl,.work-inline,.island-title,.mk{font-family:var(--sans);font-size:13px;letter-spacing:0;text-transform:none}
-.mk span,.frow .num{font:400 13px/1.3 var(--mono)}
 .island-title{letter-spacing:0;font-size:13px}.brand span,.foot{font:13px/1.4 var(--sans)}
 .ov-cue,.ov-subhead .mono,.ov-other-head .mono{font-size:13px}.frow-desc,.frow-act .state,.frow-act .jump,.frow-meta,.frow-tag{font-size:13px}
 .snippet-top{gap:6px 12px;flex-wrap:wrap}.snippet-proj-label,.snippet-badge,.snippet-caption,.snippet-jump{font-size:13px}
@@ -375,11 +345,11 @@ html:not(.enh) .work-inline a{color:var(--blue-p)}
 /* Featured headings introduce the two aligned evidence and detail columns. */
 .feature-layout,.enh .panel>.wrap.feature-layout{display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(24px,4vh,48px)}
 .feature-head,.feature-body{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);column-gap:clamp(24px,3.5vw,48px)}
-.feature-head{align-items:center;border-bottom:1px solid var(--line-i);padding-bottom:clamp(16px,2vh,24px)}
+.feature-head{min-height:var(--feature-head-h,auto);box-sizing:border-box;align-items:center;border-bottom:1px solid var(--line-i);padding-bottom:clamp(16px,2vh,24px)}
 .panel .feature-title{display:inline;font-size:clamp(50px,5.2vw,76px);line-height:1.05;letter-spacing:-.035em;color:#f2f3f5;background:linear-gradient(transparent 72%,rgba(127,166,255,.17) 72%);box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .feature-intro{font-size:clamp(14px,1.12vw,16px);line-height:1.5;color:var(--mute-i);max-width:63ch}
-.feature-body{align-items:center}
-.feature-body>.chapter-preview,.feature-body>.case{min-width:0;align-self:center}
+.feature-body{align-items:start}
+.feature-body>.chapter-preview,.feature-body>.case{min-width:0;align-self:start}
 @media(max-width:960px){.feature-head,.feature-body{grid-template-columns:1fr;row-gap:16px}.panel .feature-title{font-size:clamp(46px,10vw,66px)}.feature-intro{font-size:15px}.feature-layout,.enh .panel>.wrap.feature-layout{gap:18px}.feature-head{align-items:start}}
 
 /* The shared stage wrapper has a 24px top inset; subtract it from the measured navigator clearance. */

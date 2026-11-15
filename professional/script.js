@@ -8,15 +8,33 @@
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
   const secs = ['about','profile','work','capabilities','journey','contact'].map(id => document.getElementById(id));
 
-  /* Theme Controller: Light, Dark (default Dark) */
+  /* Theme Controller: System, Light, Dark */
   const themeKey = 'portfolio-theme';
   const themeOpts = [...document.querySelectorAll('.theme-opt')];
   const metaTheme = document.querySelector('meta[name="theme-color"]');
-  let currentPref = html.getAttribute('data-theme-preference') === 'light' ? 'light' : 'dark';
+  const systemScheme = matchMedia('(prefers-color-scheme: dark)');
+  let currentPref = html.getAttribute('data-theme-preference') || 'system';
 
   function applyTheme(pref, { animate = false } = {}) {
-    currentPref = pref === 'light' ? 'light' : 'dark';
-    const isDark = currentPref === 'dark';
+    let workPosition = null;
+    if (animate && enh) {
+      const start = top(run) - hdr.offsetHeight;
+      if (scrollY >= start && scrollY <= start + span()) {
+        const x = curX();
+        const nearest = panelStarts.reduce((best, position, i) =>
+          Math.abs(position - x) < Math.abs(panelStarts[best] - x) ? i : best, 0);
+        workPosition = { progress: clamp(x / maxX), nearest, wasEnhanced: true };
+      }
+    } else if (animate) {
+      const start = top(run), line = scrollY + hdr.offsetHeight + innerHeight * .35;
+      if (line >= start && line < start + run.offsetHeight) {
+        let nearest = -1;
+        panels.forEach((panel, i) => { if (top(panel) <= line) nearest = i; });
+        if (nearest >= 0) workPosition = { progress: null, nearest, wasEnhanced: false };
+      }
+    }
+    currentPref = (pref === 'light' || pref === 'dark' || pref === 'system') ? pref : 'system';
+    const isDark = currentPref === 'system' ? systemScheme.matches : currentPref === 'dark';
     const resolved = isDark ? 'dark' : 'light';
 
     if (animate && !motion.matches) {
@@ -37,6 +55,21 @@
     try {
       localStorage.setItem(themeKey, currentPref);
     } catch (e) {}
+
+    // Text and reading surfaces can change size between themes; recompute the
+    // Work layout after an intentional switch so nothing is clipped.
+    if (animate) requestAnimationFrame(() => {
+      finishAllPreviewResizes();
+      layout();
+      if (workPosition && (workPosition.wasEnhanced || enh)) {
+        const destination = enh
+          ? top(run) - hdr.offsetHeight + (workPosition.progress === null
+            ? panelStarts[workPosition.nearest] / maxX : workPosition.progress) * span()
+          : top(panels[workPosition.nearest]) - hdr.offsetHeight - 8;
+        scrollTo({ top: Math.max(0, destination), behavior: 'instant' });
+        update();
+      }
+    });
   }
 
   themeOpts.forEach(btn => {
@@ -45,51 +78,87 @@
     });
   });
 
-
+  systemScheme.addEventListener('change', () => {
+    if (currentPref === 'system') applyTheme('system', { animate: true });
+  });
 
   applyTheme(currentPref, { animate: false });
 
-  /* Compact toolkit: one expanded entry at a time; it replaces the other
-     entries in its row and fills the row's full width (left, centre or right). */
+  /* Project-Linked Toolkit: smooth intrinsic-height CSS Grid disclosure */
   (() => {
     const grids = $$('.toolkit-grid');
-    const colsOf = g => Math.max(1, getComputedStyle(g).gridTemplateColumns.split(' ').length);
-    const cardsOf = g => [...g.querySelectorAll(':scope > .tool-card')];
-    let open = null;
-    function collapse(restoreFocus) {
-      if (!open) return;
-      const o = open; open = null;
-      o.desc.hidden = true; o.btn.setAttribute('aria-expanded', 'false'); o.card.classList.remove('is-open');
-      cardsOf(o.grid).forEach(c => { c.hidden = false; });
-      if (restoreFocus) o.btn.focus({ preventScroll: true });
-    }
-    function expand(entry) {
-      collapse(false);
-      const cards = cardsOf(entry.grid), n = colsOf(entry.grid), row = Math.floor(cards.indexOf(entry.card) / n);
-      cards.forEach((c, i) => { if (c !== entry.card && Math.floor(i / n) === row) c.hidden = true; });
-      entry.card.classList.add('is-open'); entry.desc.hidden = false;
-      entry.btn.setAttribute('aria-expanded', 'true');
-      entry.cols = n; open = entry;
-    }
-    grids.forEach((grid, gi) => cardsOf(grid).forEach((card, ci) => {
-      const head = card.querySelector('.tool-card-head'), desc = card.querySelector('.tool-desc'), refs = card.querySelector('.tool-refs');
-      if (!head || !desc || !refs) return;
-      const btn = document.createElement('button');
-      btn.type = 'button'; btn.className = 'tool-toggle';
-      desc.id = 'tool-' + gi + '-' + ci + '-detail';
-      btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', desc.id);
-      btn.innerHTML = '<span class="tool-name"></span><span class="tool-used"></span><span class="tool-chev" aria-hidden="true"></span>';
-      btn.children[0].textContent = head.textContent.trim();
-      btn.children[1].textContent = refs.textContent.trim();
-      head.remove(); refs.remove(); card.prepend(btn); desc.hidden = true;
-      const entry = { grid, card, btn, desc, cols: 0 };
-      btn.addEventListener('click', () => { if (open && open.card === card) collapse(false); else expand(entry); });
-    }));
-    if (grids.length) html.classList.add('toolkit-ready');
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && open && e.target.closest && e.target.closest('.toolkit-wrap')) collapse(true);
+    grids.forEach((grid, gi) => {
+      const cards = [...grid.querySelectorAll(':scope > .tool-card')];
+      cards.forEach((card, ci) => {
+        const head = card.querySelector('.tool-card-head');
+        const desc = card.querySelector('.tool-desc');
+        const refs = card.querySelector('.tool-refs');
+        if (!head || !desc || !refs) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tool-toggle';
+        const panelId = 'tool-' + gi + '-' + ci + '-panel';
+        btn.id = 'tool-' + gi + '-' + ci + '-btn';
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', panelId);
+
+        const toggleMain = document.createElement('span');
+        toggleMain.className = 'tool-toggle-main';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'tool-name';
+        nameSpan.textContent = head.textContent.trim();
+
+        const usedSpan = document.createElement('span');
+        usedSpan.className = 'tool-used mono';
+        usedSpan.textContent = refs.textContent.trim();
+
+        toggleMain.append(nameSpan, usedSpan);
+
+        const chev = document.createElement('span');
+        chev.className = 'tool-chev';
+        chev.setAttribute('aria-hidden', 'true');
+
+        btn.append(toggleMain, chev);
+
+        const collapse = document.createElement('div');
+        collapse.className = 'tool-collapse';
+        collapse.id = panelId;
+        collapse.setAttribute('role', 'region');
+        collapse.setAttribute('aria-labelledby', btn.id);
+
+        const inner = document.createElement('div');
+        inner.className = 'tool-collapse-inner';
+        inner.appendChild(desc);
+        collapse.appendChild(inner);
+
+        head.remove();
+        refs.remove();
+        card.replaceChildren(btn, collapse);
+
+        btn.addEventListener('click', () => {
+          const isOpen = card.classList.toggle('is-open');
+          btn.setAttribute('aria-expanded', String(isOpen));
+        });
+      });
     });
-    addEventListener('resize', () => { if (open && colsOf(open.grid) !== open.cols) collapse(false); });
+
+    if (grids.length) html.classList.add('toolkit-ready');
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        const activeCard = document.activeElement && document.activeElement.closest('.tool-card.is-open');
+        if (activeCard) {
+          activeCard.classList.remove('is-open');
+          const toggle = activeCard.querySelector('.tool-toggle');
+          if (toggle) {
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.focus({ preventScroll: true });
+          }
+        }
+      }
+    });
   })();
 
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');

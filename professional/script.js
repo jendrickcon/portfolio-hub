@@ -314,6 +314,45 @@
   const workTicks = $$('[data-work-tick]');
   const ovEdge = document.getElementById('ov-trans-edge');
 
+  function measureOverview() {
+    const main = document.querySelector('.ov-main');
+    if (!matchMedia('(min-width:961px)').matches) {
+      main.style.removeProperty('--overview-main-h');
+      return;
+    }
+    const frame = main.querySelector('.snippet-frame');
+    const clone = frame.cloneNode(true);
+    const projectViews = [...clone.querySelectorAll('.snippet-view')].map(view => ({
+      view, key: view.id.replace('view-', '')
+    }));
+    clone.setAttribute('aria-hidden', 'true');
+    clone.inert = true;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    Object.assign(clone.style, {
+      position: 'absolute', left: '0', top: '0', width: frame.getBoundingClientRect().width + 'px',
+      height: 'auto', visibility: 'hidden', pointerEvents: 'none'
+    });
+    const body = clone.querySelector('.snippet-body');
+    body.style.removeProperty('height');
+    body.style.removeProperty('overflow');
+    body.style.removeProperty('transition');
+    frame.parentElement.appendChild(clone);
+    let tallest = Math.ceil(main.querySelector('.ov-index').getBoundingClientRect().height);
+    projectViews.forEach(({ view, key }) => {
+      projectViews.forEach(project => project.view.classList.toggle('active', project.view === view));
+      clone.querySelector('.snippet-proj-label').textContent = snippetData[key].tag;
+      clone.querySelector('.snippet-caption').textContent = snippetData[key].caption;
+      const pages = [...view.querySelectorAll('[data-demo-view]')];
+      pages.forEach(page => {
+        pages.forEach(other => { other.hidden = other !== page; });
+        tallest = Math.max(tallest, Math.ceil(clone.getBoundingClientRect().height));
+      });
+    });
+    clone.remove();
+    main.style.setProperty('--overview-main-h', tallest + 'px');
+  }
+
   function updateWorkNavigationSpace() {
     // The navigator is absolutely positioned. Measure it without displaying it
     // so chapter introductions can start below it at every supported width.
@@ -335,6 +374,7 @@
     html.classList.toggle('enh', enh);
     if (enh) updateWorkNavigationSpace();
     const caseOverflow = measureCases();
+    measureOverview();
 
     if (enh) {
       // Use actual panel positions, including after zoom/resize, for travel,

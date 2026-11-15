@@ -135,6 +135,7 @@ dd{margin:0}
    ======================================================= */
 .ovp{background:var(--paper);color:var(--ink);position:relative}
 .ov-wrap{width:100%;display:flex;flex-direction:column;gap:clamp(10px,1.5vh,18px);padding-top:clamp(28px,3.8vh,52px);padding-bottom:clamp(12px,2vh,22px);box-sizing:border-box}
+.enh .panel>.wrap.ov-wrap{padding-top:max(clamp(28px,3.8vh,52px),calc(var(--work-nav-space,82px) - 24px + 12px))}
 .ov-topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:1px solid var(--line-p);padding-bottom:7px}
 .ov-topbar h2{font-size:clamp(26px,3.4vh,42px)}
 .ov-cue{font-size:11px;color:var(--mute-p)}
@@ -266,7 +267,7 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 
 
 /* Let the featured frame fit its content and stay centered beside the list. */
-@media(min-width:961px){.ov-main{align-items:stretch}.snippet-stage{justify-content:center}}
+@media(min-width:961px){.ov-main{align-items:stretch}.snippet-stage{justify-content:center}.has-case-controls .ov-main{min-height:var(--overview-main-h,0px);align-items:center}}
 
 /* A media-led index uses the chapter width without a separate preview panel. */
 .media-index,.enh .panel>.wrap.media-index{display:flex;flex-direction:column;justify-content:center;gap:10px;align-items:stretch}

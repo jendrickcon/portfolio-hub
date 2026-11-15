@@ -1,4 +1,4 @@
-/* A quiet, decorative routing field for the About section. */
+/* A quiet, decorative routing field for the About section with Light/Dark theme adaptation. */
 (() => {
   const section = document.getElementById('about');
   const canvas = section && section.querySelector('.about-field');
@@ -14,6 +14,7 @@
   const enabled = () => !reduced.matches && !coarse.matches && innerWidth >= 769 && width >= 700 && height >= 280;
   const canDraw = () => connected && visible && !document.hidden && enabled();
   const seed = n => { const value = Math.sin(n * 91.437) * 43758.5453; return value - Math.floor(value); };
+  const isLight = () => document.documentElement.getAttribute('data-theme') === 'light';
 
   function buildField() {
     const cols = width >= 1450 ? 10 : 9;
@@ -42,10 +43,13 @@
     ctx.clearRect(0, 0, width, height);
     if (!canDraw()) return;
     ctx.lineWidth = 1;
+    const light = isLight();
     routes.forEach(([from, to]) => {
       const a = nodes[from], b = nodes[to], active = Math.max(influence(a), influence(b));
-      const alpha = .055 + active * .11;
-      ctx.strokeStyle = `rgba(151, 173, 193, ${alpha})`;
+      const alpha = light ? (.035 + active * .07) : (.055 + active * .11);
+      ctx.strokeStyle = light
+        ? `rgba(80, 105, 128, ${alpha})`
+        : `rgba(151, 173, 193, ${alpha})`;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       if (Math.abs(a.x - b.x) > Math.abs(a.y - b.y)) {
@@ -60,7 +64,15 @@
     });
     nodes.forEach(node => {
       const active = influence(node);
-      ctx.fillStyle = `rgba(161, 182, 200, ${.13 + active * .22})`;
+      if (light) {
+        ctx.fillStyle = node.tone > .86
+          ? `rgba(45, 106, 79, ${.18 + active * .28})`
+          : `rgba(90, 110, 130, ${.11 + active * .18})`;
+      } else {
+        ctx.fillStyle = node.tone > .86
+          ? `rgba(125, 184, 150, ${.18 + active * .30})`
+          : `rgba(161, 182, 200, ${.13 + active * .22})`;
+      }
       const size = node.tone > .86 ? 3 : 2;
       ctx.fillRect(node.x - size / 2, node.y - size / 2, size, size);
     });
@@ -119,6 +131,16 @@
     else { pointer.strength = 0; paint(); }
   }, { threshold: 0 }) : null;
 
+  // Repaint immediately when theme changes without full rebuild
+  const themeObserver = 'MutationObserver' in window ? new MutationObserver(mutations => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && (m.attributeName === 'data-theme' || m.attributeName === 'data-theme-preference')) {
+        paint();
+        break;
+      }
+    }
+  }) : null;
+
   function connect() {
     if (connected) return;
     connected = true;
@@ -130,6 +152,7 @@
     coarse.addEventListener('change', resize);
     if (observer) observer.observe(section);
     else { window.addEventListener('scroll', onScrollFallback, { passive: true }); onScrollFallback(); }
+    if (themeObserver) themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     resize();
   }
   function disconnect() {
@@ -143,6 +166,7 @@
     coarse.removeEventListener('change', resize);
     if (observer) observer.disconnect();
     else window.removeEventListener('scroll', onScrollFallback);
+    if (themeObserver) themeObserver.disconnect();
   }
   window.addEventListener('pagehide', disconnect);
   window.addEventListener('pageshow', connect);

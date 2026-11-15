@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#11151b">
 <link rel="icon" href="data:,">
+<script>
+(()=>{try{const k='portfolio-theme',s=localStorage.getItem(k),p=(s==='light'||s==='dark'||s==='system')?s:'system',d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches,r=p==='system'?(d?'dark':'light'):p,el=document.documentElement;el.setAttribute('data-theme',r);el.setAttribute('data-theme-preference',p);el.style.colorScheme=r;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=r==='dark'?'#11151b':'#f4f6f5';}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
 <title>Jendrick Coniconde | Professional Portfolio</title>
 <meta name="description" content="Selected work in UI design, front-end development, QA and systems integration by Jendrick Coniconde.">
 <link rel="stylesheet" href="style.css">
@@ -20,7 +24,14 @@
   <a class="nl mono" data-sec="journey" href="#journey">Journey<span class="rule" aria-hidden="true"><i></i></span></a>
   <a class="nl mono" data-sec="contact" href="#contact">Contact<span class="rule" aria-hidden="true"><i></i></span></a>
  </nav>
- <div class="res-top"><a class="btn btn-secondary" href="#resume-note">Request résumé ↗</a></div>
+ <div class="hdr-right">
+  <div class="theme-control" role="group" aria-label="Theme preference">
+   <button type="button" class="theme-opt" data-theme-val="system" aria-pressed="false" title="System theme"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="theme-text">System</span></button>
+   <button type="button" class="theme-opt" data-theme-val="light" aria-pressed="false" title="Light theme (Drafting Paper)"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="theme-text">Light</span></button>
+   <button type="button" class="theme-opt" data-theme-val="dark" aria-pressed="false" title="Dark theme (Ink)"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-text">Dark</span></button>
+  </div>
+  <div class="res-top"><a class="btn btn-secondary" href="#contact">Request résumé ↗</a></div>
+ </div>
 </div></header>
 
 <main id="main">

@@ -7,6 +7,51 @@
   const footer = document.querySelector('footer');
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
   const secs = ['about','work','capabilities','journey','contact'].map(id => document.getElementById(id));
+
+  /* Theme Controller: System, Light, Dark */
+  const themeKey = 'portfolio-theme';
+  const themeOpts = [...document.querySelectorAll('.theme-opt')];
+  const systemScheme = matchMedia('(prefers-color-scheme: dark)');
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  let currentPref = html.getAttribute('data-theme-preference') || 'system';
+
+  function applyTheme(pref, { animate = false } = {}) {
+    currentPref = (pref === 'light' || pref === 'dark' || pref === 'system') ? pref : 'system';
+    const isDark = currentPref === 'system' ? systemScheme.matches : currentPref === 'dark';
+    const resolved = isDark ? 'dark' : 'light';
+
+    if (animate && !motion.matches) {
+      html.classList.add('theme-transitioning');
+      setTimeout(() => html.classList.remove('theme-transitioning'), 220);
+    }
+
+    html.setAttribute('data-theme', resolved);
+    html.setAttribute('data-theme-preference', currentPref);
+    html.style.colorScheme = resolved;
+    if (metaTheme) metaTheme.content = isDark ? '#11151b' : '#f4f6f5';
+
+    themeOpts.forEach(btn => {
+      const active = btn.dataset.themeVal === currentPref;
+      btn.setAttribute('aria-pressed', String(active));
+    });
+
+    try {
+      localStorage.setItem(themeKey, currentPref);
+    } catch (e) {}
+  }
+
+  themeOpts.forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyTheme(btn.dataset.themeVal, { animate: true });
+    });
+  });
+
+  systemScheme.addEventListener('change', () => {
+    if (currentPref === 'system') applyTheme('system', { animate: true });
+  });
+
+  applyTheme(currentPref, { animate: false });
+
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');
   const clamp = v => Math.max(0, Math.min(1, v));
   const smooth = (from, to, value) => { const t = clamp((value - from) / (to - from)); return t * t * (3 - 2 * t); };

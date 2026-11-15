@@ -13,6 +13,7 @@
   const themeOpts = [...document.querySelectorAll('.theme-opt')];
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   const systemScheme = matchMedia('(prefers-color-scheme: dark)');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let currentPref = html.getAttribute('data-theme-preference') || 'system';
 
   function applyTheme(pref, { animate = false } = {}) {
@@ -84,9 +85,126 @@
 
   applyTheme(currentPref, { animate: false });
 
-  /* Project-Linked Toolkit: smooth intrinsic-height CSS Grid disclosure */
+  /* Project-Linked Toolkit: Single-Card Takeover with Origin Cue & Sibling Transitions */
   (() => {
     const grids = $$('.toolkit-grid');
+    if (!grids.length) return;
+
+    let activeEntry = null;
+    let pendingTimer = null;
+
+    function getGridCols(grid) {
+      const comp = getComputedStyle(grid).gridTemplateColumns;
+      return comp ? comp.split(' ').filter(Boolean).length : 1;
+    }
+
+    function computeOrigin(entry) {
+      const cols = getGridCols(entry.grid);
+      if (cols <= 1) return 'left';
+      const col = entry.cardIndex % cols;
+      if (col === 0) return 'left';
+      if (col === cols - 1) return 'right';
+      return 'center';
+    }
+
+    function closeItem(restoreFocus = true, callback = null) {
+      if (pendingTimer) {
+        clearTimeout(pendingTimer);
+        pendingTimer = null;
+      }
+      if (!activeEntry) {
+        if (typeof callback === 'function') callback();
+        return;
+      }
+
+      const current = activeEntry;
+      activeEntry = null;
+
+      if (motion.matches) {
+        current.card.classList.remove('is-open');
+        current.card.removeAttribute('data-origin');
+        current.btn.setAttribute('aria-expanded', 'false');
+        current.siblings.forEach(s => {
+          s.classList.remove('is-sibling-exiting', 'is-sibling-entering');
+          s.hidden = false;
+          s.inert = false;
+        });
+        if (restoreFocus) current.btn.focus({ preventScroll: true });
+        if (typeof callback === 'function') callback();
+        return;
+      }
+
+      // Animated close: collapse detail first
+      current.card.classList.remove('is-open');
+      current.btn.setAttribute('aria-expanded', 'false');
+
+      pendingTimer = setTimeout(() => {
+        pendingTimer = null;
+        current.card.removeAttribute('data-origin');
+        current.siblings.forEach(s => {
+          s.classList.add('is-sibling-entering');
+          s.hidden = false;
+          s.inert = false;
+        });
+        // Force reflow for smooth fade-in
+        void current.card.offsetHeight;
+        requestAnimationFrame(() => {
+          current.siblings.forEach(s => s.classList.remove('is-sibling-entering'));
+        });
+        if (restoreFocus) current.btn.focus({ preventScroll: true });
+        if (typeof callback === 'function') callback();
+      }, 160);
+    }
+
+    function performOpen(entry) {
+      if (pendingTimer) {
+        clearTimeout(pendingTimer);
+        pendingTimer = null;
+      }
+
+      entry.card.dataset.origin = computeOrigin(entry);
+
+      if (motion.matches) {
+        entry.siblings.forEach(s => {
+          s.hidden = true;
+          s.inert = true;
+        });
+        entry.card.classList.add('is-open');
+        entry.btn.setAttribute('aria-expanded', 'true');
+        activeEntry = entry;
+        return;
+      }
+
+      // Animated open: siblings fade out, then hide, then card expands
+      entry.siblings.forEach(s => s.classList.add('is-sibling-exiting'));
+
+      pendingTimer = setTimeout(() => {
+        pendingTimer = null;
+        entry.siblings.forEach(s => {
+          s.classList.remove('is-sibling-exiting');
+          s.hidden = true;
+          s.inert = true;
+        });
+        entry.card.classList.add('is-open');
+        entry.btn.setAttribute('aria-expanded', 'true');
+        activeEntry = entry;
+      }, 140);
+    }
+
+    function openItem(entry) {
+      if (activeEntry === entry) {
+        closeItem(true);
+        return;
+      }
+      if (activeEntry) {
+        closeItem(false, () => performOpen(entry));
+        return;
+      }
+      performOpen(entry);
+    }
+
+    const allEntries = [];
+
     grids.forEach((grid, gi) => {
       const cards = [...grid.querySelectorAll(':scope > .tool-card')];
       cards.forEach((card, ci) => {
@@ -95,11 +213,15 @@
         const refs = card.querySelector('.tool-refs');
         if (!head || !desc || !refs) return;
 
+        const panelId = 'tool-' + gi + '-' + ci + '-panel';
+        const btnId = 'tool-' + gi + '-' + ci + '-btn';
+        const toolNameText = head.textContent.trim();
+        const toolUsedText = refs.textContent.trim();
+
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'tool-toggle';
-        const panelId = 'tool-' + gi + '-' + ci + '-panel';
-        btn.id = 'tool-' + gi + '-' + ci + '-btn';
+        btn.id = btnId;
         btn.setAttribute('aria-expanded', 'false');
         btn.setAttribute('aria-controls', panelId);
 
@@ -108,11 +230,11 @@
 
         const nameSpan = document.createElement('span');
         nameSpan.className = 'tool-name';
-        nameSpan.textContent = head.textContent.trim();
+        nameSpan.textContent = toolNameText;
 
         const usedSpan = document.createElement('span');
         usedSpan.className = 'tool-used mono';
-        usedSpan.textContent = refs.textContent.trim();
+        usedSpan.textContent = toolUsedText;
 
         toggleMain.append(nameSpan, usedSpan);
 
@@ -126,39 +248,76 @@
         collapse.className = 'tool-collapse';
         collapse.id = panelId;
         collapse.setAttribute('role', 'region');
-        collapse.setAttribute('aria-labelledby', btn.id);
+        collapse.setAttribute('aria-labelledby', btnId);
 
         const inner = document.createElement('div');
         inner.className = 'tool-collapse-inner';
-        inner.appendChild(desc);
+
+        const detailBody = document.createElement('div');
+        detailBody.className = 'tool-detail-body';
+        detailBody.appendChild(desc);
+
+        const detailFooter = document.createElement('div');
+        detailFooter.className = 'tool-detail-footer';
+
+        const proofSpan = document.createElement('span');
+        proofSpan.className = 'tool-detail-proof mono';
+        proofSpan.innerHTML = '<span class="tool-proof-label">Evidence:</span> ' + toolUsedText;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'tool-close-btn';
+        closeBtn.setAttribute('aria-label', 'Close ' + toolNameText + ' details');
+        closeBtn.innerHTML = '<span>Close details</span><svg class="tool-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+        detailFooter.append(proofSpan, closeBtn);
+        detailBody.appendChild(detailFooter);
+        inner.appendChild(detailBody);
         collapse.appendChild(inner);
 
         head.remove();
         refs.remove();
         card.replaceChildren(btn, collapse);
 
-        btn.addEventListener('click', () => {
-          const isOpen = card.classList.toggle('is-open');
-          btn.setAttribute('aria-expanded', String(isOpen));
+        const entry = {
+          card,
+          grid,
+          btn,
+          closeBtn,
+          cardIndex: ci,
+          siblings: []
+        };
+        allEntries.push(entry);
+
+        btn.addEventListener('click', () => openItem(entry));
+        closeBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          closeItem(true);
         });
+      });
+    });
+
+    // Populate siblings per grid
+    grids.forEach(grid => {
+      const gridEntries = allEntries.filter(e => e.grid === grid);
+      gridEntries.forEach(entry => {
+        entry.siblings = gridEntries.filter(e => e !== entry).map(e => e.card);
       });
     });
 
     if (grids.length) html.classList.add('toolkit-ready');
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        const activeCard = document.activeElement && document.activeElement.closest('.tool-card.is-open');
-        if (activeCard) {
-          activeCard.classList.remove('is-open');
-          const toggle = activeCard.querySelector('.tool-toggle');
-          if (toggle) {
-            toggle.setAttribute('aria-expanded', 'false');
-            toggle.focus({ preventScroll: true });
-          }
-        }
+      if (e.key === 'Escape' && activeEntry) {
+        closeItem(true);
       }
     });
+
+    window.addEventListener('resize', () => {
+      if (activeEntry) {
+        activeEntry.card.dataset.origin = computeOrigin(activeEntry);
+      }
+    }, { passive: true });
   })();
 
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');
@@ -686,7 +845,6 @@
     }, { threshold: [0, 1] }).observe(footer);
   }
 
-  const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let navigationId = 0;
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 

@@ -15,14 +15,43 @@
 
   /* Snippet interactive state controller */
   const snippetData = {
-    'udm-radar': { tag: 'UDM-RADAR // STUDENT PORTAL', href: '#udm-radar', caption: 'Current CCS light-theme student interface · synthetic example.' },
-    'studyquest': { tag: 'STUDYQUEST // LEARNING PATH', href: '#studyquest', caption: 'Course, review and assessment interfaces · sample content.' },
-    'mini-pcs': { tag: 'MINI PCS // BATCH WORKFLOW', href: '#mini-pcs', caption: 'Batch and task workflow · sample records.' }
+    'udm-radar': { tag: 'UDM-RADAR · Student portal', href: '#udm-radar', caption: 'Current CCS light-theme student interface · synthetic example.' },
+    'studyquest': { tag: 'StudyQuest · Learning path', href: '#studyquest', caption: 'Course, review and assessment interfaces · sample content.' },
+    'mini-pcs': { tag: 'Mini PCS · Batch workflow', href: '#mini-pcs', caption: 'Batch and task workflow · sample records.' }
   };
   const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
   document.querySelector('.mobile-tabs').hidden = false;
   const snippetTag = document.getElementById('snippet-tag');
   const snippetJump = document.getElementById('snippet-jump-link');
+
+  // Transition between measured content heights, then restore intrinsic sizing.
+  const previewBody = document.querySelector('.snippet-body');
+  const reducePreviewMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let previewTimer, previewFrame;
+  function finishPreviewResize() {
+    clearTimeout(previewTimer);
+    cancelAnimationFrame(previewFrame);
+    previewBody.style.transition = '';
+    previewBody.style.height = '';
+    previewBody.style.overflow = '';
+  }
+  function resizePreview(change) {
+    const from = previewBody.getBoundingClientRect().height;
+    finishPreviewResize();
+    change();
+    if (reducePreviewMotion.matches) return;
+    const to = previewBody.getBoundingClientRect().height;
+    if (Math.abs(from - to) < 1) return;
+    previewBody.style.overflow = 'hidden';
+    previewBody.style.transition = 'none';
+    previewBody.style.height = from + 'px';
+    void previewBody.offsetHeight;
+    previewBody.style.transition = 'height 280ms cubic-bezier(.2,.7,.2,1)';
+    previewFrame = requestAnimationFrame(() => { previewBody.style.height = to + 'px'; });
+    previewTimer = setTimeout(finishPreviewResize, 320);
+  }
+  window.addEventListener('resize', finishPreviewResize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { finishPreviewResize(); layout(); });
 
   function setSnippet(key) {
     if (!snippetData[key]) return;
@@ -30,15 +59,17 @@
       const match = r.dataset.target === key;
       r.classList.toggle('active', match);
       const stateEl = r.querySelector('.state');
-      if (stateEl) stateEl.textContent = match ? 'Previewing snippet' : 'Hover to inspect';
+      if (stateEl) stateEl.textContent = match ? 'Previewing' : 'Hover to preview';
     });
     mtabs.forEach(b => {
       b.classList.toggle('active', b.dataset.tab === key);
       b.setAttribute('aria-pressed', String(b.dataset.tab === key));
     });
-    views.forEach(v => {
-      v.classList.toggle('active', v.id === 'view-' + key);
-    });
+    if (!document.getElementById('view-' + key).classList.contains('active')) {
+      resizePreview(() => views.forEach(v => {
+        v.classList.toggle('active', v.id === 'view-' + key);
+      }));
+    }
     if (snippetTag) snippetTag.textContent = snippetData[key].tag;
     document.querySelector('.snippet-caption').textContent = snippetData[key].caption;
     if (snippetJump) snippetJump.setAttribute('href', snippetData[key].href);
@@ -66,8 +97,13 @@
     const buttons = [...nav.querySelectorAll('[data-demo-target]')];
     const pages = [...demo.querySelectorAll('[data-demo-view]')];
     const select = button => {
-      buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-      pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
+      if (button.getAttribute('aria-pressed') === 'true') return;
+      const change = () => {
+        buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
+      };
+      if (demo.closest('.snippet-body')) resizePreview(change);
+      else change();
     };
     buttons.forEach(button => {
       button.addEventListener('pointerenter', event => {
@@ -78,39 +114,21 @@
     });
   });
 
-  // A single persistent preview for supporting work; links remain independent.
-  const supportData = {
-    audiary: ['AUDIARY', 'SOURCE-FAITHFUL RECONSTRUCTION', 'Audiary Explore interface and README · illustrative offline collection.'],
-    laya: ['LAYA', 'PLACEHOLDER', 'LAYA repository · device verification pending.'],
-    waffle: ['WAFFLE’S NINE LIVES', 'SOURCE-FAITHFUL RECONSTRUCTION', 'Waffle’s Nine Lives Renderer.kt and Palette.kt · illustrative gameplay.'],
-    gallery: ['ENUHRI ART GALLERY', 'PLACEHOLDER', 'Portfolio Hub Art Gallery source · security and rendering work remains.'],
-    cyber: ['CYBERDEFENDER', 'SOURCE-FAITHFUL RECONSTRUCTION', 'CyberDefender web battle interface · illustrative encounter.'],
-    sandbox: ['SANDBOX', 'SOURCE-FAITHFUL RECONSTRUCTION', 'Sandbox canvas and toolbar source · static illustration.'],
-    devpath: ['DEVPATH', 'PLACEHOLDER', 'DevPath source · development paused.']
-  };
-  const supportCards = $$('[data-support-card]'), supportViews = $$('[data-support-view]');
-  function selectSupport(key) {
-    const data = supportData[key];
-    if (!data) return;
-    supportCards.forEach(card => {
-      const selected = card.dataset.supportCard === key;
-      card.classList.toggle('active', selected);
-      card.querySelector('[data-support-target]').setAttribute('aria-pressed', String(selected));
+  // Keep a direct image link as the fallback when dialogs are unavailable.
+  const imageLink = document.querySelector('.audiary-image-link');
+  const imageDialog = document.querySelector('.media-lightbox');
+  if (imageDialog && typeof imageDialog.showModal === 'function') {
+    imageLink.setAttribute('aria-haspopup', 'dialog');
+    imageLink.addEventListener('click', event => {
+      event.preventDefault();
+      imageDialog.showModal();
     });
-    supportViews.forEach(view => { view.hidden = view.dataset.supportView !== key; });
-    document.getElementById('support-name').textContent = data[0];
-    document.getElementById('support-evidence').textContent = data[1];
-    document.getElementById('support-caption').textContent = data[2];
+    imageDialog.querySelector('button').addEventListener('click', () => imageDialog.close());
+    imageDialog.addEventListener('click', event => {
+      if (event.target === imageDialog) imageDialog.close();
+    });
+    imageDialog.addEventListener('close', () => imageLink.focus({ preventScroll: true }));
   }
-  supportCards.forEach(card => {
-    const button = card.querySelector('[data-support-target]');
-    button.hidden = false;
-    card.addEventListener('pointerenter', event => {
-      if (event.pointerType === 'mouse' || event.pointerType === 'pen') selectSupport(card.dataset.supportCard);
-    });
-    card.addEventListener('focusin', () => selectSupport(card.dataset.supportCard));
-    button.addEventListener('click', () => selectSupport(card.dataset.supportCard));
-  });
 
   /* Math & Track Geometry */
   let maxX = 1, panelStarts = [], footerVisible = false;

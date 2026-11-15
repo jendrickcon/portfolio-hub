@@ -837,3 +837,15 @@ footer.ink{border-top:1px solid var(--line-strong)}
   color:var(--body-text);
 }
 [data-theme="light"] .mk{font-weight:500}
+
+/* ===== Final cleanup: SVG action icons, hero wrapping, project action column ===== */
+.ico{width:16px;height:16px;flex:none}
+.ico.ext{margin-left:5px;vertical-align:-2px}
+.contact .btn,.contact-link{display:inline-flex;align-items:center;gap:9px}
+.frow-act .jump{gap:6px;white-space:nowrap;padding:3px 10px;min-height:30px}
+.snippet-jump{gap:6px;white-space:nowrap}
+.next{gap:6px}
+.ov-cue{display:inline-flex;align-items:center;gap:4px}
+.jr li p strong{font-weight:600;color:var(--text)}
+.about h1{text-wrap:balance;font-size:clamp(36px,5vw,76px);max-width:17em}
+@media(max-width:600px){.about h1{font-size:clamp(34px,9vw,48px)}}

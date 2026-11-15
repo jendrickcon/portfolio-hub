@@ -1,5 +1,9 @@
 /* One decorative, theme-aware routing field for the complete portfolio.
-   Restored simple, lightweight architecture based on commit 8593ee1. */
+   Lightweight by design: one fixed canvas, plain strokes and fills (no glow, no
+   compositing, no route tracking), direct distance-based pointer response, and
+   a single shared requestAnimationFrame loop that stops as soon as nothing changes.
+   During the horizontal Work stage the whole field shifts a few pixels, derived
+   directly from Work progress (no velocity, no spring, no momentum). */
 (() => {
   const canvas = document.getElementById('page-field');
   if (!canvas) return;
@@ -9,21 +13,20 @@
   const html = document.documentElement;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const coarse = matchMedia('(pointer: coarse)');
+  const PARALLAX = 10;            // total horizontal travel (CSS px) across the Work sequence
+  const HOLD = 100;               // ms the pointer response is held after the last movement
   let width = 0, height = 0, nodes = [], routes = [];
-  let connected = false, frame = 0, lastDraw = 0;
-  let lastScrollY = scrollY, lastScrollTime = performance.now(), lastScrollAt = 0;
-  let scrollInput = 0, workVelocity = 0, contactCalm = 0;
+  let connected = false, frame = 0, blend = 0, lastProgress = -1;
   const pointer = { x: 0, y: 0, strength: 0, lastMove: 0, inside: false };
+  const clamp = v => Math.max(0, Math.min(1, v));
   const seed = n => { const value = Math.sin(n * 91.437) * 43758.5453; return value - Math.floor(value); };
   const animated = () => connected && !document.hidden && !reduced.matches && !coarse.matches && width >= 769 && height >= 300;
   const light = () => html.getAttribute('data-theme') === 'light';
+  const workOn = () => animated() && window.__portfolioWorkActive === true && html.dataset.activeSection === 'work';
+  const workProgress = () => clamp(window.__portfolioWorkProgress || 0);
 
-  // Quick theme change handler
-  window.onFieldThemeChange = () => {
-    if (!document.hidden) {
-      paint(performance.now(), animated());
-    }
-  };
+  // Theme changes repaint once with the current geometry and Work offset.
+  window.onFieldThemeChange = () => { if (!document.hidden) paint(); };
 
   function buildField() {
     const cols = width >= 1450 ? 10 : width >= 769 ? 9 : 6;
@@ -36,8 +39,7 @@
         nodes.push({
           x: width * (.04 + .92 * x / (cols - 1)) + (seed(id + 1) - .5) * 20,
           y: height * (.09 + .82 * y / (rows - 1)) + (seed(id + 61) - .5) * 20,
-          tone: seed(id + 201), phase: seed(id + 301) * Math.PI * 2,
-          drawX: 0, drawY: 0, active: 0
+          tone: seed(id + 201), drawX: 0, active: 0
         });
         if (x > 0 && (x + y) % 3 !== 0) routes.push([id - 1, id]);
         if (y > 0 && (x + y * 2) % 4 === 0) routes.push([id - cols, id]);
@@ -45,18 +47,19 @@
     }
   }
 
-  function paint(now, moving) {
+  function paint() {
     ctx.clearRect(0, 0, width, height);
-    const isLight = light(), drift = moving ? 1 - contactCalm : 0;
+    const isLight = light();
+    const offset = animated() ? blend * (workProgress() - .5) * PARALLAX : 0;
 
-    // 1. Calculate node positions & modest distance-based activation
+    // Direct, distance-based proximity: no stored position along a route.
     for (const node of nodes) {
-      node.drawX = node.x + drift * (Math.sin(now / 1100 + node.phase) * 1.25 - workVelocity * 3.2 * (.4 + node.tone * .6));
-      node.drawY = node.y + drift * Math.cos(now / 1400 + node.phase) * .8;
-      node.active = pointer.strength ? Math.max(0, 1 - Math.hypot(node.x - pointer.x, node.y - pointer.y) / 145) * pointer.strength : 0;
+      node.drawX = node.x + offset;
+      node.active = pointer.strength
+        ? Math.max(0, 1 - Math.hypot(node.x - pointer.x, node.y - pointer.y) / 145) * pointer.strength
+        : 0;
     }
 
-    // 2. Draw routes in a single lightweight pass (1px crisp stroke, zero shadow blur)
     ctx.lineWidth = 1;
     for (const route of routes) {
       const a = nodes[route[0]], b = nodes[route[1]];
@@ -64,34 +67,26 @@
       const alpha = isLight ? (.15 + active * .13) : (.075 + active * .08);
       ctx.strokeStyle = (isLight ? 'rgba(52, 82, 138, ' : 'rgba(151, 173, 193, ') + alpha + ')';
       ctx.beginPath();
-      ctx.moveTo(a.drawX, a.drawY);
+      ctx.moveTo(a.drawX, a.y);
       if (Math.abs(a.x - b.x) > Math.abs(a.y - b.y)) {
-        const mid = (a.drawX + b.drawX) / 2 - workVelocity * drift * 2;
-        ctx.lineTo(mid, a.drawY);
-        ctx.lineTo(mid, b.drawY);
+        const mid = (a.drawX + b.drawX) / 2;
+        ctx.lineTo(mid, a.y);
+        ctx.lineTo(mid, b.y);
       } else {
-        const mid = (a.drawY + b.drawY) / 2;
+        const mid = (a.y + b.y) / 2;
         ctx.lineTo(a.drawX, mid);
         ctx.lineTo(b.drawX, mid);
       }
-      ctx.lineTo(b.drawX, b.drawY);
+      ctx.lineTo(b.drawX, b.y);
       ctx.stroke();
     }
 
-    // 3. Draw nodes in a single lightweight pass
     for (const node of nodes) {
-      const pulse = drift * (Math.sin(now / 1300 + node.phase) + 1) * .025;
-      if (isLight) {
-        ctx.fillStyle = node.tone > .86
-          ? 'rgba(45, 106, 79, ' + (.36 + pulse + node.active * .20) + ')'
-          : 'rgba(52, 82, 138, ' + (.28 + pulse + node.active * .18) + ')';
-      } else {
-        ctx.fillStyle = node.tone > .86
-          ? 'rgba(125, 184, 150, ' + (.17 + pulse + node.active * .20) + ')'
-          : 'rgba(161, 182, 200, ' + (.12 + pulse + node.active * .16) + ')';
-      }
+      ctx.fillStyle = isLight
+        ? (node.tone > .86 ? 'rgba(45, 106, 79, ' + (.36 + node.active * .20) + ')' : 'rgba(52, 82, 138, ' + (.28 + node.active * .18) + ')')
+        : (node.tone > .86 ? 'rgba(125, 184, 150, ' + (.17 + node.active * .20) + ')' : 'rgba(161, 182, 200, ' + (.12 + node.active * .16) + ')');
       const size = node.tone > .86 ? 3 : 2;
-      ctx.fillRect(node.drawX - size / 2, node.drawY - size / 2, size, size);
+      ctx.fillRect(node.drawX - size / 2, node.y - size / 2, size, size);
     }
   }
 
@@ -100,32 +95,27 @@
     frame = 0;
   }
 
+  // The only animation loop. Every event requests it through schedule();
+  // it runs while something is changing and ends on the first idle frame.
   function tick(now) {
     frame = 0;
     if (!animated()) return;
-    if (now - lastDraw >= 32) {
-      lastDraw = now;
-      const pointerTarget = pointer.inside && now - pointer.lastMove < 100 ? 1 : 0;
-      const rate = pointerTarget ? .30 : .45;
-      pointer.strength += (pointerTarget - pointer.strength) * rate;
-      if (!pointerTarget && pointer.strength < .02) pointer.strength = 0;
 
-      const work = html.dataset.activeSection === 'work' && html.classList.contains('enh');
-      const target = work && now - lastScrollAt < 160 ? scrollInput : 0;
-      workVelocity += (target - workVelocity) * .15;
-      if (!target && Math.abs(workVelocity) < .002) workVelocity = 0;
+    const hold = pointer.inside && now - pointer.lastMove < HOLD;
+    pointer.strength += ((hold ? 1 : 0) - pointer.strength) * (hold ? .35 : .45);
+    if (!hold && pointer.strength < .02) pointer.strength = 0;
 
-      const calmTarget = html.dataset.activeSection === 'contact' ? 1 : 0;
-      contactCalm += (calmTarget - contactCalm) * .05;
-      if (calmTarget && contactCalm > .995) contactCalm = 1;
-      if (!calmTarget && contactCalm < .005) contactCalm = 0;
+    // Short scalar blend only when entering or leaving Work; the offset itself follows progress directly.
+    const target = workOn() ? 1 : 0;
+    blend += (target - blend) * .3;
+    if (Math.abs(target - blend) < .01) blend = target;
 
-      paint(now, true);
-    }
-    const calmActive = html.dataset.activeSection === 'contact' ? contactCalm < 0.995 : contactCalm > 0.005;
-    if (calmActive || pointer.strength > 0 || (pointer.inside && now - pointer.lastMove < 100) || workVelocity !== 0) {
-      frame = requestAnimationFrame(tick);
-    }
+    const progress = workProgress();
+    const moved = blend > 0 && Math.abs(progress - lastProgress) > .0002;
+    lastProgress = progress;
+
+    paint();
+    if (hold || pointer.strength > 0 || blend !== target || moved) frame = requestAnimationFrame(tick);
   }
 
   function schedule() {
@@ -142,7 +132,7 @@
     pointer.strength = 0;
     buildField();
     stop();
-    paint(performance.now(), animated());
+    paint();
     schedule();
   }
 
@@ -155,24 +145,20 @@
     schedule();
   }
 
-  function onScroll() {
-    const now = performance.now(), delta = scrollY - lastScrollY;
-    if (Math.abs(delta) > .5) {
-      scrollInput = Math.max(-1, Math.min(1, delta / Math.max(16, now - lastScrollTime) * .45));
-      lastScrollAt = now;
-    }
-    lastScrollY = scrollY;
-    lastScrollTime = now;
-    schedule();
+  function onLeave() {
+    pointer.inside = false;
+    pointer.strength = 0;
+    paint();
   }
+
+  // Work progress is published by script.js; a scroll only requests one shared frame.
+  function onScroll() { schedule(); }
 
   function onVisibility() {
     if (document.hidden) stop();
     else {
       pointer.strength = 0;
-      workVelocity = 0;
-      lastScrollY = scrollY;
-      paint(performance.now(), animated());
+      paint();
       schedule();
     }
   }
@@ -181,22 +167,20 @@
     stop();
     pointer.inside = false;
     pointer.strength = 0;
-    workVelocity = 0;
-    paint(performance.now(), animated());
+    blend = 0;
+    paint();
     schedule();
   }
 
   const themeObserver = 'MutationObserver' in window
-    ? new MutationObserver(() => {
-        if (!document.hidden) paint(performance.now(), animated());
-      })
+    ? new MutationObserver(() => { if (!document.hidden) paint(); })
     : null;
 
   function connect() {
     if (connected) return;
     connected = true;
     document.addEventListener('pointermove', onPointer, { passive: true });
-    document.addEventListener('pointerleave', onLeave);
+    html.addEventListener('pointerleave', onLeave);
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', resize, { passive: true });
     document.addEventListener('visibilitychange', onVisibility);
@@ -206,18 +190,12 @@
     resize();
   }
 
-  function onLeave() {
-    pointer.inside = false;
-    pointer.strength = 0;
-    paint(performance.now(), animated());
-  }
-
   function disconnect() {
     if (!connected) return;
     connected = false;
     stop();
     document.removeEventListener('pointermove', onPointer);
-    document.removeEventListener('pointerleave', onLeave);
+    html.removeEventListener('pointerleave', onLeave);
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', resize);
     document.removeEventListener('visibilitychange', onVisibility);

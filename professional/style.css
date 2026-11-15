@@ -350,6 +350,8 @@ html:not(.enh) .work-inline a{color:var(--blue-p)}
 .feature-intro{font-size:clamp(14px,1.12vw,16px);line-height:1.5;color:var(--mute-i);max-width:63ch}
 .feature-body{align-items:start}
 .feature-body>.chapter-preview,.feature-body>.case{min-width:0;align-self:start}
+.enh .feature-body>.chapter-preview{align-self:center}
+.enh .feature-body>.case{align-self:start}
 @media(max-width:960px){.feature-head,.feature-body{grid-template-columns:1fr;row-gap:16px}.panel .feature-title{font-size:clamp(46px,10vw,66px)}.feature-intro{font-size:15px}.feature-layout,.enh .panel>.wrap.feature-layout{gap:18px}.feature-head{align-items:start}}
 
 /* The shared stage wrapper has a 24px top inset; subtract it from the measured navigator clearance. */

@@ -8,14 +8,24 @@
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
   const secs = ['about','profile','work','capabilities','journey','contact'].map(id => document.getElementById(id));
 
-  /* Theme Controller: System, Light, Dark */
+  /* Theme Controller: Light, Dark only */
   const themeKey = 'portfolio-theme';
   const themeOpts = [...document.querySelectorAll('.theme-opt')];
   const metaTheme = document.querySelector('meta[name="theme-color"]');
-  const systemScheme = matchMedia('(prefers-color-scheme: dark)');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
-  let currentPref = html.getAttribute('data-theme-preference') || 'system';
+  let currentTheme = 'dark';
+  try {
+    let saved = localStorage.getItem(themeKey);
+    if (saved === 'system') {
+      saved = 'dark';
+      localStorage.setItem(themeKey, 'dark');
+    }
+    if (saved === 'light' || saved === 'dark') {
+      currentTheme = saved;
+    }
+  } catch (e) {}
 
+  let themeTransitionTimer = null;
   function applyTheme(pref, { animate = false } = {}) {
     let workPosition = null;
     if (animate && enh) {
@@ -34,31 +44,37 @@
         if (nearest >= 0) workPosition = { progress: null, nearest, wasEnhanced: false };
       }
     }
-    currentPref = (pref === 'light' || pref === 'dark' || pref === 'system') ? pref : 'system';
-    const isDark = currentPref === 'system' ? systemScheme.matches : currentPref === 'dark';
-    const resolved = isDark ? 'dark' : 'light';
+    const resolved = (pref === 'light' || pref === 'dark') ? pref : 'dark';
+    currentTheme = resolved;
 
     if (animate && !motion.matches) {
       html.classList.add('theme-transitioning');
-      setTimeout(() => html.classList.remove('theme-transitioning'), 220);
+      clearTimeout(themeTransitionTimer);
+      themeTransitionTimer = setTimeout(() => {
+        html.classList.remove('theme-transitioning');
+      }, 240);
     }
 
     html.setAttribute('data-theme', resolved);
-    html.setAttribute('data-theme-preference', currentPref);
+    html.removeAttribute('data-theme-preference');
     html.style.colorScheme = resolved;
-    if (metaTheme) metaTheme.content = isDark ? '#11151b' : '#f4f6f5';
+    if (metaTheme) metaTheme.content = resolved === 'dark' ? '#11151b' : '#f4f6f5';
 
     themeOpts.forEach(btn => {
-      const active = btn.dataset.themeVal === currentPref;
+      const active = btn.dataset.themeVal === resolved;
       btn.setAttribute('aria-pressed', String(active));
     });
 
     try {
-      localStorage.setItem(themeKey, currentPref);
+      localStorage.setItem(themeKey, resolved);
     } catch (e) {}
 
-    // Text and reading surfaces can change size between themes; recompute the
-    // Work layout after an intentional switch so nothing is clipped.
+    // Notify field canvas for smooth palette interpolation
+    if (typeof window.onFieldThemeChange === 'function') {
+      window.onFieldThemeChange(resolved, animate && !motion.matches);
+    }
+
+    // Work layout recomputation after theme switch
     if (animate) requestAnimationFrame(() => {
       finishAllPreviewResizes();
       layout();
@@ -79,19 +95,59 @@
     });
   });
 
-  systemScheme.addEventListener('change', () => {
-    if (currentPref === 'system') applyTheme('system', { animate: true });
-  });
+  applyTheme(currentTheme, { animate: false });
 
-  applyTheme(currentPref, { animate: false });
-
-  /* Project-Linked Toolkit: Stable Stage Heights & Spatial FLIP Takeover */
+  /* Project-Linked Toolkit: Adaptive Natural Height & Spatial Takeover Lifecycle */
   (() => {
     const shelves = $$('.toolkit-shelf');
     if (!shelves.length) return;
 
     let activeEntry = null;
+    let closingEntry = null;
     let isTransitioning = false;
+    let openTimer1 = null, openTimer2 = null, openTimer3 = null;
+    let closeTimer1 = null, closeTimer2 = null;
+
+    function clearAllTimers() {
+      clearTimeout(openTimer1);
+      clearTimeout(openTimer2);
+      clearTimeout(openTimer3);
+      clearTimeout(closeTimer1);
+      clearTimeout(closeTimer2);
+    }
+
+    function cancelActiveCleanly() {
+      clearAllTimers();
+      const cur = activeEntry || closingEntry;
+      activeEntry = null;
+      closingEntry = null;
+      isTransitioning = false;
+
+      // Unconditionally ensure all shelves are in clean collapsed state
+      shelves.forEach(s => {
+        const t = s.querySelector('.tool-takeover');
+        if (t) {
+          t.hidden = true;
+          t.classList.remove('is-active', 'is-revealed');
+          t.setAttribute('aria-hidden', 'true');
+          t.style.transform = 'none';
+          t.style.transition = 'none';
+        }
+        const stg = s.querySelector('.tool-stage');
+        if (stg) stg.style.height = '';
+
+        const toggles = s.querySelectorAll('.tool-toggle');
+        toggles.forEach(b => b.setAttribute('aria-expanded', 'false'));
+
+        const cards = s.querySelectorAll('.tool-card');
+        cards.forEach(c => {
+          c.inert = false;
+          c.removeAttribute('aria-hidden');
+          c.style.visibility = '';
+          c.classList.remove('is-sibling-exiting', 'is-sibling-entering', 'is-selected-source');
+        });
+      });
+    }
 
     // Build takeover element contents and card toggles
     shelves.forEach((shelf, gi) => {
@@ -185,8 +241,6 @@
         btn.addEventListener('click', () => {
           if (activeEntry && activeEntry.card === card) {
             closeActive(true);
-          } else if (activeEntry) {
-            closeActive(false, () => performOpen(card));
           } else {
             performOpen(card);
           }
@@ -194,65 +248,24 @@
       });
     });
 
-    // Hidden measurement element for computing max expanded height per shelf
-    const measurer = document.createElement('div');
-    measurer.className = 'tool-takeover';
-    measurer.style.cssText = 'position:fixed;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;z-index:-1;display:block;transform:none;transition:none;';
-    measurer.innerHTML = `
-      <div class="tool-takeover-head"><span class="tool-takeover-main"><span class="tool-takeover-title"></span><span class="tool-takeover-refs mono"></span></span><span class="tool-takeover-chev"></span></div>
-      <div class="tool-takeover-body" style="opacity:1;transform:none;"><p class="tool-takeover-desc"></p><div class="tool-takeover-footer"><span class="tool-takeover-proof mono"></span><button type="button" class="tool-takeover-close-btn mono"><span>Close details</span></button></div></div>
-    `;
-    document.body.appendChild(measurer);
-    const mTitle = measurer.querySelector('.tool-takeover-title');
-    const mRefs = measurer.querySelector('.tool-takeover-refs');
-    const mDesc = measurer.querySelector('.tool-takeover-desc');
-    const mProof = measurer.querySelector('.tool-takeover-proof');
-
-    function updateStageHeights() {
-      const isDesktop = matchMedia('(min-width: 541px)').matches;
-      shelves.forEach(shelf => {
-        const stage = shelf.querySelector('.tool-stage');
-        const grid = shelf.querySelector('.toolkit-grid');
-        if (!stage || !grid) return;
-
-        if (!isDesktop) {
-          stage.style.removeProperty('--stage-h');
-          return;
-        }
-
-        const gridH = grid.offsetHeight;
-        let maxExpH = 0;
-        const stageW = stage.offsetWidth;
-        if (stageW > 0) {
-          measurer.style.width = stageW + 'px';
-          const cards = [...grid.querySelectorAll('.tool-card')];
-          cards.forEach(c => {
-            const d = c._toolData;
-            if (!d) return;
-            mTitle.textContent = d.name;
-            mRefs.textContent = d.refs;
-            mDesc.textContent = d.desc;
-            mProof.textContent = 'Evidence: ' + d.refs;
-            const h = measurer.offsetHeight;
-            if (h > maxExpH) maxExpH = h;
-          });
-        }
-
-        const stableH = Math.max(gridH, maxExpH);
-        stage.style.setProperty('--stage-h', stableH + 'px');
-      });
-    }
-
     function performOpen(card) {
-      if (isTransitioning) return;
+      if (activeEntry || closingEntry) {
+        cancelActiveCleanly();
+      }
       isTransitioning = true;
+      clearAllTimers();
 
       const d = card._toolData;
       const stage = d.stage;
+      const grid = d.grid;
       const takeover = d.takeover;
-      const siblings = [...d.grid.querySelectorAll('.tool-card')].filter(c => c !== card);
+      const siblings = [...grid.querySelectorAll('.tool-card')].filter(c => c !== card);
 
-      // Measure starting geometry relative to stage
+      // Step 1: Measure current collapsed grid height
+      const gridH = grid.offsetHeight;
+      stage.style.height = gridH + 'px';
+
+      // Step 2: Measure starting geometry relative to stage
       const cardRect = card.getBoundingClientRect();
       const stageRect = stage.getBoundingClientRect();
       const startX = cardRect.left - stageRect.left;
@@ -261,7 +274,7 @@
       const startH = cardRect.height;
       const endW = stageRect.width;
 
-      // Populate takeover
+      // Step 3: Populate takeover content
       takeover.querySelector('.tool-takeover-title').textContent = d.name;
       takeover.querySelector('.tool-takeover-refs').textContent = d.refs;
       takeover.querySelector('.tool-takeover-desc').textContent = d.desc;
@@ -269,65 +282,77 @@
       takeover.querySelector('.tool-takeover-close-btn').setAttribute('aria-label', `Close ${d.name} details`);
       takeover.querySelector('.tool-takeover-head').setAttribute('aria-expanded', 'true');
 
-      // Prepare takeover for FLIP measurement
+      // Step 4: Measure required expanded height in DOM
       takeover.hidden = false;
       takeover.style.width = '100%';
       takeover.style.transition = 'none';
       takeover.style.transform = 'none';
-      takeover.classList.remove('is-revealed');
-      takeover.classList.remove('is-active');
+      takeover.classList.remove('is-revealed', 'is-active');
 
-      const endH = takeover.offsetHeight;
-      const sx = startW / endW;
-      const sy = startH / endH;
+      const naturalExpH = takeover.offsetHeight;
+      const expH = Math.min(naturalExpH, 360);
+      const targetStageH = Math.max(gridH, expH);
+      const sx = endW > 0 ? startW / endW : 1;
+      const sy = expH > 0 ? startH / expH : 1;
 
       // Invert: position takeover exactly matching clicked card
       takeover.style.transform = `translate(${startX}px, ${startY}px) scale(${sx}, ${sy})`;
       takeover.classList.add('is-active');
       takeover.setAttribute('aria-hidden', 'false');
 
-      // Exit siblings and hide source card in grid
+      // Exit siblings
       card.classList.add('is-selected-source');
       siblings.forEach(s => s.classList.add('is-sibling-exiting'));
 
-      setTimeout(() => {
+      openTimer1 = setTimeout(() => {
         siblings.forEach(s => {
           s.inert = true;
           s.setAttribute('aria-hidden', 'true');
+          s.style.visibility = 'hidden';
         });
       }, 120);
 
-      // Play FLIP animation
+      // Force reflow
       void takeover.offsetHeight;
 
+      // Step 5: Animate stage height to target expanded height (following group moves down once)
+      if (targetStageH > gridH && !motion.matches) {
+        stage.style.height = targetStageH + 'px';
+      } else if (targetStageH > gridH) {
+        stage.style.height = targetStageH + 'px';
+      }
+
+      // Step 6: Play FLIP takeover animation
       if (motion.matches) {
         takeover.style.transform = 'translate(0px, 0px) scale(1, 1)';
         takeover.classList.add('is-revealed');
         isTransitioning = false;
       } else {
-        takeover.style.transition = 'transform 280ms cubic-bezier(.2,.7,.2,1)';
+        takeover.style.transition = 'transform 260ms cubic-bezier(.2,.7,.2,1)';
         takeover.style.transform = 'translate(0px, 0px) scale(1, 1)';
 
-        setTimeout(() => {
+        openTimer2 = setTimeout(() => {
           takeover.classList.add('is-revealed');
         }, 140);
 
-        setTimeout(() => {
+        openTimer3 = setTimeout(() => {
           isTransitioning = false;
-        }, 320);
+        }, 280);
       }
 
       d.btn.setAttribute('aria-expanded', 'true');
       activeEntry = {
         card,
         stage,
+        grid,
         takeover,
         siblings,
         startX,
         startY,
         sx,
         sy,
-        trigger: d.btn
+        trigger: d.btn,
+        expandedH: targetStageH
       };
     }
 
@@ -338,49 +363,74 @@
       }
 
       const current = activeEntry;
+      closingEntry = current;
       activeEntry = null;
       isTransitioning = true;
+      clearAllTimers();
 
-      // Phase A: Hide detail text (no text stretching)
+      // Phase A: Hide detail text immediately
       current.takeover.classList.remove('is-revealed');
 
+      // Phase B: Temporary height floor - keep stage height held at current expanded height!
+      const currentStageH = current.stage.offsetHeight;
+      current.stage.style.height = currentStageH + 'px';
+
       function finishClose() {
+        // Hide takeover shell
         current.takeover.hidden = true;
         current.takeover.classList.remove('is-active');
         current.takeover.setAttribute('aria-hidden', 'true');
         current.takeover.style.transform = 'none';
         current.takeover.style.transition = 'none';
 
+        // Restore siblings while height floor remains held
         current.card.classList.remove('is-selected-source');
         current.siblings.forEach(s => {
           s.inert = false;
           s.removeAttribute('aria-hidden');
+          s.style.visibility = '';
           s.classList.remove('is-sibling-exiting');
           s.classList.add('is-sibling-entering');
         });
 
+        // Force layout settle and measure true collapsed grid height
         void current.stage.offsetHeight;
         requestAnimationFrame(() => {
           current.siblings.forEach(s => s.classList.remove('is-sibling-entering'));
-        });
 
-        current.trigger.setAttribute('aria-expanded', 'false');
-        if (restoreFocus) current.trigger.focus({ preventScroll: true });
-        isTransitioning = false;
-        if (typeof callback === 'function') callback();
+          const finalCollapsedH = current.grid.offsetHeight;
+
+          if (motion.matches || Math.abs(currentStageH - finalCollapsedH) <= 1) {
+            current.stage.style.height = '';
+            current.trigger.setAttribute('aria-expanded', 'false');
+            if (restoreFocus) current.trigger.focus({ preventScroll: true });
+            isTransitioning = false;
+            closingEntry = null;
+            if (typeof callback === 'function') callback();
+          } else {
+            // Animate group height ONCE from held expanded height to final collapsed height
+            current.stage.style.height = finalCollapsedH + 'px';
+            closeTimer2 = setTimeout(() => {
+              current.stage.style.height = '';
+              current.trigger.setAttribute('aria-expanded', 'false');
+              if (restoreFocus) current.trigger.focus({ preventScroll: true });
+              isTransitioning = false;
+              closingEntry = null;
+              if (typeof callback === 'function') callback();
+            }, 260);
+          }
+        });
       }
 
       if (motion.matches) {
         finishClose();
       } else {
-        // Phase B: Return shell to source card geometry
-        setTimeout(() => {
-          current.takeover.style.transition = 'transform 260ms cubic-bezier(.2,.7,.2,1)';
-          current.takeover.style.transform = `translate(${current.startX}px, ${current.startY}px) scale(${current.sx}, ${current.sy})`;
+        // Reverse takeover shell animation to source card geometry (260ms)
+        // Stage height is rock-solid at currentStageH during this entire return!
+        current.takeover.style.transition = 'transform 260ms cubic-bezier(.2,.7,.2,1)';
+        current.takeover.style.transform = `translate(${current.startX}px, ${current.startY}px) scale(${current.sx}, ${current.sy})`;
 
-          // Phase C: Restore siblings and hide takeover
-          setTimeout(finishClose, 260);
-        }, 80);
+        closeTimer1 = setTimeout(finishClose, 260);
       }
     }
 
@@ -392,16 +442,11 @@
       }
     });
 
-    let resizeTimer = null;
     window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(updateStageHeights, 80);
+      if (activeEntry && !isTransitioning) {
+        activeEntry.stage.style.height = activeEntry.takeover.offsetHeight + 'px';
+      }
     }, { passive: true });
-
-    if ('fonts' in document) {
-      document.fonts.ready.then(updateStageHeights);
-    }
-    setTimeout(updateStageHeights, 100);
   })();
 
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');

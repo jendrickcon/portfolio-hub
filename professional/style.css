@@ -118,28 +118,21 @@
   --surface-contrast: #e6ece8;
 }
 
-/* Theme transition: applied dynamically during theme changes only */
-html.theme-transitioning,
-html.theme-transitioning body,
-html.theme-transitioning header,
-html.theme-transitioning section,
-html.theme-transitioning article,
-html.theme-transitioning nav,
-html.theme-transitioning footer,
-html.theme-transitioning aside,
-html.theme-transitioning p,
-html.theme-transitioning h1,
-html.theme-transitioning h2,
-html.theme-transitioning h3,
-html.theme-transitioning h4,
-html.theme-transitioning a,
-html.theme-transitioning button,
-html.theme-transitioning span,
-html.theme-transitioning dl,
-html.theme-transitioning dt,
-html.theme-transitioning dd {
-  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, fill 180ms ease, stroke 180ms ease !important;
+/* Theme transition tokens & transition behavior: applied dynamically during theme changes only */
+:root {
+  --motion-theme: 240ms;
+  --ease-theme: cubic-bezier(.2, .7, .2, 1);
 }
+
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition-property: background-color, color, border-color, outline-color, box-shadow, text-decoration-color, fill, stroke, opacity !important;
+  transition-duration: var(--motion-theme) !important;
+  transition-timing-function: var(--ease-theme) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.theme-transitioning,
   html.theme-transitioning * {
@@ -627,15 +620,13 @@ footer.ink{border-top:1px solid var(--line-strong)}
 .tool-stage{
   position:relative;
   width:100%;
+  min-height:auto;
+  transition:height 260ms cubic-bezier(.2,.7,.2,1);
+  will-change:height;
 }
-@media(min-width:541px){
+@media(prefers-reduced-motion:reduce){
   .tool-stage{
-    min-height:var(--stage-h, auto);
-  }
-}
-@media(max-width:540px){
-  .tool-stage{
-    min-height:auto;
+    transition:none !important;
   }
 }
 
@@ -806,18 +797,43 @@ footer.ink{border-top:1px solid var(--line-strong)}
   .tool-takeover{position:relative}
 }
 
-/* Light-mode reading hierarchy: reserve surfaces for dense information. */
-[data-theme="light"] .profile-intro,[data-theme="light"] .feature-intro,[data-theme="light"] .contact-intro,[data-theme="light"] .cap p,[data-theme="light"] .jr p{color:var(--body-text);font-size:16px;line-height:1.6}
-[data-theme="light"] .profile-intro{font-size:17px}
-[data-theme="light"] .case-detail .case-copy{color:var(--body-text);font-size:16px;line-height:1.6}
-[data-theme="light"] .case-detail .case-copy p{line-height:1.55}
-[data-theme="light"] .feature-layout dl.f div,[data-theme="light"] .feature-layout .pf div{font-size:14.5px;line-height:1.5}
-[data-theme="light"] .feature-layout dl.f dt,[data-theme="light"] .feature-layout .pf dt{font-size:14px}
-[data-theme="light"] .frow-desc,[data-theme="light"] .media-copy p,[data-theme="light"] .media-pending{color:var(--body-text);font-size:16px;line-height:1.55}
-[data-theme="light"] .oc p{color:var(--body-text);font-size:15px;line-height:1.5}
-[data-theme="light"] .profile-fact-value,[data-theme="light"] .resume-status{color:var(--body-text);font-size:14px;line-height:1.5}
-[data-theme="light"] .profile-fact-label,[data-theme="light"] .toolkit-shelf-title{font-size:12px}
-[data-theme="light"] .tool-used{font-size:13px;line-height:1.35}
-[data-theme="light"] .mk{font-size:14px;font-weight:500}
-[data-theme="light"] .case-state{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius-control);padding:14px 16px}
-[data-theme="light"] .contact>.wrap{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius-panel);padding:clamp(20px,3vw,36px)}
+/* Persistent surface containers & theme reading hierarchy (stationary geometry) */
+.case-state{
+  border:1px solid transparent;
+  border-radius:var(--radius-control);
+  padding:14px 16px;
+  background:transparent;
+  box-sizing:border-box;
+}
+.contact>.wrap{
+  border:1px solid transparent;
+  border-radius:var(--radius-panel);
+  padding:clamp(20px,3vw,36px);
+  background:transparent;
+  box-sizing:border-box;
+}
+
+[data-theme="light"] .case-state{
+  background:var(--surface);
+  border-color:var(--line-strong);
+}
+[data-theme="light"] .contact>.wrap{
+  background:var(--surface);
+  border-color:var(--line-strong);
+}
+
+[data-theme="light"] .profile-intro,
+[data-theme="light"] .feature-intro,
+[data-theme="light"] .contact-intro,
+[data-theme="light"] .cap p,
+[data-theme="light"] .jr p,
+[data-theme="light"] .case-detail .case-copy,
+[data-theme="light"] .frow-desc,
+[data-theme="light"] .media-copy p,
+[data-theme="light"] .media-pending,
+[data-theme="light"] .oc p,
+[data-theme="light"] .profile-fact-value,
+[data-theme="light"] .resume-status{
+  color:var(--body-text);
+}
+[data-theme="light"] .mk{font-weight:500}

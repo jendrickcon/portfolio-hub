@@ -94,6 +94,19 @@
     b.addEventListener('click', () => setSnippet(b.dataset.tab));
   });
 
+  // Layout changes can move a button under a stationary pointer. Count only
+  // actual pointer movement so those synthetic entries cannot trigger a loop.
+  let pointerRevision = 0, pointerPosition = null;
+  function trackPointer(event) {
+    if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+    if (!pointerPosition || event.clientX !== pointerPosition.x || event.clientY !== pointerPosition.y) {
+      pointerRevision++;
+      pointerPosition = { x: event.clientX, y: event.clientY };
+    }
+  }
+  document.addEventListener('pointermove', trackPointer, true);
+  document.addEventListener('pointerdown', trackPointer, true);
+
   // Each reconstruction owns its own preview state. Hover is an enhancement;
   // focus, activation and touch use the same controls without navigating.
   document.querySelectorAll('[data-demo-project]').forEach(demo => {
@@ -104,8 +117,16 @@
     fallback.hidden = true;
     const buttons = [...nav.querySelectorAll('[data-demo-target]')];
     const pages = [...demo.querySelectorAll('[data-demo-view]')];
+    let hoverTimer, hoverCandidate, lastSelectionRevision = -1;
+    const cancelHover = () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+      hoverCandidate = null;
+    };
     const select = button => {
+      cancelHover();
       if (button.getAttribute('aria-pressed') === 'true') return;
+      lastSelectionRevision = pointerRevision;
       const change = () => {
         buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
         pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
@@ -114,10 +135,21 @@
       if (container) resizePreview(container, change);
       else change();
     };
+    const scheduleHover = (button, event) => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      if (button.getAttribute('aria-pressed') === 'true') { cancelHover(); return; }
+      if (lastSelectionRevision === pointerRevision || hoverCandidate === button) return;
+      cancelHover();
+      hoverCandidate = button;
+      hoverTimer = setTimeout(() => {
+        if (button.matches(':hover')) select(button);
+        else cancelHover();
+      }, 200);
+    };
     buttons.forEach(button => {
-      button.addEventListener('pointerenter', event => {
-        if (event.pointerType === 'mouse' || event.pointerType === 'pen') select(button);
-      });
+      button.addEventListener('pointerenter', event => scheduleHover(button, event));
+      button.addEventListener('pointermove', event => scheduleHover(button, event));
+      button.addEventListener('pointerleave', () => { if (hoverCandidate === button) cancelHover(); });
       button.addEventListener('focus', () => select(button));
       button.addEventListener('click', () => select(button));
     });

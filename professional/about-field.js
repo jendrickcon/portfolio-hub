@@ -121,15 +121,15 @@
     ctx.stroke();
     ctx.restore();
 
-    // 4. Draw active routes: Line-local soft glow pass (narrow halo)
+    // 4. Draw active routes: Pass 1 - Outer wide soft halo (extends well beyond line geometry)
     const glowColor = isLight ? 'rgba(49, 95, 202, ' : 'rgba(127, 166, 255, ';
     for (const route of routes) {
       if (route.active > 0.01) {
         ctx.save();
-        ctx.strokeStyle = glowColor + (isLight ? (0.14 * route.active) : (0.20 * route.active)) + ')';
-        ctx.shadowColor = glowColor + (isLight ? (0.28 * route.active) : (0.38 * route.active)) + ')';
-        ctx.shadowBlur = isLight ? 7 : 8;
-        ctx.lineWidth = 1 + 2.2 * route.active;
+        ctx.strokeStyle = glowColor + (isLight ? (0.10 * route.active) : (0.14 * route.active)) + ')';
+        ctx.shadowColor = glowColor + (isLight ? (0.22 * route.active) : (0.30 * route.active)) + ')';
+        ctx.shadowBlur = isLight ? 12 : 14;
+        ctx.lineWidth = 6.5 + 2.0 * route.active;
         ctx.beginPath();
         traceRoutePath(route, drift);
         ctx.stroke();
@@ -137,14 +137,29 @@
       }
     }
 
-    // 5. Draw active routes: Crisp top stroke pass (no shadow)
+    // 5. Draw active routes: Pass 2 - Inner halo (focused luminous core hugging the line)
+    for (const route of routes) {
+      if (route.active > 0.01) {
+        ctx.save();
+        ctx.strokeStyle = glowColor + (isLight ? (0.18 * route.active) : (0.24 * route.active)) + ')';
+        ctx.shadowColor = glowColor + (isLight ? (0.30 * route.active) : (0.40 * route.active)) + ')';
+        ctx.shadowBlur = isLight ? 5 : 6;
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        traceRoutePath(route, drift);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 6. Draw active routes: Pass 3 - Crisp top stroke (exact 1px vector line, zero shadow)
     const topColor = isLight ? 'rgba(49, 95, 202, ' : 'rgba(180, 205, 235, ';
     for (const route of routes) {
       if (route.active > 0.01) {
         ctx.save();
         ctx.shadowBlur = 0;
         ctx.lineWidth = 1;
-        const topAlpha = isLight ? (0.22 + 0.40 * route.active) : (0.12 + 0.45 * route.active);
+        const topAlpha = isLight ? (0.28 + 0.45 * route.active) : (0.16 + 0.52 * route.active);
         ctx.strokeStyle = topColor + topAlpha + ')';
         ctx.beginPath();
         traceRoutePath(route, drift);
@@ -153,7 +168,7 @@
       }
     }
 
-    // 6. Draw nodes
+    // 7. Draw nodes
     for (const node of nodes) {
       const pulse = drift * (Math.sin(now / 1300 + node.phase) + 1) * .025;
       if (node.active > 0.01) {

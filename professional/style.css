@@ -533,7 +533,7 @@ html:not(.enh) .ov-wrap{width:min(1240px,92vw)}
 /* =======================================================
    PROFILE & TOOLKIT SECTION
    ======================================================= */
-.profile-sec{background:transparent;color:var(--text);--mute:var(--text-muted);border-top:1px solid var(--line);padding-bottom:clamp(36px,5vh,48px);position:relative}
+.profile-sec{background:transparent;color:var(--text);--mute:var(--text-muted);border-top:0;padding-top:clamp(44px,6vw,76px);padding-bottom:clamp(36px,5vh,48px);position:relative}
 .profile-layout{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:clamp(32px,4.5vw,64px);align-items:start}
 
 /* Left Column: Portrait & Personal Facts */

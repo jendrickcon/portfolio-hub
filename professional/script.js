@@ -15,9 +15,9 @@
 
   /* Snippet interactive state controller */
   const snippetData = {
-    'udm-radar': { tag: 'UDM-RADAR · Student portal', href: '#udm-radar', caption: 'Current CCS light-theme student interface · synthetic example.' },
-    'studyquest': { tag: 'StudyQuest · Learning path', href: '#studyquest', caption: 'Course, review and assessment interfaces · sample content.' },
-    'mini-pcs': { tag: 'Mini PCS · Batch workflow', href: '#mini-pcs', caption: 'Batch and task workflow · sample records.' }
+    'udm-radar': { tag: 'UDM-RADAR · Student portal', href: '#udm-radar', caption: 'Current CCS light-theme student interface · fictional demo data.' },
+    'studyquest': { tag: 'StudyQuest · Learning path', href: '#studyquest', caption: 'Course, review and assessment interfaces · fictional demo data.' },
+    'mini-pcs': { tag: 'Mini PCS · Batch workflow', href: '#mini-pcs', caption: 'Batch and task workflow · fictional demo records.' }
   };
   const frows = $$('.frow'), views = $$('.snippet-view'), mtabs = $$('.mtab');
   document.querySelector('.mobile-tabs').hidden = false;
@@ -130,6 +130,98 @@
     imageDialog.addEventListener('close', () => imageLink.focus({ preventScroll: true }));
   }
 
+  // The unenhanced page keeps both narratives in normal document flow.
+  // Once initialized, each case replaces its summary with its own detail.
+  const caseItems = $$('[data-case]').map(root => {
+    const summary = root.querySelector('.case-summary');
+    const detail = root.querySelector('.case-detail');
+    const open = root.querySelector('.case-toggle');
+    const back = root.querySelector('.case-back');
+    const heading = detail.querySelector('h3');
+    const copy = detail.querySelector('.case-copy');
+    const item = { root, summary, detail, open, back, heading, copy, busy: false };
+    detail.hidden = true;
+    open.hidden = false;
+    back.hidden = false;
+    root.classList.add('case-ready');
+
+    const change = showDetail => {
+      if (item.busy || (showDetail && !detail.hidden) || (!showDetail && !summary.hidden)) return;
+      item.busy = true;
+      const outgoing = showDetail ? summary : detail;
+      const incoming = showDetail ? detail : summary;
+      open.setAttribute('aria-expanded', String(showDetail));
+      const finish = () => {
+        const restoreFocus = outgoing.contains(document.activeElement);
+        outgoing.hidden = true;
+        outgoing.classList.remove('is-out', 'is-in');
+        incoming.hidden = false;
+        if (!reducePreviewMotion.matches) {
+          incoming.classList.add('is-in');
+          setTimeout(() => incoming.classList.remove('is-in'), 200);
+        }
+        if (showDetail) {
+          copy.scrollTop = 0;
+          if (restoreFocus) heading.focus({ preventScroll: true });
+          requestAnimationFrame(() => updateCaseCopyFocus(item));
+        } else if (restoreFocus) {
+          open.focus({ preventScroll: true });
+        }
+        item.busy = false;
+      };
+      if (reducePreviewMotion.matches) finish();
+      else {
+        outgoing.classList.add('is-out');
+        setTimeout(finish, 130);
+      }
+    };
+    open.addEventListener('click', () => change(true));
+    back.addEventListener('click', () => change(false));
+    return item;
+  });
+
+  // Measure invisible clones so the current state, focus and layout stay intact.
+  function naturalCaseHeight(item, state) {
+    const clone = state.cloneNode(true);
+    clone.hidden = false;
+    clone.classList.remove('is-out', 'is-in');
+    clone.setAttribute('aria-hidden', 'true');
+    clone.inert = true;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    Object.assign(clone.style, { position: 'absolute', left: '0', top: '0', width: '100%', height: 'auto', visibility: 'hidden', pointerEvents: 'none' });
+    item.root.appendChild(clone);
+    const height = Math.ceil(clone.getBoundingClientRect().height);
+    clone.remove();
+    return height;
+  }
+  function updateCaseCopyFocus(item) {
+    const needsScroll = enh && !item.detail.hidden && item.copy.scrollHeight > item.copy.clientHeight + 1;
+    if (needsScroll) {
+      item.copy.tabIndex = 0;
+      item.copy.setAttribute('aria-label', item.heading.textContent + ' details');
+    } else {
+      item.copy.removeAttribute('tabindex');
+      item.copy.removeAttribute('aria-label');
+    }
+  }
+  function measureCases() {
+    if (!enh) {
+      caseItems.forEach(item => { item.root.style.removeProperty('--case-h'); updateCaseCopyFocus(item); });
+      return false;
+    }
+    const available = Math.max(0, innerHeight - hdr.offsetHeight - 110);
+    let summaryTooTall = false;
+    caseItems.forEach(item => {
+      const summaryH = naturalCaseHeight(item, item.summary);
+      const detailH = naturalCaseHeight(item, item.detail);
+      if (summaryH > available) summaryTooTall = true;
+      item.root.style.setProperty('--case-h', Math.min(Math.max(summaryH, detailH), available) + 'px');
+      updateCaseCopyFocus(item);
+    });
+    return summaryTooTall;
+  }
+
   /* Math & Track Geometry */
   let maxX = 1, panelStarts = [], footerVisible = false;
   const END_TOLERANCE = 4;
@@ -141,8 +233,9 @@
   function layout() {
     const hh = hdr.offsetHeight;
     html.style.setProperty('--hh', hh + 'px');
-    enh = mq.matches && !document.querySelector('.case-more[open]');
+    enh = mq.matches;
     html.classList.toggle('enh', enh);
+    const caseOverflow = measureCases();
 
     if (enh) {
       // Use actual panel positions, including after zoom/resize, for travel,
@@ -160,9 +253,10 @@
         const wrap = p.querySelector('.wrap');
         return wrap && wrap.scrollHeight > stageH - 20;
       });
-      if (overflows) {
+      if (overflows || caseOverflow) {
         enh = false;
         html.classList.remove('enh');
+        measureCases();
       }
     }
 
@@ -371,14 +465,6 @@
   addEventListener('scroll', sched, { passive: true });
   addEventListener('resize', layout);
   mq.addEventListener('change', layout);
-  document.querySelectorAll('.case-more').forEach(detail => {
-    detail.addEventListener('toggle', () => {
-      const panel = detail.closest('[data-panel]');
-      layout();
-      if (detail.open) detail.scrollIntoView({ block: 'nearest', behavior: 'instant' });
-      else if (panel && enh) go(panel.id);
-    });
-  });
   layout();
   if (location.hash) requestAnimationFrame(() => go(decodeURIComponent(location.hash.slice(1))));
 })();

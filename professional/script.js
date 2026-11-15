@@ -85,127 +85,55 @@
 
   applyTheme(currentPref, { animate: false });
 
-  /* Project-Linked Toolkit: Single-Card Takeover with Origin Cue & Sibling Transitions */
+  /* Project-Linked Toolkit: Stable Stage Heights & Spatial FLIP Takeover */
   (() => {
-    const grids = $$('.toolkit-grid');
-    if (!grids.length) return;
+    const shelves = $$('.toolkit-shelf');
+    if (!shelves.length) return;
 
     let activeEntry = null;
-    let pendingTimer = null;
+    let isTransitioning = false;
 
-    function getGridCols(grid) {
-      const comp = getComputedStyle(grid).gridTemplateColumns;
-      return comp ? comp.split(' ').filter(Boolean).length : 1;
-    }
+    // Build takeover element contents and card toggles
+    shelves.forEach((shelf, gi) => {
+      const stage = shelf.querySelector('.tool-stage');
+      const grid = shelf.querySelector('.toolkit-grid');
+      const takeover = shelf.querySelector('.tool-takeover');
+      if (!stage || !grid || !takeover) return;
 
-    function computeOrigin(entry) {
-      const cols = getGridCols(entry.grid);
-      if (cols <= 1) return 'left';
-      const col = entry.cardIndex % cols;
-      if (col === 0) return 'left';
-      if (col === cols - 1) return 'right';
-      return 'center';
-    }
+      const takeoverId = 'tool-takeover-' + gi;
+      takeover.id = takeoverId;
 
-    function closeItem(restoreFocus = true, callback = null) {
-      if (pendingTimer) {
-        clearTimeout(pendingTimer);
-        pendingTimer = null;
-      }
-      if (!activeEntry) {
-        if (typeof callback === 'function') callback();
-        return;
-      }
+      // Build takeover skeleton
+      takeover.innerHTML = `
+        <button type="button" class="tool-takeover-head" aria-label="Collapse tool details">
+          <span class="tool-takeover-main">
+            <span class="tool-takeover-title"></span>
+            <span class="tool-takeover-refs mono"></span>
+          </span>
+          <span class="tool-takeover-chev" aria-hidden="true"></span>
+        </button>
+        <div class="tool-takeover-body" role="region" aria-labelledby="${takeoverId}-head">
+          <p class="tool-takeover-desc"></p>
+          <div class="tool-takeover-footer">
+            <span class="tool-takeover-proof mono"></span>
+            <button type="button" class="tool-takeover-close-btn mono">
+              <span>Close details</span>
+              <svg class="tool-takeover-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
 
-      const current = activeEntry;
-      activeEntry = null;
+      const takeoverHead = takeover.querySelector('.tool-takeover-head');
+      takeoverHead.id = `${takeoverId}-head`;
+      const takeoverClose = takeover.querySelector('.tool-takeover-close-btn');
 
-      if (motion.matches) {
-        current.card.classList.remove('is-open');
-        current.card.removeAttribute('data-origin');
-        current.btn.setAttribute('aria-expanded', 'false');
-        current.siblings.forEach(s => {
-          s.classList.remove('is-sibling-exiting', 'is-sibling-entering');
-          s.hidden = false;
-          s.inert = false;
-        });
-        if (restoreFocus) current.btn.focus({ preventScroll: true });
-        if (typeof callback === 'function') callback();
-        return;
-      }
+      takeoverHead.addEventListener('click', () => closeActive(true));
+      takeoverClose.addEventListener('click', e => {
+        e.stopPropagation();
+        closeActive(true);
+      });
 
-      // Animated close: collapse detail first
-      current.card.classList.remove('is-open');
-      current.btn.setAttribute('aria-expanded', 'false');
-
-      pendingTimer = setTimeout(() => {
-        pendingTimer = null;
-        current.card.removeAttribute('data-origin');
-        current.siblings.forEach(s => {
-          s.classList.add('is-sibling-entering');
-          s.hidden = false;
-          s.inert = false;
-        });
-        // Force reflow for smooth fade-in
-        void current.card.offsetHeight;
-        requestAnimationFrame(() => {
-          current.siblings.forEach(s => s.classList.remove('is-sibling-entering'));
-        });
-        if (restoreFocus) current.btn.focus({ preventScroll: true });
-        if (typeof callback === 'function') callback();
-      }, 160);
-    }
-
-    function performOpen(entry) {
-      if (pendingTimer) {
-        clearTimeout(pendingTimer);
-        pendingTimer = null;
-      }
-
-      entry.card.dataset.origin = computeOrigin(entry);
-
-      if (motion.matches) {
-        entry.siblings.forEach(s => {
-          s.hidden = true;
-          s.inert = true;
-        });
-        entry.card.classList.add('is-open');
-        entry.btn.setAttribute('aria-expanded', 'true');
-        activeEntry = entry;
-        return;
-      }
-
-      // Animated open: siblings fade out, then hide, then card expands
-      entry.siblings.forEach(s => s.classList.add('is-sibling-exiting'));
-
-      pendingTimer = setTimeout(() => {
-        pendingTimer = null;
-        entry.siblings.forEach(s => {
-          s.classList.remove('is-sibling-exiting');
-          s.hidden = true;
-          s.inert = true;
-        });
-        entry.card.classList.add('is-open');
-        entry.btn.setAttribute('aria-expanded', 'true');
-        activeEntry = entry;
-      }, 140);
-    }
-
-    function openItem(entry) {
-      if (activeEntry === entry) {
-        closeItem(true);
-        return;
-      }
-      if (activeEntry) {
-        closeItem(false, () => performOpen(entry));
-        return;
-      }
-      performOpen(entry);
-    }
-
-    const allEntries = [];
-
-    grids.forEach((grid, gi) => {
       const cards = [...grid.querySelectorAll(':scope > .tool-card')];
       cards.forEach((card, ci) => {
         const head = card.querySelector('.tool-card-head');
@@ -213,111 +141,267 @@
         const refs = card.querySelector('.tool-refs');
         if (!head || !desc || !refs) return;
 
-        const panelId = 'tool-' + gi + '-' + ci + '-panel';
-        const btnId = 'tool-' + gi + '-' + ci + '-btn';
-        const toolNameText = head.textContent.trim();
-        const toolUsedText = refs.textContent.trim();
+        const name = head.textContent.trim();
+        const refText = refs.textContent.trim();
+        const descText = desc.textContent.trim();
 
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'tool-toggle';
-        btn.id = btnId;
+        btn.id = `tool-btn-${gi}-${ci}`;
         btn.setAttribute('aria-expanded', 'false');
-        btn.setAttribute('aria-controls', panelId);
+        btn.setAttribute('aria-controls', takeoverId);
 
         const toggleMain = document.createElement('span');
         toggleMain.className = 'tool-toggle-main';
-
         const nameSpan = document.createElement('span');
         nameSpan.className = 'tool-name';
-        nameSpan.textContent = toolNameText;
-
+        nameSpan.textContent = name;
         const usedSpan = document.createElement('span');
         usedSpan.className = 'tool-used mono';
-        usedSpan.textContent = toolUsedText;
-
+        usedSpan.textContent = refText;
         toggleMain.append(nameSpan, usedSpan);
 
         const chev = document.createElement('span');
         chev.className = 'tool-chev';
         chev.setAttribute('aria-hidden', 'true');
-
         btn.append(toggleMain, chev);
 
-        const collapse = document.createElement('div');
-        collapse.className = 'tool-collapse';
-        collapse.id = panelId;
-        collapse.setAttribute('role', 'region');
-        collapse.setAttribute('aria-labelledby', btnId);
+        card.replaceChildren(btn);
 
-        const inner = document.createElement('div');
-        inner.className = 'tool-collapse-inner';
-
-        const detailBody = document.createElement('div');
-        detailBody.className = 'tool-detail-body';
-        detailBody.appendChild(desc);
-
-        const detailFooter = document.createElement('div');
-        detailFooter.className = 'tool-detail-footer';
-
-        const proofSpan = document.createElement('span');
-        proofSpan.className = 'tool-detail-proof mono';
-        proofSpan.innerHTML = '<span class="tool-proof-label">Evidence:</span> ' + toolUsedText;
-
-        const closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'tool-close-btn';
-        closeBtn.setAttribute('aria-label', 'Close ' + toolNameText + ' details');
-        closeBtn.innerHTML = '<span>Close details</span><svg class="tool-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-
-        detailFooter.append(proofSpan, closeBtn);
-        detailBody.appendChild(detailFooter);
-        inner.appendChild(detailBody);
-        collapse.appendChild(inner);
-
-        head.remove();
-        refs.remove();
-        card.replaceChildren(btn, collapse);
-
-        const entry = {
+        card._toolData = {
+          name,
+          refs: refText,
+          desc: descText,
           card,
           grid,
+          stage,
+          shelf,
+          takeover,
           btn,
-          closeBtn,
-          cardIndex: ci,
-          siblings: []
+          cardIndex: ci
         };
-        allEntries.push(entry);
 
-        btn.addEventListener('click', () => openItem(entry));
-        closeBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          closeItem(true);
+        btn.addEventListener('click', () => {
+          if (activeEntry && activeEntry.card === card) {
+            closeActive(true);
+          } else if (activeEntry) {
+            closeActive(false, () => performOpen(card));
+          } else {
+            performOpen(card);
+          }
         });
       });
     });
 
-    // Populate siblings per grid
-    grids.forEach(grid => {
-      const gridEntries = allEntries.filter(e => e.grid === grid);
-      gridEntries.forEach(entry => {
-        entry.siblings = gridEntries.filter(e => e !== entry).map(e => e.card);
-      });
-    });
+    // Hidden measurement element for computing max expanded height per shelf
+    const measurer = document.createElement('div');
+    measurer.className = 'tool-takeover';
+    measurer.style.cssText = 'position:fixed;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;z-index:-1;display:block;transform:none;transition:none;';
+    measurer.innerHTML = `
+      <div class="tool-takeover-head"><span class="tool-takeover-main"><span class="tool-takeover-title"></span><span class="tool-takeover-refs mono"></span></span><span class="tool-takeover-chev"></span></div>
+      <div class="tool-takeover-body" style="opacity:1;transform:none;"><p class="tool-takeover-desc"></p><div class="tool-takeover-footer"><span class="tool-takeover-proof mono"></span><button type="button" class="tool-takeover-close-btn mono"><span>Close details</span></button></div></div>
+    `;
+    document.body.appendChild(measurer);
+    const mTitle = measurer.querySelector('.tool-takeover-title');
+    const mRefs = measurer.querySelector('.tool-takeover-refs');
+    const mDesc = measurer.querySelector('.tool-takeover-desc');
+    const mProof = measurer.querySelector('.tool-takeover-proof');
 
-    if (grids.length) html.classList.add('toolkit-ready');
+    function updateStageHeights() {
+      const isDesktop = matchMedia('(min-width: 541px)').matches;
+      shelves.forEach(shelf => {
+        const stage = shelf.querySelector('.tool-stage');
+        const grid = shelf.querySelector('.toolkit-grid');
+        if (!stage || !grid) return;
+
+        if (!isDesktop) {
+          stage.style.removeProperty('--stage-h');
+          return;
+        }
+
+        const gridH = grid.offsetHeight;
+        let maxExpH = 0;
+        const stageW = stage.offsetWidth;
+        if (stageW > 0) {
+          measurer.style.width = stageW + 'px';
+          const cards = [...grid.querySelectorAll('.tool-card')];
+          cards.forEach(c => {
+            const d = c._toolData;
+            if (!d) return;
+            mTitle.textContent = d.name;
+            mRefs.textContent = d.refs;
+            mDesc.textContent = d.desc;
+            mProof.textContent = 'Evidence: ' + d.refs;
+            const h = measurer.offsetHeight;
+            if (h > maxExpH) maxExpH = h;
+          });
+        }
+
+        const stableH = Math.max(gridH, maxExpH);
+        stage.style.setProperty('--stage-h', stableH + 'px');
+      });
+    }
+
+    function performOpen(card) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      const d = card._toolData;
+      const stage = d.stage;
+      const takeover = d.takeover;
+      const siblings = [...d.grid.querySelectorAll('.tool-card')].filter(c => c !== card);
+
+      // Measure starting geometry relative to stage
+      const cardRect = card.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const startX = cardRect.left - stageRect.left;
+      const startY = cardRect.top - stageRect.top;
+      const startW = cardRect.width;
+      const startH = cardRect.height;
+      const endW = stageRect.width;
+
+      // Populate takeover
+      takeover.querySelector('.tool-takeover-title').textContent = d.name;
+      takeover.querySelector('.tool-takeover-refs').textContent = d.refs;
+      takeover.querySelector('.tool-takeover-desc').textContent = d.desc;
+      takeover.querySelector('.tool-takeover-proof').innerHTML = '<span class="tool-takeover-proof-label">Evidence:</span> ' + d.refs;
+      takeover.querySelector('.tool-takeover-close-btn').setAttribute('aria-label', `Close ${d.name} details`);
+      takeover.querySelector('.tool-takeover-head').setAttribute('aria-expanded', 'true');
+
+      // Prepare takeover for FLIP measurement
+      takeover.hidden = false;
+      takeover.style.width = '100%';
+      takeover.style.transition = 'none';
+      takeover.style.transform = 'none';
+      takeover.classList.remove('is-revealed');
+      takeover.classList.remove('is-active');
+
+      const endH = takeover.offsetHeight;
+      const sx = startW / endW;
+      const sy = startH / endH;
+
+      // Invert: position takeover exactly matching clicked card
+      takeover.style.transform = `translate(${startX}px, ${startY}px) scale(${sx}, ${sy})`;
+      takeover.classList.add('is-active');
+      takeover.setAttribute('aria-hidden', 'false');
+
+      // Exit siblings and hide source card in grid
+      card.classList.add('is-selected-source');
+      siblings.forEach(s => s.classList.add('is-sibling-exiting'));
+
+      setTimeout(() => {
+        siblings.forEach(s => {
+          s.inert = true;
+          s.setAttribute('aria-hidden', 'true');
+        });
+      }, 120);
+
+      // Play FLIP animation
+      void takeover.offsetHeight;
+
+      if (motion.matches) {
+        takeover.style.transform = 'translate(0px, 0px) scale(1, 1)';
+        takeover.classList.add('is-revealed');
+        isTransitioning = false;
+      } else {
+        takeover.style.transition = 'transform 280ms cubic-bezier(.2,.7,.2,1)';
+        takeover.style.transform = 'translate(0px, 0px) scale(1, 1)';
+
+        setTimeout(() => {
+          takeover.classList.add('is-revealed');
+        }, 140);
+
+        setTimeout(() => {
+          isTransitioning = false;
+        }, 320);
+      }
+
+      d.btn.setAttribute('aria-expanded', 'true');
+      activeEntry = {
+        card,
+        stage,
+        takeover,
+        siblings,
+        startX,
+        startY,
+        sx,
+        sy,
+        trigger: d.btn
+      };
+    }
+
+    function closeActive(restoreFocus = true, callback = null) {
+      if (!activeEntry) {
+        if (typeof callback === 'function') callback();
+        return;
+      }
+
+      const current = activeEntry;
+      activeEntry = null;
+      isTransitioning = true;
+
+      // Phase A: Hide detail text (no text stretching)
+      current.takeover.classList.remove('is-revealed');
+
+      function finishClose() {
+        current.takeover.hidden = true;
+        current.takeover.classList.remove('is-active');
+        current.takeover.setAttribute('aria-hidden', 'true');
+        current.takeover.style.transform = 'none';
+        current.takeover.style.transition = 'none';
+
+        current.card.classList.remove('is-selected-source');
+        current.siblings.forEach(s => {
+          s.inert = false;
+          s.removeAttribute('aria-hidden');
+          s.classList.remove('is-sibling-exiting');
+          s.classList.add('is-sibling-entering');
+        });
+
+        void current.stage.offsetHeight;
+        requestAnimationFrame(() => {
+          current.siblings.forEach(s => s.classList.remove('is-sibling-entering'));
+        });
+
+        current.trigger.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) current.trigger.focus({ preventScroll: true });
+        isTransitioning = false;
+        if (typeof callback === 'function') callback();
+      }
+
+      if (motion.matches) {
+        finishClose();
+      } else {
+        // Phase B: Return shell to source card geometry
+        setTimeout(() => {
+          current.takeover.style.transition = 'transform 260ms cubic-bezier(.2,.7,.2,1)';
+          current.takeover.style.transform = `translate(${current.startX}px, ${current.startY}px) scale(${current.sx}, ${current.sy})`;
+
+          // Phase C: Restore siblings and hide takeover
+          setTimeout(finishClose, 260);
+        }, 80);
+      }
+    }
+
+    if (shelves.length) html.classList.add('toolkit-ready');
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && activeEntry) {
-        closeItem(true);
+        closeActive(true);
       }
     });
 
+    let resizeTimer = null;
     window.addEventListener('resize', () => {
-      if (activeEntry) {
-        activeEntry.card.dataset.origin = computeOrigin(activeEntry);
-      }
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(updateStageHeights, 80);
     }, { passive: true });
+
+    if ('fonts' in document) {
+      document.fonts.ready.then(updateStageHeights);
+    }
+    setTimeout(updateStageHeights, 100);
   })();
 
   const mq = matchMedia('(min-width:1024px) and (min-height:600px) and (prefers-reduced-motion:no-preference)');

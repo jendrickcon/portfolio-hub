@@ -547,3 +547,61 @@ html:not(.enh) .work-inline a{color:var(--blue-p)}
 /* Keep the vertical Work overview inset and its labels readable on phones. */
 html:not(.enh) .ov-wrap{width:min(1240px,92vw)}
 .ov-subhead{flex-wrap:wrap;gap:4px 8px}
+
+/* =======================================================
+   PROFILE & TOOLKIT SECTION
+   ======================================================= */
+.profile-sec{background:var(--page);color:var(--text);border-top:1px solid var(--line);position:relative}
+.profile-layout{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:clamp(32px,4.5vw,64px);align-items:start}
+
+/* Left Column: Portrait & Personal Facts */
+.profile-sidebar{display:flex;flex-direction:column;gap:20px}
+.profile-portrait-wrap{position:relative;width:100%;max-width:340px;border-radius:var(--radius-portrait);overflow:hidden;background:var(--portrait-backing);border:1px solid var(--line);box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.profile-portrait-wrap img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center}
+.profile-facts{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-control);padding:16px 18px;gap:11px;font-size:13px}
+.profile-fact-row{display:grid;grid-template-columns:85px 1fr;gap:12px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:9px}
+.profile-fact-row:last-child{border-bottom:0;padding-bottom:0}
+.profile-fact-label{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.profile-fact-value{color:var(--text);line-height:1.45}
+.fact-avail-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--verified);margin-right:4px}
+
+/* Right Column: Statement, Shelves, Résumé */
+.profile-main{display:flex;flex-direction:column;gap:36px}
+.profile-head .eyebrow{margin-bottom:8px}
+.profile-head h2{font-size:clamp(32px,3.8vw,52px);margin-bottom:16px}
+.profile-intro{font-size:17px;line-height:1.6;color:var(--text-muted);max-width:44rem}
+
+/* Grouped Project-Linked Toolkit Shelves */
+.toolkit-wrap{display:flex;flex-direction:column;gap:24px}
+.toolkit-head{display:flex;flex-direction:column;gap:4px}
+.toolkit-main-title{font-size:20px;font-family:var(--serif);font-weight:400;color:var(--text)}
+.toolkit-sub{font-size:12px;color:var(--text-muted)}
+.toolkit-shelf{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
+.toolkit-shelf-title{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
+.toolkit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.tool-card{display:flex;flex-direction:column;justify-content:space-between;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-control);gap:8px;transition:border-color .15s ease,background-color .15s ease}
+.tool-card:hover{border-color:var(--accent)}
+.tool-card-head{display:flex;align-items:center;gap:9px}
+.tool-icon{width:16px;height:16px;flex:none;color:var(--accent)}
+.tool-name{font-family:var(--sans);font-weight:600;font-size:13.5px;color:var(--text)}
+.tool-desc{font-size:12.5px;line-height:1.4;color:var(--text-muted)}
+.tool-refs{font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--accent);padding-top:6px;border-top:1px dashed var(--line)}
+
+/* Privacy-Safe Résumé Access Block */
+.profile-resume-block{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px;padding:20px 24px;background:var(--surface-raised);border:1px solid var(--line);border-radius:var(--radius-control)}
+.resume-meta h3{font-size:22px;margin:4px 0;color:var(--text)}
+.resume-status{font-size:13px;color:var(--text-muted);max-width:32rem}
+.resume-tag{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em}
+.resume-actions{display:inline-flex;align-items:center;gap:12px}
+.btn-ghost{display:inline-flex;align-items:center;padding:8px 12px;color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;text-decoration:none}
+.btn-ghost:hover{text-decoration:underline}
+
+@media(max-width:960px){
+  .profile-layout{grid-template-columns:1fr;gap:28px}
+  .profile-portrait-wrap{max-width:280px;margin:0 auto}
+}
+@media(max-width:540px){
+  .toolkit-grid{grid-template-columns:1fr}
+  .profile-fact-row{grid-template-columns:1fr;gap:4px}
+  .profile-resume-block{flex-direction:column;align-items:flex-start}
+}

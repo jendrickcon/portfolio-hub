@@ -6,7 +6,7 @@
   const stage = run.querySelector('.stage');
   const footer = document.querySelector('footer');
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
-  const secs = ['about','work','capabilities','journey','contact'].map(id => document.getElementById(id));
+  const secs = ['about','profile','work','capabilities','journey','contact'].map(id => document.getElementById(id));
 
   /* Theme Controller: System, Light, Dark */
   const themeKey = 'portfolio-theme';

@@ -31,7 +31,7 @@
    <button type="button" class="theme-opt" data-theme-val="light" aria-pressed="false" title="Light theme (Drafting Paper)"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="theme-text">Light</span></button>
    <button type="button" class="theme-opt" data-theme-val="dark" aria-pressed="false" title="Dark theme (Ink)"><svg class="theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-text">Dark</span></button>
   </div>
-  <div class="res-top"><a class="btn btn-secondary" href="#profile-resume"><span>Request résumé</span><svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></a></div>
+  <div class="res-top"><button type="button" class="btn btn-secondary" data-resume-open aria-haspopup="dialog" aria-controls="resume-dialog"><span>View résumé</span><svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></button></div>
  </div>
 </div></header>
 
@@ -49,10 +49,10 @@
     <span>View selected work</span>
     <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
    </a>
-   <a class="btn btn-secondary" href="#resume-note">
-    <span>Request résumé</span>
+   <button type="button" class="btn btn-secondary" data-resume-open aria-haspopup="dialog" aria-controls="resume-dialog">
+    <span>View résumé</span>
     <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4M9 12h6M9 15.5h6"/></svg>
-   </a>
+   </button>
    <a class="btn btn-secondary" href="#contact">
     <span>Contact</span>
     <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
@@ -107,13 +107,17 @@
    <aside class="profile-resume-block" id="profile-resume" aria-label="Résumé information">
     <div class="resume-meta">
      <span class="resume-tag mono">RÉSUMÉ</span>
-     <p class="resume-title">Public OJT résumé</p>
-     <p class="resume-status">A phone-free public copy is being prepared.</p>
+     <p class="resume-title">Internship résumé</p>
+     <p class="resume-status">One page · Phone-free public copy</p>
     </div>
     <div class="resume-actions">
-     <a class="btn btn-primary" href="mailto:conicondejendrick@gmail.com?subject=R%C3%A9sum%C3%A9%20Request%20-%20Jendrick%20Coniconde">
-      <span>Request by email</span>
-      <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+     <button type="button" class="btn btn-primary" data-resume-open aria-haspopup="dialog" aria-controls="resume-dialog">
+      <span>View résumé</span>
+      <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+     </button>
+     <a class="btn btn-secondary" href="assets/resume/Jendrick_Coniconde_Resume.pdf" download="Jendrick_Coniconde_Resume.pdf" data-resume-download>
+      <span>Download PDF</span>
+      <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14"/></svg>
      </a>
      <a class="btn-ghost" href="#contact">Contact</a>
     </div>
@@ -154,11 +158,6 @@
         <div class="tool-card-head"><span class="tool-name">JavaScript</span></div>
         <p class="tool-desc">Browser interactions in StudyQuest and the Portfolio Hub, reviewed and tested as part of implementation.</p>
         <div class="tool-refs mono"><span>StudyQuest · Portfolio Hub</span></div>
-       </article>
-       <article class="tool-card">
-        <div class="tool-card-head"><span class="tool-name">Responsive &amp; accessibility checks</span></div>
-        <p class="tool-desc">Keyboard use, visible focus, reduced motion and layouts at several widths. Coverage is partial; there has been no screen-reader audit yet.</p>
-        <div class="tool-refs mono"><span>This portfolio · Portfolio Hub</span></div>
        </article>
       </div>
       <div class="tool-takeover" hidden aria-hidden="true"></div>
@@ -221,14 +220,14 @@
      <div class="tool-stage">
       <div class="toolkit-grid">
        <article class="tool-card">
-        <div class="tool-card-head"><span class="tool-name">Browser DevTools</span></div>
-        <p class="tool-desc">Inspecting layout and console output while testing.</p>
-        <div class="tool-refs mono"><span>This portfolio · Portfolio Hub</span></div>
+        <div class="tool-card-head"><span class="tool-name">Manual QA &amp; Defect Reporting</span></div>
+        <p class="tool-desc">Executed exploratory and workflow testing, verified suspected defects against baseline behavior, and documented reproducible findings with environment, steps, expected and actual results, severity, impact, and evidence.</p>
+        <div class="tool-refs mono"><span>Junior QA Engineer Practical Assessment · UDM-RADAR · StudyQuest</span></div>
        </article>
        <article class="tool-card">
-        <div class="tool-card-head"><span class="tool-name">Browser testing</span></div>
-        <p class="tool-desc">Manual and AI-assisted checks at several screen sizes. Broader cross-browser and device coverage is still pending.</p>
-        <div class="tool-refs mono"><span>This portfolio · Portfolio Hub</span></div>
+        <div class="tool-card-head"><span class="tool-name">Test Design &amp; API Validation</span></div>
+        <p class="tool-desc">Designed positive, negative, boundary, and security cases; prioritized release-critical coverage; analyzed HTTP responses; and wrote five negative API tests covering authentication, required fields, invalid tokens, and malformed JSON.</p>
+        <div class="tool-refs mono"><span>Junior QA Engineer Practical Assessment · UDM-RADAR · StudyQuest</span></div>
        </article>
        <article class="tool-card">
         <div class="tool-card-head"><span class="tool-name">Prompt Structuring &amp; AI Review</span></div>
@@ -546,16 +545,47 @@
    <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4V21H3zM9.5 9.75h3.8v1.6h.06c.53-1 1.83-2.06 3.76-2.06 4.02 0 4.76 2.65 4.76 6.1V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.69V21h-4z"/></svg>
    <span>LinkedIn</span>
    </a>
-  <a class="contact-link" href="#resume-note">
+  <button type="button" class="contact-link" data-resume-open aria-haspopup="dialog" aria-controls="resume-dialog">
    <svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
-   <span>Request résumé</span>
-   </a>
+   <span>View résumé</span>
+   </button>
  </div>
- <p class="note" id="resume-note" tabindex="-1">Résumé available on request. Please contact me by email.</p>
+ <p class="note" id="resume-note" tabindex="-1">Résumé: one page, phone-free PDF. Email is the best way to reach me.</p>
 </div></section>
 </main>
 
 <footer class="ink"><div class="wrap">Jendrick A. Coniconde · Enuhri · UI, front-end and QA.</div></footer>
+
+<dialog class="resume-dialog" id="resume-dialog" aria-labelledby="resume-dialog-title" aria-describedby="resume-dialog-note">
+ <div class="resume-dialog-panel">
+  <div class="resume-dialog-bar">
+   <div class="resume-dialog-heading">
+    <h2 id="resume-dialog-title">Jendrick A. Coniconde · Résumé</h2>
+    <p id="resume-dialog-note" class="resume-dialog-meta">One page · Phone-free public copy</p>
+   </div>
+   <button type="button" class="resume-dialog-close" data-resume-close aria-label="Close résumé preview"><span>Close</span><svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="resume-toolbar" role="group" aria-label="Résumé zoom">
+   <button type="button" class="resume-zoom-btn" data-resume-zoom-out aria-label="Zoom out résumé" title="Zoom out"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6M7.5 10.5h6"/></svg></button>
+   <p class="resume-zoom-value" aria-live="polite" aria-atomic="true" data-resume-zoom-value>Fit page</p>
+   <button type="button" class="resume-zoom-btn" data-resume-zoom-in aria-label="Zoom in résumé" title="Zoom in"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6M7.5 10.5h6M10.5 7.5v6"/></svg></button>
+   <button type="button" class="resume-zoom-btn resume-zoom-fit" data-resume-fit aria-label="Reset résumé zoom" title="Fit page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg><span>Fit page</span></button>
+  </div>
+  <div class="resume-dialog-scroll" tabindex="0" role="region" aria-label="Scrollable résumé preview" data-resume-viewport>
+   <figure class="resume-preview">
+    <img src="assets/resume/Jendrick_Coniconde_Resume-preview.webp" alt="Preview of Jendrick A. Coniconde’s one-page internship résumé." width="1800" height="2330" decoding="async" data-resume-image>
+   </figure>
+  </div>
+  <div class="resume-dialog-actions">
+   <a class="btn btn-primary" href="assets/resume/Jendrick_Coniconde_Resume.pdf" download="Jendrick_Coniconde_Resume.pdf" data-resume-download>
+    <span>Download PDF</span>
+    <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14"/></svg>
+   </a>
+   <a class="btn-ghost" href="assets/resume/Jendrick_Coniconde_Resume.pdf" target="_blank" rel="noopener noreferrer">Open PDF in browser</a>
+   <p class="resume-dialog-error" role="status" hidden></p>
+  </div>
+ </div>
+</dialog>
 
 <script src="script.js" defer></script>
 <script src="about-field.js" defer></script>

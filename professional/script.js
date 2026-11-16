@@ -631,10 +631,9 @@
     let resumeTrigger = null;
 
     /* Zoom model: 1 is "Fit page" — the whole document scaled into the viewport.
-       Zoom percentages are absolute: the image is drawn at `natural px × percent`.
-       Steps are bounded so the sheet never exceeds twice its native width. */
+       Percentages reported to the visitor are absolute (natural px × percent),
+       while the steps they move through are relative to the fitted page. */
     const ZOOM_MIN = 1;            // multiplier of the fit scale (1 = Fit page)
-    const ZOOM_PERCENTS = [25, 33, 50, 67, 75, 100, 125, 150, 175, 200];
     const ZOOM_MAX_WIDTH = 2;      // never wider than 2× the document's own pixels
     let resumeFitScale = 1;
     let resumeScale = 1;           // multiplier of fit scale
@@ -673,9 +672,14 @@
     };
 
     // Scale is stored as a fraction of the document's own pixel width, so the
-    // label, the rendered size and the scroll area can never disagree.
+    // label, the rendered size and the scroll area can never disagree. Steps are
+    // relative to Fit page: with a ~28% fit scale, absolute 33%/50% steps barely
+    // change anything while 100% quadruples the sheet. Relative steps keep every
+    // press the same size of change, and the label still reports the real value.
+    const ZOOM_RELATIVE = [1, 1.5, 2, 2.5, 3, 3.5, 4];
+    const ZOOM_MAX_RELATIVE = 4;   // 4× the fitted page ≈ 100–115% of native size
     const currentPercent = () => Math.round(resumeFitScale * resumeScale * 100);
-    const maxScale = () => ZOOM_MAX_WIDTH / Math.max(0.0001, resumeFitScale);
+    const maxScale = () => Math.min(ZOOM_MAX_RELATIVE, ZOOM_MAX_WIDTH / Math.max(0.0001, resumeFitScale));
 
     const applyZoom = () => {
       const w = Math.round(resumePreview.naturalWidth * resumeFitScale * resumeScale);
@@ -697,46 +701,50 @@
       const cy = (box.scrollTop + box.clientHeight / 2) / Math.max(1, box.scrollHeight);
       resumeScale = target;
       resumeZoomReset = Math.abs(target - ZOOM_MIN) < 0.001;
+      // Animate every zoom change, in and out, including returns to Fit page.
       resumeScroll.classList.add('is-zooming');
       clearTimeout(resumeZoomTimer);
-      resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 220);
+      resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 240);
       applyZoom();
       // Switch the viewport between "centred page" and "scrollable sheet".
       resumeScroll.classList.toggle('is-fitted', resumeZoomReset);
-      if (resumeZoomReset) { box.scrollLeft = 0; box.scrollTop = 0; return; }
-      if (center) {
-        // The sheet resizes with a short transition, so restore the centre once
-        // the new scrollable size actually exists.
-        const restore = () => {
-          box.scrollLeft = cx * box.scrollWidth - box.clientWidth / 2;
-          box.scrollTop = cy * box.scrollHeight - box.clientHeight / 2;
-        };
-        restore();
-        requestAnimationFrame(restore);
-        setTimeout(restore, 240);
+      const newW = resumePreview.offsetWidth, newH = resumePreview.offsetHeight;
+      if (resumeZoomReset) {
+        box.scrollLeft = 0; box.scrollTop = 0;
+      } else if (center) {
+        box.scrollLeft = cx * (newW + 8) - box.clientWidth / 2;
+        box.scrollTop = cy * (newH + 16) - box.clientHeight / 2;
       } else {
-        box.scrollLeft = 0;
-        box.scrollTop = 0;
+        box.scrollLeft = 0; box.scrollTop = 0;
       }
     };
-    const fitResume = () => {
+    const fitResume = ({ animate = false } = {}) => {
       resumeFitScale = measureFit();
       resumeScale = ZOOM_MIN;
       resumeZoomReset = true;
-      resumeScroll.classList.remove('is-zooming');
+      if (animate) {
+        resumeScroll.classList.add('is-zooming');
+        clearTimeout(resumeZoomTimer);
+        resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 240);
+      } else {
+        resumeScroll.classList.remove('is-zooming');
+        clearTimeout(resumeZoomTimer);
+      }
       clearTimeout(resumeZoomTimer);
+      if (animate) resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 240);
       applyZoom();
       resumeScroll.classList.add('is-fitted');
       resumeScroll.scrollLeft = 0;
       resumeScroll.scrollTop = 0;
     };
+    // Each press moves one relative step: Fit page → 1.5× → 2× → 2.5× …
     const zoomStep = direction => {
       if (!resumeFitScale) resumeFitScale = measureFit();
-      const pct = currentPercent();
-      const target = direction > 0
-        ? (ZOOM_PERCENTS.find(v => v > pct + 0.5) || ZOOM_PERCENTS[ZOOM_PERCENTS.length - 1])
-        : ([...ZOOM_PERCENTS].reverse().find(v => v < pct - 0.5) || resumeFitScale * 100);
-      setZoom(target / 100 / resumeFitScale);
+      const from = resumeScale;
+      const next = direction > 0
+        ? (ZOOM_RELATIVE.find(s => s > from + 0.001) || ZOOM_MAX_RELATIVE)
+        : ([...ZOOM_RELATIVE].reverse().find(s => s < from - 0.001) || ZOOM_MIN);
+      setZoom(next);
     };
 
     const canShowResume = typeof resumeDialog.showModal === 'function';
@@ -785,7 +793,7 @@
 
     resumeZoomIn.addEventListener('click', () => zoomStep(1));
     resumeZoomOut.addEventListener('click', () => zoomStep(-1));
-    resumeFit.addEventListener('click', () => { fitResume(); resumeScroll.focus({ preventScroll: true }); });
+    resumeFit.addEventListener('click', () => { fitResume({ animate: true }); resumeScroll.focus({ preventScroll: true }); });
 
     // Keyboard zoom, but only while the viewer is what the visitor is using.
     resumeDialog.addEventListener('keydown', event => {
@@ -793,7 +801,7 @@
       const key = event.key;
       if (key === '+' || key === '=') { event.preventDefault(); zoomStep(1); }
       else if (key === '-' || key === '_') { event.preventDefault(); zoomStep(-1); }
-      else if (key === '0') { event.preventDefault(); fitResume(); }
+      else if (key === '0') { event.preventDefault(); fitResume({ animate: true }); }
     });
 
     // Refit when the viewport changes, so "Fit page" stays fit after rotation or

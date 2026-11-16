@@ -1,233 +1,164 @@
-# Portfolio Hub
+# Enuhri Portfolio Hub
 
-**Enuhri Portfolio Hub** is Jendrick / Enuhri’s personal portfolio: a retro computer and CRT-inspired environment for exploring projects, applications, and experiments. It combines working browser applications with standalone prototypes and project case studies.
+Jendrick / Enuhri's personal portfolio repository. It holds two related experiences for the same person and body of work:
 
-This is an evolving student portfolio built through iterative, AI-assisted development. The current implementation has an identity and working features, alongside unfinished integrations and known issues.
+- **[Professional](professional/index.html)** — the primary hiring-facing portfolio under `professional/`.
+- **Explore** — the retro CRT / old-computer experience at the repository root, containing legacy work, experiments, and app-like project presentations.
 
-## What This Repository Is
+A root Professional/Explore chooser does not exist yet. Visitors reach Professional by its direct path.
 
-The root [Portfolio Hub](index.html) is the central portfolio experience and launcher. Its collection includes a legacy HCI portfolio, an interactive art gallery, a web game, a falling-sand simulation, and a project-planning graph. UDM-RADAR and StudyQuest appear as project representations; their full runnable systems are not included here.
+This is a student portfolio built through iterative, AI-assisted development. It is published as a working portfolio, not as production software: some projects are functional, some are experiments, and some are presented through descriptions rather than runnable code.
 
-The core applications use HTML, CSS, and JavaScript in the browser. They do not require an application backend to serve their static files. The Art Gallery connects separately to Firebase Authentication and Cloud Firestore.
+## Status
 
-## Current Status
+| Area                               | Status                | Notes                                                      |
+| ---------------------------------- | --------------------- | ---------------------------------------------------------- |
+| Professional View                  | Implemented           | Primary hiring-facing portfolio; public deployment pending |
+| Public résumé viewing              | Implemented           | Same-page dialog with Fit page and zoom controls           |
+| Résumé PDF download                | Implemented           | Direct same-origin download, no navigation away            |
+| Light and Dark themes              | Implemented           | Both themes across the Professional View                   |
+| Profile and project-linked Toolkit | Implemented           | Capabilities tied to project evidence                      |
+| Featured project reconstructions   | Implemented           | Presented from shipped evidence and screenshots            |
+| Explore (CRT Hub)                  | Implemented / partial | Preserved legacy and experimental experience               |
+| Static hosting migration           | Planned               | Vercel is the likely provider for the Professional View    |
+| Custom domain and Name.com DNS     | Pending               | Not yet connected                                          |
+| Screenshot galleries               | Deferred              | Waiting on safe media                                      |
+| Achievements and Credentials       | Deferred              | Waiting on verified evidence                               |
+| Explore refinement                 | Pending               | One application at a time                                  |
 
-- The repository is active; this README is aligned with the implementation and audit reviewed on **15 November 2026** at application revision `ebf3ecc`.
-- The CRT Hub is an **implemented, partial / experimental foundation** for the portfolio’s exploratory experience.
-- The next major focus is discovery and planning for a new professional portfolio. That experience has **not been implemented**.
-- **DevPath development is paused** while portfolio improvement takes priority. Its unfinished direction is preserved for later.
-- Static-hosting migration is **planned, not completed**. Azure VM availability is not a permanent hosting commitment.
+Pull requests #3 (theme and profile system) and #4 (public résumé viewer and download) are merged. Deployment is **not** complete — this repository should not be described as live until it is independently verified.
 
-Here, **Implemented** means supported by code or scoped runtime evidence; **Partial / Experimental** means incomplete or not fully verified; **Planned** means not implemented; **Paused** means development has intentionally stopped; **Legacy** means retained older work; and **Known Issue** means an unresolved defect, risk, or verification gap. **Reimagined** identifies a newer implementation based on an earlier prototype. These labels do not imply production readiness.
+Status labels used here: **Implemented** — supported by code and runtime checks; **Partial / Experimental** — incomplete or not fully verified; **Planned** — agreed but not built; **Paused** — development intentionally stopped; **Deferred** — waiting on evidence or media; **Legacy** — retained older work.
 
-## Two Future Ways to Explore
+## Professional View
 
-The planned direction is two connected interfaces for the same person and body of work. **The two-view experience and entry-choice popup do not exist yet.**
+The Professional View is a single page covering Intro, Profile with a formal portrait, a public one-page résumé, a project-linked Toolkit, featured projects, project reconstructions, Capabilities, Journey, and Contact. It supports Light and Dark themes.
 
-### Professional View — Planned
+Résumé behaviour:
 
-A focused presentation for recruiters, hiring managers, internship coordinators, professional contacts, professors, and collaborators. Planned content includes About Me, résumé/CV information, selected projects, contributions, achievements, skills and capabilities, a technical and creative journey, and contact information.
+- **View résumé** opens a same-page dialog with an image preview of page 1.
+- The dialog offers Fit page, zoom in and out, and Reset, with keyboard shortcuts.
+- **Download PDF** saves the file directly without leaving the portfolio.
+- **Open PDF in browser** is the only action that intentionally opens the browser's PDF viewer.
 
-The intended design is one cohesive page with purposeful, dynamic movement and navigation beyond a conventional vertical layout. Its content, information architecture, and visual direction still need discovery and design work.
+The public résumé PDF is available at [Jendrick_Coniconde_Resume.pdf](professional/assets/resume/Jendrick_Coniconde_Resume.pdf) and is phone-free.
 
-### Explore View — Planned Evolution
+The Toolkit describes capabilities with project references rather than a bare skills list, and the Quality & Direction shelf reflects work from a junior QA practical assessment.
 
-The existing CRT Hub is the early foundation for a more playful way to discover applications, experiments, personality, and creative work. A future entry choice will let visitors choose **Professional View** or **Explore View**. The legacy HCI portfolio remains part of the collection.
+## Explore
 
-## Portfolio Hub vs Portfolio / Resume App
+The root of the repository is the CRT Hub: a retro computer interface, boot sequence, and application menu that launches the projects below. It is preserved as a legacy HCI project and an experimental surface, and it is not the primary professional presentation.
 
-**Portfolio Hub** refers to this repository and its central CRT experience: the owner’s current overall portfolio and collection of projects.
+## Projects
 
-**Portfolio / Resume** is the launcher label for the older [HCI portfolio application](portfolio/index.html). It contains personal, social, and project-preview content. It is preserved legacy work, not a completed modern professional portfolio, résumé-management system, terminal personnel dossier, or credential-download service. The planned Professional View will become the primary professional presentation without requiring deletion of this older project.
+| Project                                   | Status                                  | Portfolio role                  | Notes                                                                                              |
+| ----------------------------------------- | --------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Professional Portfolio                    | Implemented                             | Primary hiring-facing portfolio | Public deployment pending                                                                          |
+| UDM-RADAR                                 | Functional capstone system              | Featured project                | Synthetic academic data; decision-tree-regressor projections are advisory and support human review |
+| StudyQuest                                | Functional team project                 | Featured project                | Course, assessment, learning-path, and progress workflows                                          |
+| Mini PCS                                  | Completed practical-assessment workflow | Featured project                | Airtable-backed implementation; public reconstruction uses fictional records                       |
+| Audiary                                   | Supporting personal project             | Supporting project              | Real capture available                                                                             |
+| LAYA                                      | Android prerelease                      | Supporting project              | AR garden and balance-puzzle prototype; device verification pending                                |
+| Waffle's Nine Lives                       | Android MVP                             | Supporting project              | Top-down action roguelike with rooms, enemies and nine lives                                       |
+| [Art Gallery](art-gallery/index.html)     | Experiment, work remains                | Explore application             | Interactive gallery with Firebase/Firestore features; security and rendering work remains; Cloud Firestore is used separately from Portfolio Hub hosting |
+| [CyberDefender](cyberdefender/index.html) | Web reimagining                         | Explore application             | Web reimagining of the original Godot prototype                                                    |
+| [Sandbox](sandbox/index.html)             | Experiment                              | Explore application             | Falling-sand and cellular-automata simulation; media and evidence pending                          |
+| [DevPath](devpath/index.html)             | Development paused                      | App 06                          | Architecture and decision-graph prototype; broader domains are incomplete                          |
 
-## Current Launcher
+UDM-RADAR and StudyQuest are represented here through descriptions and evidence. Their full runnable systems live in their own repositories, so this repository does not independently verify their internal implementation. These entries do not claim live institutional deployment or the use of real student records.
 
-The launcher’s actual catalog is defined in [script.js](script.js). It currently has **six entries**:
+DevPath is paused, not abandoned. Its existing documentation and prototype are preserved for a later stage.
 
-| Visible entry | Current behavior | Actual status |
-| --- | --- | --- |
-| Portfolio / Resume | Opens `portfolio/` | Legacy HCI application; integrated |
-| UDM Radar | Opens a project description | Case-study representation; no runnable system here |
-| StudyQuest | Opens a project description | Case-study representation; no runnable system here |
-| Enuhri Art Gallery | Opens `art-gallery/` | Implemented / Experimental; integrated |
-| CyberDefender | Opens a project description with a web-demo launch link | Reimagined web application; integrated |
-| App 06 | Still displays the existing “COMING SOON” slot | **Intended for DevPath**; launcher integration remains planned |
+## Hosting history and current direction
 
-**App 06 = DevPath** is the owner’s decided mapping. The existing UI has not yet been updated to implement it. DevPath and Sandbox can be opened directly from their directories but are not integrated into the main launcher.
+These are separate facts and should not be combined into one claim.
 
-## Project Catalog
+**Hosting history.** Portfolio Hub was hosted on a Windows Azure VM using IIS. That is where the project was developed and served from during that period, and it is not a permanent hosting commitment.
 
-### Portfolio Hub — CRT Launcher
+**Current direction.** The move is toward static hosting, with Vercel the likely provider for the Professional View. A custom domain and Name.com DNS setup remain pending. Deployment is not complete unless verified.
 
-**Purpose:** bring the portfolio’s projects together through a retro computer interface.
+**Firebase / Cloud Firestore.** Firebase Authentication and Cloud Firestore are associated with the Enuhri Art Gallery experiment. They are separate cloud services, not the hosting platform for Portfolio Hub, and they are not part of the Azure or IIS hosting history.
 
-**Status:** Implemented / Partial / Experimental. The hub includes a landing screen, boot sequence, six-entry application menu, project descriptions, and scanline and reduced-motion controls. It launches the applications listed above.
-
-This is an OS-inspired presentation, not a complete desktop operating system. Complete draggable window management is absent. The hub’s sound toggle changes a flag and label but has no connected audio playback; some controls and integration remain unfinished.
-
-### Portfolio / Resume
-
-**Purpose:** preserve the original HCI portfolio and its personal, social, and project-preview content.
-
-**Status:** Legacy / HCI project, integrated through [portfolio/](portfolio/index.html).
-
-The page does not contain the previously documented technical skills matrix, credential downloads, or terminal dossier functionality. Its contact form has no working sending handler. Its CyberDefender description still uses the older Godot/mobile identity while linking to the current web reimagining. These limitations remain unresolved.
-
-### Enuhri Art Gallery
-
-**Purpose:** explore a museum-like environment, inspect artwork, and use an in-browser drawing studio.
-
-**Status:** Implemented / Experimental, integrated through [art-gallery/](art-gallery/index.html). Navigation, artwork inspection, drawing and image-upload controls, and Firebase integration exist. The audit observed shared Firestore artwork loading independently of Azure.
-
-The browser connects directly to Firebase Authentication and Firestore. Shared artwork loading uses a one-time `getDocs` fetch; likes and comments use `onSnapshot` realtime listeners. Submission code exists, but full cloud-write behavior was not comprehensively verified.
-
-**Known security and reliability concerns:** submitted artwork titles and artist names are inserted through unsafe HTML-rendering paths. Some comment display names have similar unsafe insertion paths; escaping comment text alone does not protect those fields. This creates a stored script-injection risk. Firestore rules are not present in this repository and were not verified, so protection against unauthorized reads, writes, or deletion must not be assumed.
-
-Duplicate Main Hub links include one pointing to a missing location. Authentication failure handling calls `reject` outside its promise scope, and offline/fallback behavior needs testing and correction. Built-in procedural artwork and a fetch-error catch exist, but a complete offline experience is not established, including when Firebase SDK imports fail. None of these issues was fixed by this documentation update.
-
-### CyberDefender
-
-**Purpose:** a cybersecurity-themed browser adventure with turn-based combat and exploration.
-
-**Status:** Reimagined HTML/CSS/JavaScript web implementation, integrated through [cyberdefender/](cyberdefender/index.html).
-
-The original project was a Godot prototype associated with the earlier mobile/game implementation. This repository contains a web reimagining, not the original Godot application executing unchanged in a browser.
-
-The source includes exploration, combat commands, enemy and boss definitions, progression, procedural Web Audio, and local save handling. The audit confirmed successful boot and reached registration; it did not exhaustively verify gameplay, balance, progression, sound, or persistence. Specific older mechanic and enemy claims should be checked against the current definitions before being advertised as complete.
-
-### Sandbox
-
-**Purpose:** an experimental falling-sand simulation with material discovery and autonomous pixel actors.
-
-**Status:** Experimental standalone application at [sandbox/](sandbox/index.html); **not integrated into the launcher**.
-
-The 15 November 2026 audit counted **88 material definitions, 197 reaction entries, and 12 presets** in [materials.js](sandbox/js/materials.js), [reactions.js](sandbox/js/reactions.js), and [presets.js](sandbox/js/presets.js). These are code-declaration counts, not a claim that every interaction works or has been manually tested. Reaction entries are not necessarily distinct material-pair recipes.
-
-The implementation includes a canvas simulation, reaction priorities, discovery tracking, inspection, presets, and humans, fish, birds, angels, devils, and black holes. Browser verification covered startup; comprehensive material combinations, actor interactions, and long-duration preset behavior remain unverified.
-
-### DevPath
-
-**Purpose:** interactive project-architecture and decision-graph exploration where choices grow a project path.
-
-**Status:** Paused standalone development at [devpath/](devpath/index.html). **App 06 is reserved for DevPath’s intended integration**, but the launcher does not yet expose it as a working DevPath entry. Portfolio improvement now takes priority over further DevPath development.
-
-The active [boot.js](devpath/js/boot.js) loads the newer graph-first interface. Growing graphs, user choices, branching, undo, and navigation have implementation support. Graph validation reports **283 reachable nodes**, with no errors or warnings, and the engine checks report **24 passed, 0 failed**.
-
-The active [knowledge registry](devpath/js/knowledge.js) registers only game-related seeds. Website and Software selections currently receive game genres too. The separate [software data file](devpath/js/data/softwareSeeds.js) is incomplete and fails JavaScript syntax validation; it is not imported by the active registry. Broader project domains remain unfinished. Legacy stage-based code and Python tests remain in the repository; those tests target the older interface and do not fully verify the active graph experience.
-
-**Preserved future direction, paused:** users should construct paths through interests, features, mechanics, required systems, architecture, technologies, and decisions. Future coverage may include game dimensions such as roguelike, dungeons, rooms, monsters, player systems, multiplayer, survival, and gun/combat systems; and application dimensions such as OCR, file systems, AI prediction, portals, cash applications, and cash management. Some game concepts already have data, but these examples do not establish complete active-domain coverage. No expansion is authorized by this README.
-
-### UDM-RADAR
-
-**Purpose:** represent an external academic analytics and decision-support project for Universidad de Manila.
-
-**Status:** External project / case-study representation. Hub descriptions and preview assets discuss academic records, projected GWA, risk detection, and intervention workflows. The full runnable implementation is not contained here, so its PHP/Python/database stack and detailed capabilities cannot be independently verified from this repository.
-
-### StudyQuest
-
-**Purpose:** represent an external AI-assisted, gamified learning project.
-
-**Status:** External project / case-study representation. Hub descriptions and preview assets discuss uploaded learning materials, course generation, assessments, and progression. The full runnable implementation is not contained here; model names, framework versions, and detailed feature claims need verification in the owning project before stronger public claims are made.
-
-## Architecture
+## Repository structure
 
 ```text
-Web host serves static HTML, CSS, JavaScript, and assets
-    -> Browser executes Portfolio Hub and standalone applications
-        -> Art Gallery connects directly to Firebase Authentication / Firestore
-
-Historical frontend hosting:
-    Azure Windows VM -> IIS -> Portfolio Hub static frontend
-
-Firebase Authentication / Firestore are separate cloud services.
-They are not hosted inside, or routed through, the Azure VM.
+professional/      Professional View (primary hiring-facing portfolio)
+portfolio/         Legacy HCI portfolio application
+art-gallery/       Enuhri Art Gallery (Firebase Authentication / Firestore)
+cyberdefender/     CyberDefender web reimagining
+sandbox/           Falling-sand simulation experiment
+devpath/           DevPath decision-graph prototype (paused)
+assets/            Shared assets for the Explore root
+docs/              Documentation and handoff notes
 ```
 
-The runnable frontend directories are `portfolio/`, `art-gallery/`, `cyberdefender/`, `sandbox/`, and `devpath/`. Shared assets are under `assets/`. The root [web.config](web.config) controls IIS development caching; [CyberDefender’s web.config](cyberdefender/web.config) supplies IIS MIME mappings. These are hosting settings, not an application backend.
+The Explore root also carries the CRT Hub entry page and shared assets. `professional/` is self-contained, with its own HTML, CSS, JavaScript, and assets.
 
-Firebase client configuration is present in the gallery source. Its presence does not establish database security. Authentication, authorized domains, configuration, and live security rules require separate review.
+## Local development
 
-## Hosting History and Migration
+Serve files over HTTP — not `file://` — so that PDF download and dialog behaviour match a real host.
 
-The project was developed and historically served through a Windows VM funded by an **Azure Student subscription**, using **IIS** under `C:\inetpub\wwwroot\enuhri-hub\`. This repository originated from that deployed application environment.
-
-When the migration direction was established, the owner reported less than approximately **USD 20** of student credit remaining. This is historical context, not a live balance check. The VM may frequently remain offline and should not be treated as permanent production infrastructure.
-
-Migration to a free or sustainable static host is planned. Candidate platforms include GitHub Pages, Cloudflare Pages, Netlify, and Firebase Hosting; no platform has been selected or deployed by this work. Local static-server checks support feasibility, but migration still depends on testing each application’s relative paths, modules, browser APIs, and cloud dependencies.
-
-An offline Azure VM prevents visitors from fetching frontend files from that VM; it does not itself stop Firebase/Firestore. The gallery still needs an accessible frontend host and valid Firebase configuration, authorized domains, authentication, and security rules. Configuration or domain settings may need updates after migration.
-
-## Verification and Audit Status
-
-Evidence below applies to application revision `ebf3ecc`, reviewed on **15 November 2026**. The earlier browser audit and the read-only checks repeated for this documentation package are distinguished explicitly.
-
-| Check | Result | Evidence scope |
-| --- | --- | --- |
-| Static entry-page responses | Hub root plus five application entry pages returned successfully under `/portfolio-hub/` | Earlier local audit; HTTP success only |
-| Browser checks | Hub launcher, legacy portfolio, gallery navigation and artwork inspection, Sandbox startup, CyberDefender boot, DevPath choices | Earlier local audit; scoped checks, not complete workflows |
-| Gallery cloud loading | Shared Firestore artwork loaded from a locally hosted frontend without Azure | Earlier local audit; does not establish write permissions or rule safety |
-| DevPath graph validation | 283 reachable nodes; 0 errors, 0 warnings | Repeated with `node devpath/tests/validate_graph.mjs` |
-| DevPath engine checks | 24 passed; 0 failed | Repeated with `node devpath/tests/test_graph_engine.mjs` |
-| JavaScript file syntax | 68 files passed; `devpath/js/data/softwareSeeds.js` failed with unexpected end of input | Repeated across 69 `.js` / `.mjs` files; parsing only |
-| Sandbox declarations | 88 materials; 197 reaction entries; 12 presets | Recounted from exported definitions |
-
-**Verification limits:** live Firestore rules and full Firebase write behavior were not verified; CyberDefender gameplay was not exhaustively tested; all Sandbox interactions were not manually verified; comprehensive mobile and cross-browser behavior remains pending. The legacy DevPath Python runner contains 14 suites, uses an IIS-specific URL, and targets the older interface. It was not rerun for this documentation package. Passing graph checks and successful entry-page responses do not establish complete application correctness or production readiness.
-
-## Known Issues and Planned Patches
-
-The following issues remain open. Documenting them has not fixed them.
-
-| Area | Current issue | Risk | Planned action | Status |
-| --- | --- | --- | --- | --- |
-| Gallery rendering | Unsafe HTML insertion for artwork metadata and some display names | High: stored script injection | Render untrusted fields safely and test malicious input | Known Issue; not fixed |
-| Gallery access control | Live Firestore rules absent from repository and unaudited | Security posture unverified | Inspect live rules, define access expectations, and test them | Known Issue; pending review |
-| Gallery reliability | Authentication error-scope bug, incomplete fallback assurance, duplicate and broken hub link | Failed recovery or navigation | Correct error handling and links; test unavailable services | Known Issue; not fixed |
-| Legacy portfolio | Contact form has no sending handler; CyberDefender wording is stale | Failed contact and misleading description | Decide contact behavior and correct legacy copy | Known Issue; not fixed |
-| Hub controls | Sound is a placeholder; some controls remain unfinished | Visitor confusion | Verify control behavior before further interface work | Partial / Experimental |
-| DevPath domains | Software data has a syntax error; active domains are game-only | Incorrect or unavailable project paths | Complete and register domains only when development is resumed by the owner | Known Issue; Paused |
-| DevPath testing | Legacy tests target an inactive interface and fixed IIS URL | Coverage gap | Plan tests for the active graph interface | Known Issue; Paused |
-| Launcher integration | App 06 mapping not implemented; Sandbox absent | Existing apps are difficult to discover | Integrate DevPath and expose Sandbox in a later package | Planned |
-| Hosting and devices | Migration and comprehensive compatibility testing unfinished | Deployment or usability failures | Test paths, cloud setup, devices, and browsers before migration | Planned |
-
-## Future Direction
-
-1. Discover and plan the Professional View: content inventory, information architecture, contributions, and design direction; then build it in a separately authorized package.
-2. Implement the planned Professional / Explore entry choice.
-3. Improve the exploratory CRT Hub while preserving its identity and legacy projects.
-4. Correct gallery rendering and authentication issues and verify Firebase security before broader publication.
-5. Integrate DevPath as App 06 later, and expose Sandbox appropriately.
-6. Resume DevPath expansion only after portfolio priorities and explicit owner instruction.
-7. Complete static-hosting compatibility work and migration, then expand mobile and cross-browser testing.
-
-This list records planned work; it does not mean those features exist today. The documentation-only update did not start these development phases.
-
-## Running Locally
-
-Use a local HTTP server from the repository root. No compilation or package installation is required to serve the existing frontend files.
-
-```bash
-python -m http.server 8000
+```text
+cd professional
+py -m http.server 8848 --bind 127.0.0.1
 ```
 
-Open [http://localhost:8000/](http://localhost:8000/). VS Code Live Server is an alternative. Opening files directly through `file://` may break ES module loading or browser features, so HTTP is preferred. The gallery’s cloud features also need network access and valid Firebase service configuration.
+If `py` is unavailable, use `python -m http.server 8848 --bind 127.0.0.1`.
 
-Direct application paths are `/portfolio/`, `/art-gallery/`, `/cyberdefender/`, `/sandbox/`, and `/devpath/` beneath the chosen hosting base. Serving the existing files does not remove their documented application defects.
+Then open `http://127.0.0.1:8848/index.html`.
 
-For the current DevPath data/engine checks, with Node.js available:
+Keep the terminal open while testing and press `Ctrl+C` to stop. This is a local development address, not a production URL. There is no build step and no dependency install for the static frontend.
+
+To view the Explore root instead, serve from the repository root:
+
+```text
+py -m http.server 8080 --bind 127.0.0.1
+```
+
+Then open `http://127.0.0.1:8080/index.html`.
+
+DevPath keeps its own data and engine checks, which require Node.js:
 
 ```bash
 node devpath/tests/validate_graph.mjs
 node devpath/tests/test_graph_engine.mjs
 ```
 
-## Development Context
+## Privacy and evidence boundaries
 
-Created by **Jendrick / Enuhri**, a BSIT student at Universidad de Manila. The work reflects continuing learning in UI/UX, front-end development, systems integration, and testing, using iterative prototyping and substantial AI assistance. The implemented work should be credited accurately without implying senior engineering expertise or wholly independent implementation.
+Public repository content excludes phone number, home address, student ID, real student records, Airtable credentials, API secrets, private QA assessment instructions, private test recordings, private Drive links, the original full-resolution portrait, and employer assessment credentials.
 
-The project’s inspirations include retro computing, cybersecurity games, neoclassical museum environments, and discovery-oriented interactive simulations such as Neal.fun. Existing projects and assets remain preserved.
+Where relevant:
 
-For detailed evidence and continuation guidance, see the [README update handoff](docs/README_UPDATE_HANDOFF.md) and the separate [owner-facing output report](docs/README_UPDATE_OUTPUT_REPORT.md). The repository’s [.gitignore](.gitignore) excludes development archives, caches, scratch files, and specified private directories; ignore patterns alone are not proof that credentials or cloud services are secure.
+- public project reconstructions use fictional records;
+- the résumé PDF is phone-free;
+- screenshots, certificates, and galleries stay deferred while privacy or evidence review is incomplete.
 
-## License or Usage Note
+Ignore patterns are not a security boundary. Firestore rules and cloud configuration require separate review; their absence from this repository does not establish that they are safe.
 
-No license file is currently included in this repository, and this README does not assign a license. For reuse questions or asset permissions, contact the owner. Project authorship and the development context above are retained from the existing documentation.
+## Roadmap
+
+1. Deploy the Professional View to Vercel and connect the Name.com domain.
+2. Add the Professional/Explore chooser.
+3. Refine Explore applications one at a time.
+4. Add project screenshot galleries when safe media is available.
+5. Add Achievements and Credentials when verified evidence is ready.
+6. Replace remaining "No capture yet" entries with genuine media.
+7. Complete final cross-browser, physical-device, accessibility, privacy, and production QA.
+
+## Known limitations
+
+- Explore applications carry documented defects that have not been fixed, including unsafe HTML rendering paths in the Art Gallery and unverified Firestore rules.
+- The legacy `portfolio/` application has a contact form without a sending handler.
+- The CRT Hub has placeholder controls that are not fully wired.
+- Comprehensive mobile, cross-browser, and physical-device testing remains pending.
+
+## Development context
+
+Created by **Jendrick / Enuhri**, a BSIT student at University of Makati. The work reflects continuing learning in UI/UX, front-end development, systems integration, and testing, using iterative prototyping and substantial AI assistance. Implemented work should be credited accurately without implying senior engineering expertise or wholly independent implementation.
+
+Existing projects and assets remain preserved. For earlier audit and handoff material, see [docs/README_UPDATE_HANDOFF.md](docs/README_UPDATE_HANDOFF.md) and [docs/README_UPDATE_OUTPUT_REPORT.md](docs/README_UPDATE_OUTPUT_REPORT.md).
+
+## License or usage note
+
+No license file is currently included in this repository, and this README does not assign a license. For reuse questions or asset permissions, contact the owner.

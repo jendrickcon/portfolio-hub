@@ -58,3 +58,32 @@ credentials/
 # --- Private & Non-Hub Root Directories ---
 anniversary/
 aspnet_client/
+
+# --- Local Browser Automation & QA Artifacts ---
+# Scratch output from local headless-browser checks (CDP/pywebview runs):
+# throwaway Edge profiles, verification scripts, screenshots, and JSON dumps.
+# These live only on the developer machine and are safe to regenerate.
+.tmp-edge-profile*/
+.tmp-chrome-profile*/
+.tmp-*.js
+.tmp-*.mjs
+.tmp-*.py
+.tmp-*.ps1
+.tmp-*.json
+.tmp-*.html
+.tmp-*.txt
+.tmp-*.png
+.tmp-*.jpg
+.tmp-*.jpeg
+.tmp-*.webp
+.tmp-*.gif
+.tmp-*.log
+.tmp-shots/
+.tmp-public-resume/
+.tmp-clean/
+# Playwright / test-runner output directories
+playwright-report/
+test-results/
+# Local tool caches
+.cache/
+.coverage/

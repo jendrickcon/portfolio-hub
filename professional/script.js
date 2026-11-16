@@ -597,20 +597,44 @@
     });
   });
 
-  // Keep a direct image link as the fallback when dialogs are unavailable.
-  const imageLink = document.querySelector('.audiary-image-link');
-  const imageDialog = document.querySelector('.media-lightbox');
-  if (imageDialog && typeof imageDialog.showModal === 'function') {
-    imageLink.setAttribute('aria-haspopup', 'dialog');
-    imageLink.addEventListener('click', event => {
-      event.preventDefault();
-      imageDialog.showModal();
+  // Supporting-project media: one reusable dialog shared by Audiary and CyberDefender.
+  // Direct image links remain the fallback when dialogs are unavailable or JavaScript is disabled.
+  const mediaDialog = document.querySelector('.media-lightbox');
+  const mediaTriggers = $$('.media-image-link, .audiary-image-link');
+  if (mediaDialog && typeof mediaDialog.showModal === 'function' && mediaTriggers.length) {
+    const dialogTitle = mediaDialog.querySelector('#media-lightbox-title') || mediaDialog.querySelector('.media-lightbox-bar p');
+    const dialogImg = mediaDialog.querySelector('.media-lightbox-img') || mediaDialog.querySelector('img');
+    const dialogClose = mediaDialog.querySelector('.media-lightbox-bar button');
+    let activeMediaTrigger = null;
+
+    mediaTriggers.forEach(trigger => {
+      trigger.setAttribute('aria-haspopup', 'dialog');
+      trigger.addEventListener('click', event => {
+        event.preventDefault();
+        activeMediaTrigger = trigger;
+        const src = trigger.getAttribute('href') || trigger.dataset.mediaSrc;
+        const title = trigger.dataset.mediaTitle || 'Project screenshot';
+        const alt = trigger.dataset.mediaAlt || title;
+        if (dialogTitle) dialogTitle.textContent = title;
+        if (dialogImg) {
+          dialogImg.src = src;
+          dialogImg.alt = alt;
+          if (trigger.dataset.mediaWidth) dialogImg.setAttribute('width', trigger.dataset.mediaWidth);
+          if (trigger.dataset.mediaHeight) dialogImg.setAttribute('height', trigger.dataset.mediaHeight);
+        }
+        mediaDialog.showModal();
+      });
     });
-    imageDialog.querySelector('button').addEventListener('click', () => imageDialog.close());
-    imageDialog.addEventListener('click', event => {
-      if (event.target === imageDialog) imageDialog.close();
+
+    if (dialogClose) dialogClose.addEventListener('click', () => mediaDialog.close());
+    mediaDialog.addEventListener('click', event => {
+      if (event.target === mediaDialog) mediaDialog.close();
     });
-    imageDialog.addEventListener('close', () => imageLink.focus({ preventScroll: true }));
+    mediaDialog.addEventListener('close', () => {
+      const target = activeMediaTrigger;
+      activeMediaTrigger = null;
+      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });
+    });
   }
 
   /* Public résumé: one image-preview dialog, opened from every View résumé control. */

@@ -103,6 +103,10 @@
     if (!shelves.length) return;
 
     let activeEntry = null;
+    let inlineEntry = null;
+    let inlineClosing = null;
+    let inlineTimer = null;
+    let modeRaf = 0;
     let closingEntry = null;
     let isTransitioning = false;
     let openTimer1 = null, openTimer2 = null, openTimer3 = null;
@@ -239,6 +243,12 @@
         };
 
         btn.addEventListener('click', () => {
+          // One-column layouts use a natural in-place disclosure; multi-column keeps the spatial takeover.
+          if (modeOf(grid) === 'inline') {
+            toggleInline(card);
+            return;
+          }
+          if (inlineEntry || inlineClosing) closeInline(false, true);
           if (activeEntry && activeEntry.card === card) {
             closeActive(true);
           } else {
@@ -434,15 +444,189 @@
       }
     }
 
+    /* ---- Mobile / one-column disclosure (no takeover layer, no reserved stage) ---- */
+    function modeOf(grid) {
+      return getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length <= 1 ? 'inline' : 'takeover';
+    }
+
+    function clearInlineStyles(panel) {
+      panel.style.height = '';
+      panel.style.opacity = '';
+      panel.style.transform = '';
+      panel.style.transition = '';
+    }
+
+    function inlinePanel(card) {
+      const d = card._toolData;
+      if (d.inline) return d.inline;
+      const panel = document.createElement('div');
+      panel.className = 'tool-inline';
+      panel.id = d.btn.id + '-detail';
+      panel.setAttribute('role', 'region');
+      panel.setAttribute('aria-labelledby', d.btn.id);
+      panel.hidden = true;
+      const body = document.createElement('div');
+      body.className = 'tool-inline-body';
+      const p = document.createElement('p');
+      p.className = 'tool-inline-desc';
+      p.textContent = d.desc;
+      const foot = document.createElement('div');
+      foot.className = 'tool-inline-foot';
+      const proof = document.createElement('span');
+      proof.className = 'tool-takeover-proof mono';
+      const label = document.createElement('span');
+      label.className = 'tool-takeover-proof-label';
+      label.textContent = 'Evidence:';
+      proof.append(label, ' ' + d.refs);
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'tool-takeover-close-btn mono';
+      close.textContent = 'Close details';
+      close.setAttribute('aria-label', 'Close ' + d.name + ' details');
+      close.addEventListener('click', () => closeInline(true));
+      foot.append(proof, close);
+      body.append(p, foot);
+      panel.append(body);
+      card.append(panel);
+      d.inline = panel;
+      return panel;
+    }
+
+    function keepVisible(card) {
+      const hh = parseFloat(getComputedStyle(html).getPropertyValue('--hh')) || 72;
+      const t = card.getBoundingClientRect().top;
+      if (t < hh + 8) scrollBy({ top: t - hh - 12, behavior: motion.matches ? 'auto' : 'smooth' });
+    }
+
+    function openInline(card) {
+      const d = card._toolData;
+      const panel = inlinePanel(card);
+      clearTimeout(inlineTimer);
+      d.btn.setAttribute('aria-expanded', 'true');
+      d.btn.setAttribute('aria-controls', panel.id);
+      card.classList.add('is-inline-open');
+      panel.hidden = false;
+      inlineEntry = { card, panel };
+      if (!motion.matches) {
+        const ease = '240ms cubic-bezier(.2,.7,.2,1)';
+        panel.style.height = '0px';
+        panel.style.opacity = '.3';
+        panel.style.transform = 'translateY(4px)';
+        void panel.offsetHeight;
+        panel.style.transition = 'height ' + ease + ', opacity ' + ease + ', transform ' + ease;
+        panel.style.height = panel.scrollHeight + 'px';
+        panel.style.opacity = '1';
+        panel.style.transform = 'none';
+        inlineTimer = setTimeout(() => {
+          clearInlineStyles(panel);
+          inlineTimer = null;
+        }, 280);
+      }
+      keepVisible(card);
+    }
+
+    function closeInline(restoreFocus, immediate = false) {
+      if (!inlineEntry && !inlineClosing) return;
+      if (inlineClosing && immediate) {
+        clearTimeout(inlineTimer);
+        inlineClosing.panel.hidden = true;
+        clearInlineStyles(inlineClosing.panel);
+        inlineClosing = null;
+      }
+      if (!inlineEntry) return;
+
+      const e = inlineEntry;
+      inlineEntry = null;
+      clearTimeout(inlineTimer);
+      const d = e.card._toolData;
+      d.btn.setAttribute('aria-expanded', 'false');
+      d.btn.setAttribute('aria-controls', d.takeover.id);
+      e.card.classList.remove('is-inline-open');
+
+      const done = () => {
+        e.panel.hidden = true;
+        clearInlineStyles(e.panel);
+        if (inlineClosing === e) inlineClosing = null;
+        inlineTimer = null;
+      };
+
+      if (motion.matches || immediate) {
+        done();
+      } else {
+        inlineClosing = e;
+        const ease = '240ms cubic-bezier(.2,.7,.2,1)';
+        e.panel.style.height = e.panel.offsetHeight + 'px';
+        void e.panel.offsetHeight;
+        e.panel.style.transition = 'height ' + ease + ', opacity ' + ease + ', transform ' + ease;
+        e.panel.style.height = '0px';
+        e.panel.style.opacity = '.3';
+        e.panel.style.transform = 'translateY(4px)';
+        inlineTimer = setTimeout(done, 260);
+      }
+      if (restoreFocus) d.btn.focus({ preventScroll: true });
+    }
+
+    function toggleInline(card) {
+      if (inlineClosing) {
+        clearTimeout(inlineTimer);
+        inlineClosing.panel.hidden = true;
+        clearInlineStyles(inlineClosing.panel);
+        inlineClosing = null;
+        inlineTimer = null;
+      }
+      if (inlineEntry && inlineEntry.card === card) {
+        closeInline(true);
+        return;
+      }
+      if (inlineEntry) {
+        closeInline(false, true);
+      }
+      if (activeEntry || closingEntry) cancelActiveCleanly();
+      openInline(card);
+    }
+
+    // Re-evaluate after resize, orientation change, zoom and font load: close safely if the mode changed.
+    function checkMode() {
+      if (inlineEntry || inlineClosing) {
+        const cur = inlineEntry || inlineClosing;
+        if (modeOf(cur.card._toolData.grid) !== 'inline') {
+          closeInline(false, true);
+          shelves.forEach(s => {
+            s.querySelectorAll('.tool-card').forEach(c => {
+              if (c._toolData) {
+                c._toolData.btn.setAttribute('aria-controls', c._toolData.takeover.id);
+                c.classList.remove('is-inline-open');
+                if (c._toolData.inline) {
+                  c._toolData.inline.hidden = true;
+                  clearInlineStyles(c._toolData.inline);
+                }
+              }
+            });
+          });
+        }
+      }
+      if (activeEntry && !isTransitioning && modeOf(activeEntry.grid) === 'inline') {
+        cancelActiveCleanly();
+      }
+    }
+    window.addEventListener('orientationchange', checkMode);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkMode);
+
     if (shelves.length) html.classList.add('toolkit-ready');
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && activeEntry) {
-        closeActive(true);
+      if (e.key === 'Escape') {
+        if (inlineEntry) {
+          closeInline(true);
+        } else if (activeEntry) {
+          closeActive(true);
+        }
       }
     });
 
     window.addEventListener('resize', () => {
+      cancelAnimationFrame(modeRaf);
+      modeRaf = requestAnimationFrame(checkMode);
       if (activeEntry && !isTransitioning) {
         activeEntry.stage.style.height = activeEntry.takeover.offsetHeight + 'px';
       }

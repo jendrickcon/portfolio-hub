@@ -613,6 +613,256 @@
     imageDialog.addEventListener('close', () => imageLink.focus({ preventScroll: true }));
   }
 
+  /* Public résumé: one image-preview dialog, opened from every View résumé control. */
+  const resumeDialog = document.getElementById('resume-dialog');
+  if (resumeDialog) {
+    const resumeOpeners = $$('[data-resume-open]');
+    const resumeClose = resumeDialog.querySelector('[data-resume-close]');
+    const resumeScroll = resumeDialog.querySelector('.resume-dialog-scroll');
+    const resumePreview = resumeDialog.querySelector('.resume-preview img');
+    const resumeError = resumeDialog.querySelector('.resume-dialog-error');
+    const resumePdf = resumeDialog.querySelector('[data-resume-download]').getAttribute('href');
+    const resumeName = 'Jendrick_Coniconde_Resume.pdf';
+    const resumeFigure = resumeDialog.querySelector('.resume-preview');
+    const resumeZoomIn = resumeDialog.querySelector('[data-resume-zoom-in]');
+    const resumeZoomOut = resumeDialog.querySelector('[data-resume-zoom-out]');
+    const resumeFit = resumeDialog.querySelector('[data-resume-fit]');
+    const resumeZoomLabel = resumeDialog.querySelector('[data-resume-zoom-value]');
+    let resumeTrigger = null;
+
+    /* Zoom model: 1 is "Fit page" — the whole document scaled into the viewport.
+       Percentages reported to the visitor are absolute (natural px × percent),
+       while the steps they move through are relative to the fitted page. */
+    const ZOOM_MIN = 1;            // multiplier of the fit scale (1 = Fit page)
+    const ZOOM_MAX_WIDTH = 2;      // never wider than 2× the document's own pixels
+    let resumeFitScale = 1;
+    let resumeScale = 1;           // multiplier of fit scale
+    let resumeZoomReset = true;    // scale is still "fit" (label shows Fit page)
+    let resumeZoomTimer = 0;
+
+    // Space the viewer may use: the viewport's width, and whatever vertical room
+    // is left once the header, toolbar and footer are laid out. The scroller's own
+    // height depends on the sheet, so it cannot be used to size the sheet.
+    const availableBox = () => {
+      const cs = getComputedStyle(resumeScroll);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      // Measure the bars directly: the scroller's own height already reflects the
+      // sheet it contains, so deriving the budget from it would be circular.
+      const panel = resumeDialog.querySelector('.resume-dialog-panel');
+      // Height of the header, toolbar and footer only — never the sheet itself.
+      const bars = [...panel.children]
+        .filter(el => el !== resumeScroll)
+        .reduce((sum, el) => sum + el.getBoundingClientRect().height, 0);
+      // The dialog's own limit (94dvh) is the budget the panel can grow into.
+      const dcs = getComputedStyle(resumeDialog);
+      const limit = parseFloat(dcs.maxBlockSize) || parseFloat(dcs.maxHeight) || resumeDialog.getBoundingClientRect().height;
+      const room = Math.max(0, limit - bars - padY);
+      return { w: resumeScroll.getBoundingClientRect().width - padX, h: room };
+    };
+
+    const measureFit = () => {
+      const img = resumePreview;
+      if (!img || !img.naturalWidth) return 1;
+      const box = availableBox();
+      if (box.w <= 0 || !isFinite(box.h)) return resumeFitScale || 1;
+      const byWidth = box.w / img.naturalWidth;
+      const scale = box.h > 0 ? Math.min(byWidth, box.h / img.naturalHeight) : byWidth;
+      return scale || 1;
+    };
+
+    // Scale is stored as a fraction of the document's own pixel width, so the
+    // label, the rendered size and the scroll area can never disagree. Steps are
+    // relative to Fit page: with a ~28% fit scale, absolute 33%/50% steps barely
+    // change anything while 100% quadruples the sheet. Relative steps keep every
+    // press the same size of change, and the label still reports the real value.
+    const ZOOM_RELATIVE = [1, 1.5, 2, 2.5, 3, 3.5, 4];
+    const ZOOM_MAX_RELATIVE = 4;   // 4× the fitted page ≈ 100–115% of native size
+    const currentPercent = () => Math.round(resumeFitScale * resumeScale * 100);
+    const maxScale = () => Math.min(ZOOM_MAX_RELATIVE, ZOOM_MAX_WIDTH / Math.max(0.0001, resumeFitScale));
+
+    const applyZoom = () => {
+      const w = Math.round(resumePreview.naturalWidth * resumeFitScale * resumeScale);
+      resumePreview.style.width = w + 'px';
+      resumePreview.style.height = 'auto';
+      resumeZoomLabel.textContent = resumeZoomReset ? 'Fit page' : currentPercent() + '%';
+      resumeZoomOut.disabled = resumeZoomReset || resumeScale <= ZOOM_MIN;
+      resumeZoomIn.disabled = resumeScale >= maxScale() - 0.001;
+    };
+
+    // Restore the viewer's centre, not the document's top-left, when re-scaling.
+    const setZoom = (next, { center = true } = {}) => {
+      const from = resumeScale;
+      if (!resumeFitScale) resumeFitScale = measureFit();
+      const target = Math.min(maxScale(), Math.max(ZOOM_MIN, next));
+      if (Math.abs(target - from) < 0.001) return;
+      const box = resumeScroll;
+      const cx = (box.scrollLeft + box.clientWidth / 2) / Math.max(1, box.scrollWidth);
+      const cy = (box.scrollTop + box.clientHeight / 2) / Math.max(1, box.scrollHeight);
+      resumeScale = target;
+      resumeZoomReset = Math.abs(target - ZOOM_MIN) < 0.001;
+      // Animate every zoom change, in and out, including returns to Fit page.
+      resumeScroll.classList.add('is-zooming');
+      clearTimeout(resumeZoomTimer);
+      resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 240);
+      applyZoom();
+      // Switch the viewport between "centred page" and "scrollable sheet".
+      resumeScroll.classList.toggle('is-fitted', resumeZoomReset);
+      const newW = resumePreview.offsetWidth, newH = resumePreview.offsetHeight;
+      if (resumeZoomReset) {
+        box.scrollLeft = 0; box.scrollTop = 0;
+      } else if (center) {
+        box.scrollLeft = cx * (newW + 8) - box.clientWidth / 2;
+        box.scrollTop = cy * (newH + 16) - box.clientHeight / 2;
+      } else {
+        box.scrollLeft = 0; box.scrollTop = 0;
+      }
+    };
+    const fitResume = ({ animate = false } = {}) => {
+      resumeFitScale = measureFit();
+      resumeScale = ZOOM_MIN;
+      resumeZoomReset = true;
+      if (animate) {
+        resumeScroll.classList.add('is-zooming');
+        clearTimeout(resumeZoomTimer);
+        resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 240);
+      } else {
+        resumeScroll.classList.remove('is-zooming');
+        clearTimeout(resumeZoomTimer);
+      }
+      clearTimeout(resumeZoomTimer);
+      if (animate) resumeZoomTimer = setTimeout(() => resumeScroll.classList.remove('is-zooming'), 240);
+      applyZoom();
+      resumeScroll.classList.add('is-fitted');
+      resumeScroll.scrollLeft = 0;
+      resumeScroll.scrollTop = 0;
+    };
+    // Each press moves one relative step: Fit page → 1.5× → 2× → 2.5× …
+    const zoomStep = direction => {
+      if (!resumeFitScale) resumeFitScale = measureFit();
+      const from = resumeScale;
+      const next = direction > 0
+        ? (ZOOM_RELATIVE.find(s => s > from + 0.001) || ZOOM_MAX_RELATIVE)
+        : ([...ZOOM_RELATIVE].reverse().find(s => s < from - 0.001) || ZOOM_MIN);
+      setZoom(next);
+    };
+
+    const canShowResume = typeof resumeDialog.showModal === 'function';
+    const openResume = trigger => {
+      if (!canShowResume) { location.href = resumePdf; return; }
+      resumeTrigger = trigger;
+      const pageScroll = scrollY, pageScrollX = scrollX;
+      const wasOpen = resumeDialog.open;
+      resumeDialog.showModal();
+      fitResume();
+      // A freshly opened dialog has no layout yet; measure again once it does.
+      // Focus the sheet, not Close: the page behind cannot scroll, and Enter does
+      // not immediately re-trigger the close button.
+      resumeScroll.focus({ preventScroll: true });
+      if (!wasOpen) {
+        // Re-fit once the dialog's bars and image have their final sizes.
+        const settle = () => { if (!resumeDialog.open) return; if (resumeZoomReset) fitResume(); else setZoom(resumeScale, { center: false }); };
+        requestAnimationFrame(settle);
+        setTimeout(settle, 80);
+        setTimeout(settle, 260);
+      }
+      if (scrollY !== pageScroll) scrollTo({ top: pageScroll, left: pageScrollX, behavior: 'instant' });
+    };
+    const closeResume = () => resumeDialog.close();
+
+    resumeOpeners.forEach(button => {
+      button.addEventListener('click', () => openResume(button));
+    });
+    resumeClose.addEventListener('click', closeResume);
+    resumeDialog.addEventListener('click', event => {
+      if (event.target === resumeDialog) closeResume();
+    });
+    // Return focus to the exact control that opened the dialog, keeping the page
+    // at the position the visitor left it at instead of jumping to that control.
+    resumeDialog.addEventListener('close', () => {
+      const target = resumeTrigger;
+      const pageScroll = scrollY, pageScrollX = scrollX;
+      resumeTrigger = null;
+      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });
+      if (scrollY !== pageScroll) scrollTo({ top: pageScroll, left: pageScrollX, behavior: 'instant' });
+    });
+    resumeDialog.addEventListener('cancel', event => {
+      event.preventDefault();
+      closeResume();
+    });
+
+    resumeZoomIn.addEventListener('click', () => zoomStep(1));
+    resumeZoomOut.addEventListener('click', () => zoomStep(-1));
+    resumeFit.addEventListener('click', () => { fitResume({ animate: true }); resumeScroll.focus({ preventScroll: true }); });
+
+    // Keyboard zoom, but only while the viewer is what the visitor is using.
+    resumeDialog.addEventListener('keydown', event => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      const key = event.key;
+      if (key === '+' || key === '=') { event.preventDefault(); zoomStep(1); }
+      else if (key === '-' || key === '_') { event.preventDefault(); zoomStep(-1); }
+      else if (key === '0') { event.preventDefault(); fitResume({ animate: true }); }
+    });
+
+    // Refit when the viewport changes, so "Fit page" stays fit after rotation or
+    // a window resize. A zoomed sheet keeps its zoom and just re-centres.
+    let resumeResizeFrame = 0;
+    addEventListener('resize', () => {
+      if (!resumeDialog.open) return;
+      cancelAnimationFrame(resumeResizeFrame);
+      resumeResizeFrame = requestAnimationFrame(() => {
+        if (resumeZoomReset) { fitResume(); return; }
+        const pct = currentPercent();
+        resumeFitScale = measureFit();
+        setZoom(pct / 100 / resumeFitScale);
+      });
+    });
+
+    // Native `download` is preferred. Only step in because a browser would render
+    // the PDF in place instead of saving it, so the page never navigates away.
+    const saveResume = event => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (typeof fetch !== 'function' || !URL.createObjectURL) return;
+      event.preventDefault();
+      if (resumeError) { resumeError.hidden = true; resumeError.textContent = ''; }
+      fetch(resumePdf, { credentials: 'same-origin' })
+        .then(response => {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.blob();
+        })
+        .then(blob => {
+          // Make sure the saved file keeps the PDF type even if the host omits it.
+          const objectUrl = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: 'application/pdf' }));
+          const link = document.createElement('a');
+          link.href = objectUrl;
+          link.download = resumeName;
+          link.rel = 'noopener';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+        })
+        .catch(() => {
+          if (!resumeError) { location.href = resumePdf; return; }
+          resumeError.textContent = 'The download could not start. Use “Open PDF in browser” instead.';
+          resumeError.hidden = false;
+        });
+    };
+    $$('[data-resume-download]').forEach(link => link.addEventListener('click', saveResume));
+
+    // A preview that never loaded can only be reached once the dialog opens,
+    // so detect the failure then instead of silently showing an empty box.
+    resumePreview.addEventListener('error', () => {
+      if (!resumeError) return;
+      resumeError.textContent = 'The résumé preview could not load. Use “Download PDF” or “Open PDF in browser”.';
+      resumeError.hidden = false;
+    });
+    if (resumePreview.complete && resumePreview.naturalWidth === 0) {
+      resumePreview.dispatchEvent(new Event('error'));
+    }
+  }
+
   // The unenhanced page keeps both narratives in normal document flow.
   // Once initialized, each case replaces its summary with its own detail.
   function revealCaseControl(control) {

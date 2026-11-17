@@ -740,8 +740,8 @@ footer.ink{border-top:1px solid var(--line-strong)}
   gap:12px;
   width:100%;
   box-sizing:border-box;
-  min-height:52px;
-  padding:11px 15px;
+  min-height:46px;
+  padding:10px 14px;
   text-align:left;
   background:transparent;
   color:var(--text);
@@ -751,9 +751,8 @@ footer.ink{border-top:1px solid var(--line-strong)}
   cursor:pointer;
 }
 .tool-toggle:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.tool-toggle-main{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.tool-toggle-main{display:flex;flex-direction:column;gap:0;min-width:0;flex:1}
 .tool-name{font-family:var(--sans);font-weight:620;font-size:14.5px;color:var(--text);line-height:1.3}
-.tool-used{font-family:var(--mono);font-size:12px;font-weight:450;color:var(--accent);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .tool-chev{flex:none;display:inline-block;width:8px;height:8px;margin-right:4px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(45deg);transition:transform var(--motion-expand) var(--ease-standard)}
 
@@ -787,8 +786,8 @@ footer.ink{border-top:1px solid var(--line-strong)}
   gap:12px;
   width:100%;
   box-sizing:border-box;
-  min-height:52px;
-  padding:11px 15px;
+  min-height:44px;
+  padding:9px 16px;
   text-align:left;
   background:transparent;
   color:var(--text);
@@ -797,9 +796,8 @@ footer.ink{border-top:1px solid var(--line-strong)}
   cursor:pointer;
 }
 .tool-takeover-head:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.tool-takeover-main{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.tool-takeover-main{display:flex;flex-direction:column;gap:0;min-width:0;flex:1}
 .tool-takeover-title{font-family:var(--sans);font-weight:620;font-size:14.5px;color:var(--text);line-height:1.3}
-.tool-takeover-refs{font-family:var(--mono);font-size:12px;font-weight:450;color:var(--accent);line-height:1.35}
 .tool-takeover-chev{
   flex:none;
   display:inline-block;
@@ -813,11 +811,13 @@ footer.ink{border-top:1px solid var(--line-strong)}
 
 /* Takeover body crossfade (no text stretch) */
 .tool-takeover-body{
-  padding:14px 18px 18px;
+  width:100%;
+  box-sizing:border-box;
+  padding:9px 16px 10px;
   border-top:1px dashed var(--line);
   display:flex;
   flex-direction:column;
-  gap:14px;
+  gap:8px;
   opacity:0;
   transform:translateY(6px);
   transition:opacity 160ms cubic-bezier(.2,.7,.2,1), transform 160ms cubic-bezier(.2,.7,.2,1);
@@ -827,15 +827,15 @@ footer.ink{border-top:1px solid var(--line-strong)}
   transform:translateY(0);
 }
 
-.tool-takeover-desc{margin:0;font-family:var(--sans);font-size:14px;font-weight:450;line-height:1.6;color:var(--text);max-width:54rem}
-.tool-takeover-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid var(--line)}
+.tool-takeover-desc{margin:0;font-family:var(--sans);font-size:14px;font-weight:450;line-height:1.5;color:var(--text);max-width:62ch}
+.tool-takeover-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:6px;border-top:1px solid var(--line)}
 .tool-takeover-proof{font-size:11.5px;color:var(--accent);font-weight:550}
 .tool-takeover-proof-label{color:var(--text-muted);font-weight:400;margin-right:4px}
 .tool-takeover-close-btn{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  padding:6px 12px;
+  padding:5px 11px;
   background:var(--surface);
   border:1px solid var(--control-border);
   border-radius:var(--radius-control);
@@ -849,6 +849,30 @@ footer.ink{border-top:1px solid var(--line-strong)}
 .tool-takeover-close-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--surface-soft)}
 .tool-takeover-close-btn:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
 .tool-takeover-close-icon{width:12px;height:12px}
+
+@media(min-width:1120px),(min-width:760px) and (max-width:960px){
+  .tool-takeover-body{
+    display:grid;
+    grid-template-columns:minmax(0,1.6fr) minmax(240px,.85fr);
+    column-gap:28px;
+    align-items:center;
+    padding:11px 16px 12px;
+  }
+  .tool-takeover-desc{max-width:none}
+  .tool-takeover-footer{
+    align-self:stretch;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:8px;
+    padding-top:0;
+    padding-left:20px;
+    border-top:0;
+    border-left:1px solid var(--line);
+  }
+  .tool-takeover-proof{line-height:1.45}
+}
 
 @media(prefers-reduced-motion:reduce){
   .tool-card,.tool-card.is-sibling-exiting,.tool-card.is-sibling-entering,
@@ -864,9 +888,10 @@ footer.ink{border-top:1px solid var(--line-strong)}
 .tool-card.is-inline-open .tool-chev{transform:rotate(-135deg)}
 .tool-inline{overflow:hidden;border-top:1px dashed var(--line)}
 .tool-inline[hidden]{display:none}
-.tool-inline-body{display:flex;flex-direction:column;gap:12px;padding:12px 15px 15px}
+.tool-inline-body{display:flex;flex-direction:column;gap:10px;padding:10px 14px 12px}
 .tool-inline-desc{margin:0;font:450 14px/1.6 var(--sans);color:var(--text)}
-.tool-inline-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--line)}
+.tool-inline-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:8px;border-top:1px solid var(--line)}
+.tool-inline-foot .tool-takeover-close-btn{min-height:44px}
 
 @media(max-width:540px){
   .toolkit-ready .toolkit-grid{grid-template-columns:1fr}
@@ -937,8 +962,6 @@ html:not(.enh) .frow{min-height:72px;align-items:center}
 .frow-brief{display:none}
 html:not(.enh) .frow-brief{display:block;margin:4px 0 0;font:400 13.5px/1.45 var(--sans);color:var(--text-muted)}
 
-/* ===== Toolkit: references may wrap to two lines instead of one clipped line ===== */
-.tool-used{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;text-overflow:clip}
 @media(max-width:540px){.toolkit-grid{gap:10px}.toolkit-wrap{gap:24px}.toolkit-shelf-title{margin-bottom:12px}}
 
 /* ===== Supporting-media dialog: restrained depth (CSS only; image stays flat) ===== */

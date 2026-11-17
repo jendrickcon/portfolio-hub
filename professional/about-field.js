@@ -13,7 +13,8 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const coarse = matchMedia('(pointer: coarse)');
   const noHover = matchMedia('(hover: none)');
-  const PARALLAX = 10;            // total horizontal travel (CSS px) across the Work sequence
+  const PARALLAX = 8;             // total horizontal travel (CSS px: 0px at Overview start to 8px at Projects end)
+  const BOUNDARY_MS = 130;        // exit/re-entry boundary interpolation (100-140ms) at Projects <-> Capabilities
   const HOLD = 40;                // ms before halo begins fading out after last pointer move
   const FADE_IN_MS = 100;         // halo fade-in duration (80-120ms target)
   const FADE_OUT_MS = 155;        // halo fade-out duration (140-200ms target; 40+155=195ms <= 220ms)
@@ -22,19 +23,83 @@
   let width = 0, height = 0, nodes = [], routes = [];
   let connected = false, frame = 0, lastOffsetX = 0, lastTick = 0;
   let haloRoute = -1, haloIntensity = 0, haloTarget = 0;
+  let boundaryBlend = 0, blendFrom = 0, blendTo = 0, blendStart = 0, lastActiveProgress = 0, lastWorkOn = false;
   const pointer = { x: 0, y: 0, lastMove: 0, inside: false };
   const clamp = v => Math.max(0, Math.min(1, v));
   const seed = n => { const value = Math.sin(n * 91.437) * 43758.5453; return value - Math.floor(value); };
   const animated = () => connected && !document.hidden && !reduced.matches && !coarse.matches && !noHover.matches && width >= 769 && height >= 300;
   const light = () => html.getAttribute('data-theme') === 'light';
-  const workOn = () => animated() && html.classList.contains('enh') && window.__portfolioWorkActive === true && html.dataset.activeSection === 'work';
+  const workOn = () => animated() && html.classList.contains('enh') && window.__portfolioWorkActive === true;
   const workProgress = () => clamp(window.__portfolioWorkProgress || 0);
-  const targetOffsetX = () => workOn() ? (workProgress() - .5) * PARALLAX : 0;
 
-  // Theme changes and Work progress updates repaint once at the current geometry.
-  window.onFieldThemeChange = () => { if (!document.hidden) paint(); };
+  // Exact cubic-bezier(.2, .7, .2, 1) easing without overshoot for boundary return only.
+  function easeStandard(x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let u = x;
+    for (let i = 0; i < 5; i++) {
+      const u2 = u * u, u3 = u2 * u, inv = 1 - u, inv2 = inv * inv;
+      const px = 0.6 * inv2 * u + 0.6 * inv * u2 + u3 - x;
+      const dx = 0.6 * inv2 - 1.2 * inv * u + 1.2 * inv * u - 0.6 * u2 + 3 * u2;
+      if (Math.abs(dx) < 1e-5) break;
+      u = clamp(u - px / dx);
+    }
+    const u2 = u * u, u3 = u2 * u, inv = 1 - u;
+    return 2.1 * inv * inv * u + 3 * inv * u2 + u3;
+  }
+
+  function syncBoundary(now) {
+    if (!animated() || !html.classList.contains('enh')) {
+      boundaryBlend = 0; blendFrom = 0; blendTo = 0; blendStart = 0;
+      lastActiveProgress = 0; lastWorkOn = false;
+      return 0;
+    }
+    const active = workOn();
+    const prog = workProgress();
+    if (active !== lastWorkOn) {
+      lastWorkOn = active;
+      const target = active ? 1 : 0;
+      // Direct at Overview boundary (prog near 0 and current offset near 0); interpolate only at Capabilities boundary.
+      if (active && prog <= .5 && Math.abs(lastOffsetX) <= .5) {
+        boundaryBlend = 1; blendFrom = 1; blendTo = 1; blendStart = 0;
+      } else if (!active && lastActiveProgress <= .15 && Math.abs(lastOffsetX) <= 1.2) {
+        boundaryBlend = 0; blendFrom = 0; blendTo = 0; blendStart = 0;
+      } else {
+        blendFrom = boundaryBlend;
+        blendTo = target;
+        blendStart = now;
+      }
+    }
+    if (active) lastActiveProgress = prog;
+    if (blendStart > 0) {
+      const t = clamp((now - blendStart) / BOUNDARY_MS);
+      boundaryBlend = blendFrom + (blendTo - blendFrom) * easeStandard(t);
+      if (t >= 1) {
+        boundaryBlend = blendTo;
+        blendStart = 0;
+        if (!active) lastActiveProgress = 0;
+      }
+    } else {
+      boundaryBlend = active ? 1 : 0;
+    }
+    const baseProg = active ? prog : lastActiveProgress;
+    return baseProg * boundaryBlend * PARALLAX;
+  }
+
+  // Theme changes and Work progress updates repaint at the current geometry.
+  window.onFieldThemeChange = () => { if (!document.hidden) paint(performance.now()); };
   window.onFieldWorkChange = () => {
-    if (animated() && Math.abs(targetOffsetX() - lastOffsetX) > .0005 && !frame) paint();
+    if (!animated()) return;
+    const now = performance.now();
+    const active = workOn();
+    const prog = workProgress();
+    const needsBoundaryAnim = (active !== lastWorkOn) && (active ? prog > .5 : lastActiveProgress > .15 || Math.abs(lastOffsetX) > 1.2);
+    if (needsBoundaryAnim || blendStart > 0) {
+      schedule();
+      return;
+    }
+    const directOffset = active ? prog * PARALLAX : 0;
+    if ((active !== lastWorkOn || Math.abs(directOffset - lastOffsetX) > .0005) && !frame) paint(now);
   };
 
   function makeRoute(u, v) {
@@ -139,10 +204,10 @@
     for (let i = 2; i < coords.length; i += 2) ctx.lineTo(coords[i], coords[i + 1]);
   }
 
-  function paint() {
+  function paint(now = performance.now(), offset) {
     ctx.clearRect(0, 0, width, height);
     const isLight = light();
-    const fieldOffsetX = targetOffsetX();
+    const fieldOffsetX = typeof offset === 'number' ? offset : syncBoundary(now);
     lastOffsetX = fieldOffsetX;
 
     const px = pointer.x - fieldOffsetX;
@@ -232,8 +297,8 @@
     lastTick = 0;
   }
 
-  // The only animation loop. Runs while halo is active/fading or Work offset changes;
-  // stops cleanly <= 200ms after pointer stops or leaves.
+  // The only animation loop. Runs while halo is active/fading or boundary transition is running;
+  // stops cleanly <= 200ms after pointer stops or leaves, and <= 140ms on boundary exit.
   function tick(now) {
     frame = 0;
     if (!animated()) return;
@@ -241,8 +306,11 @@
     const dt = lastTick ? Math.min(50, Math.max(1, now - lastTick)) : 16.7;
     lastTick = now;
 
+    const fieldOffsetX = syncBoundary(now);
+    const offsetChanged = Math.abs(fieldOffsetX - lastOffsetX) > .0005;
+
     const hold = pointer.inside && now - pointer.lastMove < HOLD;
-    const px = pointer.x - targetOffsetX();
+    const px = pointer.x - fieldOffsetX;
     const proj = (hold || haloIntensity > 0) && pointer.inside ? projectNearest(px, pointer.y) : null;
 
     if (hold && proj) {
@@ -264,10 +332,9 @@
       if (haloIntensity === 0) haloRoute = -1;
     }
 
-    const offsetChanged = Math.abs(targetOffsetX() - lastOffsetX) > .0005;
-    if (haloIntensity > 0 || prevIntensity > 0 || offsetChanged) paint();
+    if (haloIntensity > 0 || prevIntensity > 0 || offsetChanged) paint(now, fieldOffsetX);
 
-    if (haloTarget > 0 || haloIntensity > 0) frame = requestAnimationFrame(tick);
+    if (haloTarget > 0 || haloIntensity > 0 || blendStart > 0) frame = requestAnimationFrame(tick);
     else lastTick = 0;
   }
 
@@ -285,9 +352,10 @@
     haloIntensity = 0;
     haloTarget = 0;
     haloRoute = -1;
+    blendStart = 0;
     buildField();
     stop();
-    paint();
+    paint(performance.now());
   }
 
   function onPointer(event) {
@@ -305,9 +373,9 @@
     if (haloIntensity > 0) schedule();
   }
 
-  // Work progress is published by script.js; a scroll only schedules when offset changes.
+  // Work progress is published by script.js via window.onFieldWorkChange().
   function onScroll() {
-    if (animated() && Math.abs(targetOffsetX() - lastOffsetX) > .0005) schedule();
+    if (animated() && blendStart > 0) schedule();
   }
 
   function onVisibility() {
@@ -316,7 +384,8 @@
       haloIntensity = 0;
       haloTarget = 0;
       haloRoute = -1;
-      paint();
+      blendStart = 0;
+      paint(performance.now());
     }
   }
 
@@ -326,11 +395,13 @@
     haloIntensity = 0;
     haloTarget = 0;
     haloRoute = -1;
-    paint();
+    boundaryBlend = 0; blendFrom = 0; blendTo = 0; blendStart = 0;
+    lastActiveProgress = 0; lastWorkOn = false;
+    paint(performance.now());
   }
 
   const themeObserver = 'MutationObserver' in window
-    ? new MutationObserver(() => { if (!document.hidden) paint(); })
+    ? new MutationObserver(() => { if (!document.hidden) paint(performance.now()); })
     : null;
 
   function connect() {

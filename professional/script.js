@@ -1399,10 +1399,11 @@
       const workProgress = clamp(x / maxX);
       workRuler.style.setProperty('--work-p', workProgress.toFixed(5));
 
-      // Control Floating Work Navigator visibility (only visible during Work stage)
+      // Control Floating Work Navigator visibility and field horizontal boundary state
       const scrollStart = top(run) - hh;
       const isWorkActive = scrollY >= scrollStart - 16 && scrollY < scrollStart + span() + 20;
-      nextWorkActive = Boolean(isWorkActive);
+      const runRect = run.getBoundingClientRect();
+      nextWorkActive = scrollY >= scrollStart && runRect.bottom > hh;
       nextWorkProgress = workProgress;
       if (islandWrap) {
         islandWrap.classList.toggle('visible', isWorkActive);

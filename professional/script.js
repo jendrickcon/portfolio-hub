@@ -1066,6 +1066,115 @@
     }
   }
 
+  /* Shared Capability Detail Dialog */
+  const capDialog = document.getElementById('capability-dialog');
+  const capTriggers = $$('.cap-card[data-cap-key]');
+  if (capDialog && typeof capDialog.showModal === 'function' && capTriggers.length) {
+    const capabilityData = {
+      'ui-direction': {
+        title: 'UI & interface direction',
+        scope: 'Define structure, labels, navigation, and review criteria.',
+        contribution: 'Translate project requirements into clear screen hierarchy, labels, and navigation flows, then review and refine the built interface so user states and actions remain easy to scan across desktop and mobile viewports.',
+        evidence: 'UDM-RADAR · StudyQuest · Professional Portfolio'
+      },
+      'frontend': {
+        title: 'Front-end implementation',
+        scope: 'Build and refine responsive HTML, CSS, and JavaScript interfaces.',
+        contribution: 'Implement semantic HTML, theme-aware CSS, and vanilla JavaScript interactions directly on portfolio and assessment builds, while guiding and reviewing front-end structure, responsive behavior, and accessibility across team applications.',
+        evidence: 'Professional Portfolio · StudyQuest · UDM-RADAR · Mini PCS'
+      },
+      'qa-testing': {
+        title: 'QA & browser testing',
+        scope: 'Verify workflows, edge cases, API responses, and defect reports.',
+        contribution: 'Execute exploratory and workflow testing across browsers and viewports, design positive, negative, boundary, and security test cases, validate HTTP and API error handling, and document reproducible defect reports with steps, severity, and evidence.',
+        evidence: 'Junior QA Engineer Practical Assessment · UDM-RADAR · StudyQuest'
+      },
+      'systems-integration': {
+        title: 'Systems integration',
+        scope: 'Connect interfaces to application logic, databases, and external APIs.',
+        contribution: 'Connect front-end workflows to backend endpoints, relational data, and third-party services, configuring record fetching, task-state locks, and status feedback so interfaces reflect real data rules and constraints.',
+        evidence: 'Mini PCS (Airtable) · UDM-RADAR (PHP / MySQL / Python) · StudyQuest (Django)'
+      },
+      'planning-leadership': {
+        title: 'Planning & project leadership',
+        scope: 'Set project scope, coordinate team tasks, and review deliverables.',
+        contribution: 'Define feature scope, break work into actionable tasks, align teammates on interface and data contracts, use structured AI prompts with human review, and verify completed work against project goals.',
+        evidence: 'UDM-RADAR (Project Leader) · StudyQuest (Lead Developer)'
+      },
+      'cloud-platform': {
+        title: 'Cloud & platform exploration',
+        scope: 'Configure project hosting, version control, and connected services.',
+        contribution: 'Deploy and test web projects across virtual machines and static hosts, manage branches and pull requests in GitHub, and experiment with hosted databases and backend-as-a-service tools while continuing to build deployment experience.',
+        evidence: 'Portfolio Hub (Azure VM & IIS · Vercel) · GitHub · Enuhri Art Gallery (Firebase)'
+      }
+    };
+
+    const capPanel = capDialog.querySelector('.cap-dialog-panel');
+    const capIconSlot = capDialog.querySelector('[data-cap-dialog-icon]');
+    const capTitle = capDialog.querySelector('[data-cap-dialog-title]');
+    const capScope = capDialog.querySelector('[data-cap-dialog-scope]');
+    const capContrib = capDialog.querySelector('[data-cap-dialog-contrib]');
+    const capEvidence = capDialog.querySelector('[data-cap-dialog-evidence]');
+    const capCloseButtons = $$('[data-cap-close]', capDialog);
+    let capTrigger = null;
+
+    const closeCapabilityDialog = () => {
+      if (capDialog.open) capDialog.close();
+    };
+
+    const openCapabilityDialog = trigger => {
+      const data = capabilityData[trigger.dataset.capKey];
+      if (!data || capDialog.open) return;
+      capTrigger = trigger;
+      const pageScroll = scrollY, pageScrollX = scrollX;
+
+      if (capTitle) capTitle.textContent = data.title;
+      if (capScope) capScope.textContent = data.scope;
+      if (capContrib) capContrib.textContent = data.contribution;
+      if (capEvidence) capEvidence.textContent = data.evidence;
+
+      const cardSvg = trigger.querySelector('.cap-svg');
+      if (capIconSlot) {
+        if (cardSvg) capIconSlot.replaceChildren(cardSvg.cloneNode(true));
+        else capIconSlot.replaceChildren();
+      }
+
+      capDialog.showModal();
+      if (capPanel) capPanel.focus({ preventScroll: true });
+      if (scrollY !== pageScroll) scrollTo({ top: pageScroll, left: pageScrollX, behavior: 'instant' });
+    };
+
+    capTriggers.forEach(trigger => {
+      trigger.addEventListener('click', () => openCapabilityDialog(trigger));
+    });
+
+    capCloseButtons.forEach(button => {
+      button.addEventListener('click', closeCapabilityDialog);
+    });
+
+    capDialog.addEventListener('click', event => {
+      if (event.target === capDialog) closeCapabilityDialog();
+    });
+
+    capDialog.addEventListener('cancel', event => {
+      event.preventDefault();
+      closeCapabilityDialog();
+    });
+
+    capDialog.addEventListener('close', () => {
+      const target = capTrigger;
+      const pageScroll = scrollY, pageScrollX = scrollX;
+      capTrigger = null;
+      if (capIconSlot) capIconSlot.replaceChildren();
+      if (capTitle) capTitle.textContent = '';
+      if (capScope) capScope.textContent = '';
+      if (capContrib) capContrib.textContent = '';
+      if (capEvidence) capEvidence.textContent = '';
+      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });
+      if (scrollY !== pageScroll) scrollTo({ top: pageScroll, left: pageScrollX, behavior: 'instant' });
+    });
+  }
+
   // The unenhanced page keeps both narratives in normal document flow.
   // Once initialized, each case replaces its summary with its own detail.
   function revealCaseControl(control) {

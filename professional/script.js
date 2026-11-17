@@ -177,8 +177,8 @@
           <div class="tool-takeover-footer">
             <span class="tool-takeover-proof mono"></span>
             <button type="button" class="tool-takeover-close-btn mono">
-              <span>Close details</span>
               <svg class="tool-takeover-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span>Close details</span>
             </button>
           </div>
         </div>
@@ -1385,6 +1385,11 @@
 
     // Work horizontal translation & active marker update
     let cur = 0;
+    const prevWorkActive = window.__portfolioWorkActive === true;
+    const prevWorkProgress = typeof window.__portfolioWorkProgress === 'number' ? window.__portfolioWorkProgress : 0;
+    let nextWorkActive = false;
+    let nextWorkProgress = 0;
+
     if (enh) {
       const x = curX();
       track.style.transform = 'translate3d(' + (-x).toFixed(1) + 'px,0,0)';
@@ -1394,11 +1399,12 @@
       const workProgress = clamp(x / maxX);
       workRuler.style.setProperty('--work-p', workProgress.toFixed(5));
 
-
-
-      // Control Floating Work Navigator visibility (only visible during Work stage)
+      // Control Floating Work Navigator visibility and field horizontal boundary state
       const scrollStart = top(run) - hh;
       const isWorkActive = scrollY >= scrollStart - 16 && scrollY < scrollStart + span() + 20;
+      const runRect = run.getBoundingClientRect();
+      nextWorkActive = scrollY >= scrollStart && runRect.bottom > hh;
+      nextWorkProgress = workProgress;
       if (islandWrap) {
         islandWrap.classList.toggle('visible', isWorkActive);
         islandWrap.setAttribute('aria-hidden', isWorkActive ? 'false' : 'true');
@@ -1414,6 +1420,12 @@
         if (top(p) <= scrollY + hh + innerHeight * 0.35) cur = i;
       });
       if (top(run) > scrollY + hh + innerHeight * 0.35) cur = -1;
+    }
+
+    window.__portfolioWorkActive = nextWorkActive;
+    window.__portfolioWorkProgress = nextWorkProgress;
+    if (nextWorkActive !== prevWorkActive || (nextWorkActive && Math.abs(nextWorkProgress - prevWorkProgress) > 0.0001)) {
+      if (typeof window.onFieldWorkChange === 'function') window.onFieldWorkChange();
     }
 
     marks.forEach((m, i) => {

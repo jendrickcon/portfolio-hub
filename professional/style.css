@@ -857,10 +857,20 @@ footer.ink{border-top:1px solid var(--line-strong)}
     transition:none !important;
     animation:none !important;
   }
+  .tool-inline{transition:none !important}
 }
+
+/* ===== Toolkit: One-Column In-Place Disclosure ===== */
+.tool-card.is-inline-open{background:var(--surface-raised);border-color:var(--accent)}
+.tool-card.is-inline-open .tool-chev{transform:rotate(-135deg)}
+.tool-inline{overflow:hidden;border-top:1px dashed var(--line)}
+.tool-inline[hidden]{display:none}
+.tool-inline-body{display:flex;flex-direction:column;gap:12px;padding:12px 15px 15px}
+.tool-inline-desc{margin:0;font:450 14px/1.6 var(--sans);color:var(--text)}
+.tool-inline-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--line)}
+
 @media(max-width:540px){
   .toolkit-ready .toolkit-grid{grid-template-columns:1fr}
-  .tool-takeover{position:relative}
 }
 
 /* Persistent surface containers & theme reading hierarchy (stationary geometry) */

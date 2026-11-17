@@ -386,9 +386,9 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 .media-title{display:block}.media-title h2{font-size:clamp(30px,3vw,44px);margin:3px 0}.media-title>p{font-size:13px;color:var(--mute-i);padding-bottom:5px}
 .media-heading{font:600 14px var(--sans);letter-spacing:0;text-transform:none;color:var(--tink);border-bottom:1px solid var(--line-i);padding-bottom:5px;margin-bottom:7px}
 .media-personal{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}.media-experiments{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr;gap:14px}
-.media-entry{min-width:0;border-top:1px solid #465264;padding-top:7px}.media-feature{display:grid;grid-template-columns:minmax(95px,38%) 1fr;gap:14px}.media-entry figure{margin:0;min-width:0}.media-entry img{display:block;width:100%;height:110px;object-fit:cover;object-position:center;background:#1b2430}.media-feature img{height:150px;object-fit:contain;background:#1b2221}.media-entry figcaption{font:13px/1.35 var(--sans);color:#7DB896}.media-status{font:13px/1.35 var(--sans);color:#bec7d0}.media-entry figcaption{margin-top:4px}.media-copy h4{font:600 16px/1.2 var(--sans);color:#f5f1e9;margin:3px 0}.media-copy p,.media-pending p{font-size:13px;line-height:1.4;color:#c5cbd5}.media-copy a{display:inline-flex;align-items:center;min-height:44px;padding:4px 0;color:#a9c5ff;text-decoration:none;font:600 13px var(--sans)}.media-copy a:hover{text-decoration:underline;color:white}.media-copy a:focus-visible{outline:2px solid #a6c3ff;outline-offset:3px}.media-pending{font-size:13px;color:#bac1c9;margin:0 0 5px}.media-next{display:inline-flex;align-items:center;min-height:44px;align-self:start}
+.media-entry{min-width:0;border-top:1px solid #465264;padding-top:7px}.media-feature{display:grid;grid-template-columns:minmax(95px,38%) 1fr;gap:14px}.media-entry figure{margin:0;min-width:0}.media-entry img{display:block;width:100%;height:110px;object-fit:cover;object-position:center;background:#1b2430}.media-feature img{height:150px;object-fit:contain;background:#1b2221}.media-status{font:13px/1.35 var(--sans);color:#bec7d0}.media-copy h4{font:600 16px/1.2 var(--sans);color:#f5f1e9;margin:3px 0}.media-copy p,.media-pending p{font-size:13px;line-height:1.4;color:#c5cbd5}.media-copy a{display:inline-flex;align-items:center;min-height:44px;padding:4px 0;color:#a9c5ff;text-decoration:none;font:600 13px var(--sans)}.media-copy a:hover{text-decoration:underline;color:white}.media-copy a:focus-visible{outline:2px solid #a6c3ff;outline-offset:3px}.media-pending{font-size:13px;color:#bac1c9;margin:0 0 5px}.media-next{display:inline-flex;align-items:center;min-height:44px;align-self:start}
 @media(max-width:960px){.media-personal,.media-experiments{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.media-feature{grid-column:1/-1}.media-title{align-items:start;flex-direction:column;gap:0}.media-index,.enh .panel>.wrap.media-index{gap:18px}}
-@media(max-width:540px){.media-personal,.media-experiments{grid-template-columns:1fr}.media-feature{grid-column:auto;display:flex;flex-direction:column}.media-feature img{height:auto;max-height:340px}.media-entry img{height:auto;max-height:250px;object-fit:contain;object-position:left}.media-entry{padding-top:12px}.media-entry figcaption{margin-bottom:9px}}
+@media(max-width:540px){.media-personal,.media-experiments{grid-template-columns:1fr}.media-feature{grid-column:auto;display:flex;flex-direction:column}.media-feature img{height:auto;max-height:340px}.media-entry img{height:auto;max-height:250px;object-fit:contain;object-position:left}.media-entry{padding-top:12px}}
 @media(min-width:541px){.media-feature img{object-fit:cover;object-position:top}}
 @media(max-width:540px){.media-feature img{height:210px;max-height:none;object-fit:cover;object-position:top}}
 /* Audiary is a portrait phone capture: show a square crop and offer the full image. */
@@ -660,9 +660,7 @@ html:not(.enh) .ov-wrap{width:min(1240px,92vw)}
 .mk,.mk.past{color:var(--text-muted);opacity:1}.mk[aria-current="step"]{color:var(--text)}
 .case-copy strong{color:var(--text)}
 .media-entry{border-top-color:var(--line-strong)}
-.media-entry figcaption{color:var(--verified)}
 .media-status,.media-copy p,.media-pending{color:var(--text-muted)}
-.media-gallery figcaption,.media-entry.has-shot figcaption{color:var(--verified)}
 .media-copy h4{color:var(--text)}
 .media-copy a,.media-copy a:hover{color:var(--accent-strong)}
 .media-feature .audiary-image-link{background:var(--media-backdrop)}
@@ -925,3 +923,27 @@ footer.ink{border-top:1px solid var(--line-strong)}
 .jr li p strong{font-weight:600;color:var(--text)}
 .about h1{text-wrap:balance;font-size:clamp(36px,5vw,76px);max-width:17em}
 @media(max-width:600px){.about h1{font-size:clamp(34px,9vw,48px)}}
+
+/* ===== Linear/mobile Work: compact project-jump list instead of the interactive Overview ===== */
+/* Keyed to the real layout mode (html.enh = horizontal Work), not a hardcoded width. */
+.cue-linear{display:none}
+html:not(.enh) .cue-wide,html:not(.enh) .ov-cue .ico,html:not(.enh) .ov-hover-hint,html:not(.enh) .mobile-tabs,html:not(.enh) .snippet-stage,html:not(.enh) .frow-desc,html:not(.enh) .frow-act{display:none!important}
+html:not(.enh) .cue-linear{display:inline}
+html:not(.enh) .ov-topbar{display:block}
+html:not(.enh) .ov-cue{margin:6px 0 0;font:400 14px/1.45 var(--sans);letter-spacing:0;text-transform:none;color:var(--text-muted)}
+html:not(.enh) .ov-main{display:block;margin-top:14px}
+html:not(.enh) .ov-list{gap:8px}
+html:not(.enh) .frow{min-height:72px;align-items:center}
+.frow-brief{display:none}
+html:not(.enh) .frow-brief{display:block;margin:4px 0 0;font:400 13.5px/1.45 var(--sans);color:var(--text-muted)}
+
+/* ===== Toolkit: references may wrap to two lines instead of one clipped line ===== */
+.tool-used{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;text-overflow:clip}
+@media(max-width:540px){.toolkit-grid{gap:10px}.toolkit-wrap{gap:24px}.toolkit-shelf-title{margin-bottom:12px}}
+
+/* ===== Supporting-media dialog: restrained depth (CSS only; image stays flat) ===== */
+.media-lightbox{box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 18px 46px rgba(0,0,0,.30),0 3px 10px rgba(0,0,0,.18)}
+.media-lightbox::backdrop{backdrop-filter:blur(3px)}
+.media-lightbox[open]{animation:mediaLightboxIn 200ms cubic-bezier(.2,.7,.2,1)}
+@keyframes mediaLightboxIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.media-lightbox[open]{animation:none}.media-lightbox::backdrop{backdrop-filter:none}}

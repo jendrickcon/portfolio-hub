@@ -168,7 +168,6 @@
         <button type="button" class="tool-takeover-head" aria-label="Collapse tool details">
           <span class="tool-takeover-main">
             <span class="tool-takeover-title"></span>
-            <span class="tool-takeover-refs mono"></span>
           </span>
           <span class="tool-takeover-chev" aria-hidden="true"></span>
         </button>
@@ -217,10 +216,7 @@
         const nameSpan = document.createElement('span');
         nameSpan.className = 'tool-name';
         nameSpan.textContent = name;
-        const usedSpan = document.createElement('span');
-        usedSpan.className = 'tool-used mono';
-        usedSpan.textContent = refText;
-        toggleMain.append(nameSpan, usedSpan);
+        toggleMain.append(nameSpan);
 
         const chev = document.createElement('span');
         chev.className = 'tool-chev';
@@ -286,7 +282,6 @@
 
       // Step 3: Populate takeover content
       takeover.querySelector('.tool-takeover-title').textContent = d.name;
-      takeover.querySelector('.tool-takeover-refs').textContent = d.refs;
       takeover.querySelector('.tool-takeover-desc').textContent = d.desc;
       takeover.querySelector('.tool-takeover-proof').innerHTML = '<span class="tool-takeover-proof-label">Evidence:</span> ' + d.refs;
       takeover.querySelector('.tool-takeover-close-btn').setAttribute('aria-label', `Close ${d.name} details`);
@@ -481,7 +476,7 @@
       const close = document.createElement('button');
       close.type = 'button';
       close.className = 'tool-takeover-close-btn mono';
-      close.textContent = 'Close details';
+      close.innerHTML = '<svg class="tool-takeover-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Close details</span>';
       close.setAttribute('aria-label', 'Close ' + d.name + ' details');
       close.addEventListener('click', () => closeInline(true));
       foot.append(proof, close);
@@ -640,7 +635,7 @@
 
   /* Snippet interactive state controller */
   const snippetData = {
-    'udm-radar': { tag: 'UDM-RADAR · Student portal', href: '#udm-radar', caption: 'Current CCS light-theme student interface · fictional demo data.' },
+    'udm-radar': { tag: 'UDM-RADAR · Student portal', href: '#udm-radar', caption: 'Current CCS student interface · fictional demo data.' },
     'studyquest': { tag: 'StudyQuest · Learning path', href: '#studyquest', caption: 'Course, review and assessment interfaces · fictional demo data.' },
     'mini-pcs': { tag: 'Mini PCS · Batch workflow', href: '#mini-pcs', caption: 'Batch and task workflow · fictional demo records.' }
   };

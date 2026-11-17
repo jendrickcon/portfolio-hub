@@ -15,11 +15,11 @@
   const noHover = matchMedia('(hover: none)');
   const PARALLAX = 8;             // total horizontal travel (CSS px: 0px at Overview start to 8px at Projects end)
   const BOUNDARY_MS = 130;        // exit/re-entry boundary interpolation (100-140ms) at Projects <-> Capabilities
-  const HOLD = 40;                // ms before halo begins fading out after last pointer move
-  const FADE_IN_MS = 100;         // halo fade-in duration (80-120ms target)
-  const FADE_OUT_MS = 155;        // halo fade-out duration (140-200ms target; 40+155=195ms <= 220ms)
-  const HALO_LEN = 50;            // local route highlight length (40-60 CSS px target)
-  const MAX_HALO_DIST = 80;       // max pointer-to-route capture radius (CSS px; falloff reaches 0 cleanly)
+  const HOLD = 70;                // ms before halo begins fading out after last pointer move
+  const FADE_IN_MS = 180;         // halo fade-in duration
+  const FADE_OUT_MS = 320;        // halo fade-out duration (70+320=390ms idle stop)
+  const HALO_LEN = 85;            // local route highlight length (CSS px)
+  const MAX_HALO_DIST = 110;      // max pointer-to-route capture radius (CSS px; falloff reaches 0 cleanly)
   let width = 0, height = 0, nodes = [], routes = [];
   let connected = false, frame = 0, lastOffsetX = 0, lastTick = 0;
   let haloRoute = -1, haloIntensity = 0, haloTarget = 0;
@@ -131,11 +131,41 @@
     };
   }
 
+  function nearestOnRoute(r, px, py) {
+    let bestD2 = Infinity, bestS = 0;
+    const pts = r.pts;
+    for (let seg = 0; seg < 3; seg++) {
+      const len = r.lens[seg];
+      if (len <= 0) continue;
+      const ax = pts[seg * 2], ay = pts[seg * 2 + 1];
+      const dx = pts[seg * 2 + 2] - ax, dy = pts[seg * 2 + 3] - ay;
+      const t = clamp(((px - ax) * dx + (py - ay) * dy) / (len * len));
+      const qx = ax + dx * t, qy = ay + dy * t;
+      const d2 = (px - qx) * (px - qx) + (py - qy) * (py - qy);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        bestS = r.cum[seg] + t * len;
+      }
+    }
+    return { d2: bestD2, s: bestS };
+  }
+
   function buildField() {
-    const cols = width >= 1450 ? 10 : width >= 769 ? 9 : 6;
-    const rows = width >= 1450 ? 6 : 5;
+    const cols = width >= 1280 ? 10 : width >= 769 ? 9 : 6;
+    const rows = width >= 1280 ? 6 : 5;
     nodes = [];
     routes = [];
+    const seen = new Set();
+    const candidates = [];
+    const addEdge = (u, v) => {
+      const key = u < v ? u + ':' + v : v + ':' + u;
+      if (seen.has(key)) return null;
+      seen.add(key);
+      const r = makeRoute(u, v);
+      routes.push(r);
+      return r;
+    };
+
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const id = y * cols + x;
@@ -144,8 +174,42 @@
           y: height * (.09 + .82 * y / (rows - 1)) + (seed(id + 61) - .5) * 20,
           tone: seed(id + 201), active: 0
         });
-        if (x > 0 && (x + y) % 3 !== 0) routes.push(makeRoute(id - 1, id));
-        if (y > 0 && (x + y * 2) % 4 === 0) routes.push(makeRoute(id - cols, id));
+        if (x > 0) {
+          if ((x + y) % 3 !== 0) addEdge(id - 1, id);
+          else candidates.push({ u: id - 1, v: id, order: candidates.length });
+        }
+        if (y > 0) {
+          if ((x + y * 2) % 4 === 0) addEdge(id - cols, id);
+          else candidates.push({ u: id - cols, v: id, order: candidates.length });
+        }
+      }
+    }
+
+    // Dead-zone-aware orthogonal bridges (~15% extra routes) to reduce large empty regions without clutter.
+    const targetExtra = Math.round(routes.length * .15);
+    for (const c of candidates) {
+      const a = nodes[c.u], b = nodes[c.v];
+      c.mx = (a.x + b.x) / 2;
+      c.my = (a.y + b.y) / 2;
+      let minD2 = Infinity;
+      for (const r of routes) {
+        const d2 = nearestOnRoute(r, c.mx, c.my).d2;
+        if (d2 < minD2) minD2 = d2;
+      }
+      c.d2 = minD2;
+    }
+
+    for (let k = 0; k < targetExtra && candidates.length; k++) {
+      let bestPos = 0;
+      for (let i = 1; i < candidates.length; i++) {
+        if (candidates[i].d2 > candidates[bestPos].d2) bestPos = i;
+      }
+      const chosen = candidates.splice(bestPos, 1)[0];
+      const added = addEdge(chosen.u, chosen.v);
+      if (!added) continue;
+      for (const c of candidates) {
+        const d2 = nearestOnRoute(added, c.mx, c.my).d2;
+        if (d2 < c.d2) c.d2 = d2;
       }
     }
   }
@@ -158,21 +222,11 @@
       if (r.totalLen < 20) continue;
       if (px < r.minX - MAX_HALO_DIST || px > r.maxX + MAX_HALO_DIST ||
           py < r.minY - MAX_HALO_DIST || py > r.maxY + MAX_HALO_DIST) continue;
-      const pts = r.pts;
-      for (let seg = 0; seg < 3; seg++) {
-        const len = r.lens[seg];
-        if (len <= 0) continue;
-        const ax = pts[seg * 2], ay = pts[seg * 2 + 1];
-        const bx = pts[seg * 2 + 2], by = pts[seg * 2 + 3];
-        const dx = bx - ax, dy = by - ay;
-        const t = clamp(((px - ax) * dx + (py - ay) * dy) / (len * len));
-        const qx = ax + dx * t, qy = ay + dy * t;
-        const d2 = (px - qx) * (px - qx) + (py - qy) * (py - qy);
-        if (d2 < bestDist2) {
-          bestDist2 = d2;
-          bestIdx = i;
-          bestS = r.cum[seg] + t * len;
-        }
+      const hit = nearestOnRoute(r, px, py);
+      if (hit.d2 < bestDist2) {
+        bestDist2 = hit.d2;
+        bestIdx = i;
+        bestS = hit.s;
       }
     }
     if (bestIdx < 0) return null;
@@ -239,36 +293,38 @@
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
-          // Pass 1: single restrained blurred glow pass (2-4px radius).
+          // Pass 1: single outer bloom pass with fixed shadowColor alpha so bloom does not fade quadratically.
           const glowGrad = ctx.createLinearGradient(sx, sy, ex, ey);
           const gCol = isLight
-            ? `rgba(52, 98, 204, ${(0.18 * strength).toFixed(3)})`
-            : `rgba(154, 188, 232, ${(0.24 * strength).toFixed(3)})`;
+            ? `rgba(52, 98, 204, ${(0.36 * strength).toFixed(3)})`
+            : `rgba(140, 182, 242, ${(0.44 * strength).toFixed(3)})`;
           glowGrad.addColorStop(0, 'rgba(0,0,0,0)');
-          glowGrad.addColorStop(.5, gCol);
+          glowGrad.addColorStop(.22, gCol);
+          glowGrad.addColorStop(.78, gCol);
           glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
 
           ctx.save();
-          ctx.lineWidth = isLight ? .95 : 1;
-          ctx.shadowBlur = isLight ? 2.2 : 3;
+          ctx.lineWidth = isLight ? 1.25 : 1.3;
+          ctx.shadowBlur = isLight ? 4 : 5;
           ctx.shadowColor = isLight
-            ? `rgba(52, 98, 204, ${(0.22 * strength).toFixed(3)})`
-            : `rgba(145, 180, 226, ${(0.34 * strength).toFixed(3)})`;
+            ? 'rgba(52, 98, 204, 0.78)'
+            : 'rgba(145, 180, 226, 0.86)';
           ctx.strokeStyle = glowGrad;
           tracePolyline(seg);
           ctx.stroke();
           ctx.restore();
 
-          // Pass 2: crisp 0.9-1.0px local core highlight (no blur).
+          // Pass 2: crisp 0.95-1.0px local core highlight (no blur).
           const coreGrad = ctx.createLinearGradient(sx, sy, ex, ey);
           const cCol = isLight
-            ? `rgba(42, 84, 186, ${(0.42 * strength).toFixed(3)})`
-            : `rgba(196, 218, 244, ${(0.40 * strength).toFixed(3)})`;
+            ? `rgba(37, 82, 192, ${(0.52 * strength).toFixed(3)})`
+            : `rgba(205, 226, 252, ${(0.54 * strength).toFixed(3)})`;
           coreGrad.addColorStop(0, 'rgba(0,0,0,0)');
-          coreGrad.addColorStop(.5, cCol);
+          coreGrad.addColorStop(.22, cCol);
+          coreGrad.addColorStop(.78, cCol);
           coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
 
-          ctx.lineWidth = isLight ? .9 : .95;
+          ctx.lineWidth = isLight ? .95 : 1;
           ctx.strokeStyle = coreGrad;
           tracePolyline(seg);
           ctx.stroke();
@@ -298,7 +354,7 @@
   }
 
   // The only animation loop. Runs while halo is active/fading or boundary transition is running;
-  // stops cleanly <= 200ms after pointer stops or leaves, and <= 140ms on boundary exit.
+  // stops cleanly <= 410ms after pointer stops or leaves, and <= 140ms on boundary exit.
   function tick(now) {
     frame = 0;
     if (!animated()) return;
@@ -315,9 +371,9 @@
 
     if (hold && proj) {
       if (proj.routeIndex !== haloRoute) {
-        // Switching to another route: old stops immediately (max 1 route), new fades in at current projection.
+        // Immediate switch (max 1 route); preserve partial fade continuity across neighboring routes.
+        haloIntensity = haloRoute >= 0 ? haloIntensity * .65 : 0;
         haloRoute = proj.routeIndex;
-        haloIntensity = 0;
       }
       haloTarget = 1;
     } else {

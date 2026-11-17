@@ -15,9 +15,9 @@
   const noHover = matchMedia('(hover: none)');
   const PARALLAX = 8;             // total horizontal travel (CSS px: 0px at Overview start to 8px at Projects end)
   const BOUNDARY_MS = 130;        // exit/re-entry boundary interpolation (100-140ms) at Projects <-> Capabilities
-  const HOLD = 40;                // ms before halo begins fading out after last pointer move
-  const FADE_IN_MS = 115;         // halo fade-in duration
-  const FADE_OUT_MS = 180;        // halo fade-out duration (40+180=220ms idle stop)
+  const HOLD = 70;                // ms before halo begins fading out after last pointer move
+  const FADE_IN_MS = 180;         // halo fade-in duration
+  const FADE_OUT_MS = 320;        // halo fade-out duration (70+320=390ms idle stop)
   const HALO_LEN = 85;            // local route highlight length (CSS px)
   const MAX_HALO_DIST = 110;      // max pointer-to-route capture radius (CSS px; falloff reaches 0 cleanly)
   let width = 0, height = 0, nodes = [], routes = [];
@@ -354,7 +354,7 @@
   }
 
   // The only animation loop. Runs while halo is active/fading or boundary transition is running;
-  // stops cleanly <= 200ms after pointer stops or leaves, and <= 140ms on boundary exit.
+  // stops cleanly <= 410ms after pointer stops or leaves, and <= 140ms on boundary exit.
   function tick(now) {
     frame = 0;
     if (!animated()) return;
@@ -371,9 +371,9 @@
 
     if (hold && proj) {
       if (proj.routeIndex !== haloRoute) {
-        // Switching to another route: old stops immediately (max 1 route), new fades in at current projection.
+        // Immediate switch (max 1 route); preserve partial fade continuity across neighboring routes.
+        haloIntensity = haloRoute >= 0 ? haloIntensity * .65 : 0;
         haloRoute = proj.routeIndex;
-        haloIntensity = 0;
       }
       haloTarget = 1;
     } else {

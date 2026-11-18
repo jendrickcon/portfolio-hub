@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explore 3D Workstation Prototype — Enuhri</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Layer 1 + Layer 2 decorative WebGL canvas -->
+  <canvas id="crt-scene-canvas" class="crt-canvas" aria-hidden="true" tabindex="-1"></canvas>
+  <div id="static-pixel-bg" class="static-pixel-bg" aria-hidden="true"></div>
+
+  <!-- Layer 3: Interactive Semantic HTML Controls -->
+  <header class="proto-header">
+    <nav class="proto-nav" aria-label="Prototype controls and return navigation">
+      <a href="/explore/" class="ctrl-btn ctrl-btn--return" aria-label="Return to current production Explore Hub">◂ Current Explore</a>
+      <div class="ctrl-group" role="group" aria-label="Workstation and quality controls">
+        <button type="button" id="toggle-power-btn" class="ctrl-btn ctrl-btn--power" aria-pressed="false">POWER: OFF</button>
+        <button type="button" id="toggle-motion-btn" class="ctrl-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
+        <label for="quality-select" class="sr-only">Graphics quality tier</label>
+        <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="Graphics quality tier">
+          <option value="auto">QUALITY: AUTO</option>
+          <option value="high">QUALITY: HIGH</option>
+          <option value="medium">QUALITY: MEDIUM</option>
+          <option value="low">QUALITY: LOW / STATIC</option>
+        </select>
+        <button type="button" id="toggle-webgl-btn" class="ctrl-btn" aria-pressed="false">SIMULATE NO-WEBGL: OFF</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="proto-main">
+    <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+    <section class="proto-intro" aria-label="Prototype introduction">
+      <span class="proto-badge">ISOLATED PROTOTYPE · /experiments/explore-3d/</span>
+      <h1 class="proto-title">ENUHRI WORKSTATION</h1>
+      <p class="proto-desc">
+        Hybrid procedural Three.js hardware and deterministic 320×180 pixel environment paired with a semantic HTML CRT screen.
+      </p>
+    </section>
+
+    <section id="crt-chassis" class="crt-chassis" aria-label="CRT workstation display">
+      <div class="screen-overlay">
+        <div class="screen-scanlines" aria-hidden="true"></div>
+        <div id="screen-content" class="screen-content"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Development Performance HUD (hidden unless ?debug=1) -->
+  <aside id="perf-hud" class="perf-hud" hidden aria-label="Performance metrics"></aside>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

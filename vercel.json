@@ -1,0 +1,59 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/professional",
+      "destination": "/",
+      "statusCode": 308
+    },
+    {
+      "source": "/professional/",
+      "destination": "/",
+      "statusCode": 308
+    },
+    {
+      "source": "/professional/index.html",
+      "destination": "/",
+      "statusCode": 308
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/professional/index.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/professional/index.html"
+    },
+    {
+      "source": "/style.css",
+      "destination": "/professional/style.css"
+    },
+    {
+      "source": "/script.js",
+      "destination": "/professional/script.js"
+    },
+    {
+      "source": "/about-field.js",
+      "destination": "/professional/about-field.js"
+    },
+    {
+      "source": "/assets/evidence/:path*",
+      "destination": "/professional/assets/evidence/:path*"
+    },
+    {
+      "source": "/assets/fonts/:path*",
+      "destination": "/professional/assets/fonts/:path*"
+    },
+    {
+      "source": "/assets/profile/:path*",
+      "destination": "/professional/assets/profile/:path*"
+    },
+    {
+      "source": "/assets/resume/:path*",
+      "destination": "/professional/assets/resume/:path*"
+    }
+  ]
+}

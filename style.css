@@ -160,17 +160,6 @@ body.crt-zoomed .side-panel--left {
   color: var(--text-muted);
 }
 
-.system-info-line {
-  font-size: 0.85rem;
-  letter-spacing: 1.5px;
-  color: var(--text-muted);
-}
-
-.system-info-line--status {
-  color: var(--green);
-  text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
-}
-
 /* ===================================================
    2. CRT COMPOSITION & STAGE
 =================================================== */
@@ -627,21 +616,6 @@ body.crt-zoomed .accessories {
   height: auto;
   display: block;
   object-fit: cover;
-}
-
-.project-media {
-  width: 100%;
-  min-height: 20%;
-  border: 1px dashed rgba(232, 228, 216, 0.3);
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(0.32rem, 1vw, 0.44rem);
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-  padding: 6px;
-  text-align: center;
 }
 
 .project-category {

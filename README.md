@@ -5,7 +5,7 @@ Jendrick / Enuhri's personal portfolio repository. It holds two related experien
 - **[Professional](professional/index.html)** — the primary hiring-facing portfolio served at the canonical root `/`.
 - **[Explore](explore/index.html)** — the retro CRT / old-computer experience served under `/explore/`, containing experiments, interactive prototypes, and app-like project presentations.
 
-Both experiences are linked bidirectionally (with `/professional/` permanently redirecting to `/`). No mandatory entrance chooser sits in front of the Professional View.
+Both experiences are linked bidirectionally (with `/professional/` and the retired `/portfolio/` routes permanently redirecting via `308` to `/`). No mandatory entrance chooser sits in front of the Professional View.
 
 This is a student portfolio built through iterative, AI-assisted development. It is published as a working portfolio, not as production software: some projects are functional, some are experiments, and some are presented through descriptions rather than runnable code.
 
@@ -13,7 +13,7 @@ This is a student portfolio built through iterative, AI-assisted development. It
 
 | Area                               | Status                | Notes                                                      |
 | ---------------------------------- | --------------------- | ---------------------------------------------------------- |
-| Professional View                  | Implemented (Live)    | Primary hiring-facing portfolio, live on Vercel at [www.jendrick.dev](https://www.jendrick.dev) (`professional` root directory) |
+| Professional View                  | Implemented (Live)    | Canonical hiring-facing portfolio served at `/` on [www.jendrick.dev](https://www.jendrick.dev) |
 | Public résumé viewing              | Implemented           | Same-page dialog with Fit page and zoom controls           |
 | Résumé PDF download                | Implemented           | Direct same-origin download, no navigation away            |
 | Light and Dark themes              | Implemented           | Synchronized Light/Dark themes across Professional View and project reconstructions |
@@ -21,19 +21,19 @@ This is a student portfolio built through iterative, AI-assisted development. It
 | Featured project reconstructions   | Implemented           | Presented from shipped evidence and screenshots, including UDM-RADAR GWA trend chart |
 | Supporting-media viewer            | Implemented           | Lightbox viewer for supporting project captures            |
 | Capabilities cards & dialog        | Implemented           | Interactive animated SVG capability cards and shared evidence dialog |
-| Explore (CRT Hub)                  | Implemented (`explore/`) | Preserved experimental experience at `/explore/` with URL hash state and return links to `/` |
-| Vercel deployment (`professional`) | Implemented (Live)    | Custom domain `https://www.jendrick.dev` currently deploys from the `professional` root directory |
-| Root routing configuration         | Implemented (`vercel.json`) | Maps `/` to Professional, `/explore/` to CRT Hub, `/professional/` -> `308 /`; pending Vercel Root Directory switch |
-| App 06 / DevPath mapping           | Planned (Paused)      | App 06 is DevPath conceptually, with CRT catalog integration still pending |
-| Explore refinement                 | Pending               | Catalog integration, `/portfolio/` retirement (PR D), and mobile/a11y polish (PR E) |
+| Explore (CRT Hub)                  | Implemented (`explore/`) | Six-slot CRT catalog (`/explore/`) with direct sub-app launches, inline project dossiers, and URL hash state |
+| DevPath entry in Explore           | Paused Prototype      | Shown separately below the six primary catalog tiles as `PAUSED PROTOTYPE` (`#app=devpath`) |
+| Root deployment (`vercel.json`)    | Implemented (Live)    | Deploys from repository root: `/` to Professional, `/explore/` to CRT Hub, `/professional/` & `/portfolio/` -> `308 /` |
+| Legacy HCI portfolio (`portfolio/`) | Retired (Archived)    | Externally archived and removed from active repository; `/portfolio/` redirects (`308`) to `/` |
+| Explore polish (PR E)              | Pending               | Final Explore mobile/a11y polish and cross-device QA       |
 
-Pull requests #1–#15 are merged on `main`, and PR C adds root deployment alignment in [vercel.json](vercel.json). The **Professional View** is live on Vercel at `https://www.jendrick.dev` (currently deployed from the `professional` directory); `/explore/` and sub-app routes go live once PR C merges and the Vercel project Root Directory is switched to the repository root.
+Pull requests #1–#16 are merged on `main`, and repository-root deployment via [vercel.json](vercel.json) is live on `https://www.jendrick.dev` serving `/`, `/explore/`, `/art-gallery/`, `/cyberdefender/`, `/sandbox/`, and `/devpath/`.
 
-Status labels used here: **Implemented** — supported by code and runtime checks; **Partial / Experimental** — incomplete or not fully verified; **Planned** — agreed but not built; **Paused** — development intentionally stopped; **Deferred** — waiting on evidence or media; **Legacy** — retained older work.
+Status labels used here: **Implemented** — supported by code and runtime checks; **Partial / Experimental** — incomplete or not fully verified; **Planned** — agreed but not built; **Paused** — development intentionally stopped; **Deferred** — waiting on evidence or media; **Legacy** — retired or retained older work.
 
 ## Professional View
 
-The Professional View is a single page covering Intro, Profile with a formal portrait, a public one-page résumé, a compacted two-column project-linked Toolkit, featured projects, Light/Dark project reconstructions (including UDM-RADAR's interactive GWA trend chart), a supporting-media lightbox viewer, interactive Capability cards with a shared details dialog, Journey, and Contact. It supports Light and Dark themes and is currently served at the production root of `https://www.jendrick.dev` from the `professional` root directory on Vercel.
+The Professional View is a single page covering Intro, Profile with a formal portrait, a public one-page résumé, a compacted two-column project-linked Toolkit, featured projects, Light/Dark project reconstructions (including UDM-RADAR's interactive GWA trend chart), a supporting-media lightbox viewer, interactive Capability cards with a shared details dialog, Journey, and Contact. It supports Light and Dark themes and is served at the production root of `https://www.jendrick.dev` via [vercel.json](vercel.json).
 
 Résumé behaviour:
 
@@ -48,23 +48,23 @@ The Toolkit describes capabilities with project references rather than a bare sk
 
 ## Explore
 
-The [explore/](explore/index.html) route (`/explore/`) hosts the CRT Hub: a retro computer interface, boot sequence, URL-hash navigation (`#menu`, `#app=<id>`), a persistent `◂ Professional Portfolio` return link (`/`), and the application launcher. It is an experimental secondary surface rather than the primary hiring presentation.
+The [explore/](explore/index.html) route (`/explore/`) hosts the CRT Hub: a retro computer interface, boot sequence, URL-hash navigation (`#menu`, `#app=<id>`), a persistent `◂ Professional Portfolio` return link (`/`), a six-slot primary application catalog (`Professional Portfolio`, `UDM-RADAR`, `StudyQuest`, `Enuhri Art Gallery`, `CyberDefender`, and `Sandbox`), and a visually secondary `DevPath · PAUSED PROTOTYPE` bar. It is an experimental secondary surface rather than the primary hiring presentation.
 
 ## Projects
 
 | Project                                   | Status                                  | Portfolio role                  | Notes                                                                                              |
 | ----------------------------------------- | --------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Professional Portfolio                    | Implemented (Live)                      | Primary hiring-facing portfolio | Live on Vercel at `https://www.jendrick.dev` (`professional` directory)                            |
+| Professional Portfolio                    | Implemented (Live)                      | Primary hiring-facing portfolio | Canonical root experience live on `https://www.jendrick.dev/`                                      |
 | UDM-RADAR                                 | Functional capstone system              | Featured project                | Synthetic academic data; decision-tree-regressor projections are advisory and support human review |
-| StudyQuest                                | Functional team project                 | Featured project                | Course, assessment, learning-path, and progress workflows                                          |
+| StudyQuest                                | Functional team project                 | Featured project                | Course, assessment, learning-path, and progress workflows using Gemini API with Pydantic validation |
 | Mini PCS                                  | Completed practical-assessment workflow | Featured project                | Airtable-backed implementation; public reconstruction uses fictional records                       |
 | Audiary                                   | Supporting personal project             | Supporting project              | Real capture available                                                                             |
 | LAYA                                      | Android prerelease                      | Supporting project              | AR garden and balance-puzzle prototype; device verification pending                                |
 | Waffle's Nine Lives                       | Android MVP                             | Supporting project              | Top-down action roguelike with rooms, enemies and nine lives                                       |
 | [Art Gallery](art-gallery/index.html)     | Experiment, work remains                | Explore application             | Interactive gallery with Firebase/Firestore features; Firestore rules still require console review; Cloud Firestore is used separately from Portfolio Hub hosting |
 | [CyberDefender](cyberdefender/index.html) | Web reimagining                         | Explore application             | Web reimagining of the original Godot prototype                                                    |
-| [Sandbox](sandbox/index.html)             | Experiment                              | Explore application             | Falling-sand and cellular-automata simulation; media and evidence pending                          |
-| [DevPath](devpath/index.html)             | Development paused                      | App 06 (conceptually)           | Architecture and decision-graph prototype; broader domains are incomplete; CRT catalog integration pending |
+| [Sandbox](sandbox/index.html)             | Experiment                              | Explore application             | Falling-sand and cellular-automata simulation with header return link to `/explore/#menu`          |
+| [DevPath](devpath/index.html)             | Development paused                      | Secondary Explore entry         | Architecture and decision-graph prototype (`PAUSED PROTOTYPE`); Game Architecture is available while broader domains remain incomplete |
 
 UDM-RADAR and StudyQuest are represented here through descriptions and evidence. Their full runnable systems live in their own repositories, so this repository does not independently verify their internal implementation. These entries do not claim live institutional deployment or the use of real student records.
 
@@ -76,7 +76,7 @@ These are separate facts and should not be combined into one claim.
 
 **Hosting history.** Portfolio Hub was hosted on a Windows Azure VM using IIS. That is where the project was developed and served from during that period, and it is not a permanent hosting commitment.
 
-**Current direction.** The **Professional View** is live on Vercel at `https://www.jendrick.dev`. A repository-root [vercel.json](vercel.json) configuration maps `/` to `professional/index.html`, `/professional/` to `/` (`308`), `/explore/` to `explore/index.html`, and all Explore sub-app routes (`/art-gallery/`, `/cyberdefender/`, `/sandbox/`, `/devpath/`, and temporarily compatible `/portfolio/`). Live multi-route availability activates after merging PR C and updating the Vercel dashboard Root Directory from `professional` to repository root.
+**Current direction.** The **Professional View** is live on Vercel at `https://www.jendrick.dev` via repository-root [vercel.json](vercel.json), which maps `/` to `professional/index.html`, `/explore/` to `explore/index.html`, `/art-gallery/`, `/cyberdefender/`, `/sandbox/`, and `/devpath/`, and permanently redirects (`308`) `/professional/` and `/portfolio/` to `/`. The legacy standalone HCI `portfolio/` directory has been archived externally and retired from the active repository.
 
 **Firebase / Cloud Firestore.** Firebase Authentication and Cloud Firestore are associated with the Enuhri Art Gallery experiment. They are separate cloud services, not the hosting platform for Portfolio Hub, and they are not part of the Azure or IIS hosting history.
 
@@ -85,13 +85,12 @@ These are separate facts and should not be combined into one claim.
 ```text
 professional/      Professional View (served at / via vercel.json rewrites)
 explore/           CRT Explore Hub (served at /explore/)
-portfolio/         Legacy HCI portfolio application (temporary compatibility until PR D retirement)
 art-gallery/       Enuhri Art Gallery (Firebase Authentication / Firestore)
 cyberdefender/     CyberDefender web reimagining
 sandbox/           Falling-sand simulation experiment
 devpath/           DevPath decision-graph prototype (paused)
 assets/            Shared sprites and previews for /explore/
-vercel.json        Repository-root rewrites and /professional/ -> / redirect
+vercel.json        Repository-root rewrites and 308 redirects (/professional/, /portfolio/ -> /)
 docs/              Documentation and handoff notes
 ```
 
@@ -141,15 +140,12 @@ Ignore patterns are not a security boundary. Firestore rules and cloud configura
 
 ## Roadmap
 
-1. Merge PR C and switch the Vercel project Root Directory from `professional` to repository root so `/`, `/explore/`, `/professional/`, and sub-apps match production expectations.
-2. Integrate Sandbox, DevPath (`paused prototype`), and featured case-study links into the `/explore/` CRT catalog, and retire the temporary `portfolio/` directory (PR D).
-3. Polish Explore mobile layout, keyboard focus, and reduced-motion behavior (PR E).
-4. Complete final cross-browser, physical-device, accessibility, privacy, and production QA.
+1. Finish Explore mobile layout, keyboard focus, and reduced-motion polish (PR E).
+2. Complete final cross-browser, physical-device, accessibility, privacy, and production QA.
 
 ## Known limitations
 
 - Firestore security rules for the Art Gallery cloud database are managed in Firebase Console and remain unverified in this repository.
-- Explore sub-apps (`/explore/`, `/sandbox/`, `/devpath/`) are not yet publicly reachable on `https://www.jendrick.dev` until PR C merges and Vercel's Root Directory is switched from `professional` to repository root.
 - CRT Hub sound remains intentionally removed until Web Audio cues are implemented in a later pass.
 - Comprehensive mobile, cross-browser, and physical-device testing remains pending.
 

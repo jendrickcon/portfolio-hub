@@ -8,6 +8,7 @@
 <link rel="icon" href="data:,">
 <script>
 (()=>{const k='portfolio-theme',el=document.documentElement;let saved=null;try{saved=localStorage.getItem(k);if(saved==='system'){saved='dark';localStorage.setItem(k,'dark');}}catch(_){}const theme=(saved==='light'||saved==='dark')?saved:'dark';el.setAttribute('data-theme',theme);el.style.colorScheme=theme;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=theme==='dark'?'#11151b':'#f4f6f5';})();
+(()=>{try{const inIframe=window.self!==window.top||Boolean(window.frameElement);const q=new URLSearchParams(location.search);const force=q.get('entry')==='1';const skip=q.get('embed')==='1'||q.get('entry')==='0'||(location.hash&&location.hash.length>1)||(!force&&sessionStorage.getItem('enuhri_entry_choice_seen')==='1');if(!inIframe&&(!skip||force)){document.documentElement.dataset.entryGate='open';}}catch(_){}})();
 </script>
 <title>Jendrick Coniconde | Professional Portfolio</title>
 <meta name="description" content="Selected work in UI design, front-end development, QA and systems integration by Jendrick Coniconde.">
@@ -17,6 +18,78 @@
 <body>
 <canvas id="page-field" class="page-field" aria-hidden="true"></canvas>
 <a class="skip" href="#main">Skip to content</a>
+
+<!-- Portfolio Entry Gate: session-scoped choice between canonical portfolio and CRT workstation -->
+<div id="entry-gate" class="entry-gate" role="dialog" aria-modal="true" aria-labelledby="entry-heading" aria-describedby="entry-desc" hidden>
+ <svg class="entry-signal-svg" viewBox="0 0 1200 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <defs>
+   <radialGradient id="entryGlowPrimary" cx="30%" cy="55%" r="48%">
+    <stop offset="0%" stop-color="currentColor" stop-opacity="0.16"/>
+    <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+   </radialGradient>
+   <radialGradient id="entryGlowExplore" cx="76%" cy="56%" r="42%">
+    <stop offset="0%" stop-color="#3bd47f" stop-opacity="0.15"/>
+    <stop offset="100%" stop-color="#3bd47f" stop-opacity="0"/>
+   </radialGradient>
+  </defs>
+  <rect class="entry-sig-glow-p" width="1200" height="720" fill="url(#entryGlowPrimary)"/>
+  <rect class="entry-sig-glow-e" width="1200" height="720" fill="url(#entryGlowExplore)"/>
+  <g class="entry-signal-layer entry-signal-layer--grid" stroke="currentColor" stroke-width="1" fill="none">
+   <path d="M96 120v16M88 128h16M336 104v12M330 110h12M600 92v16M592 100h16M884 118v12M878 124h12M1092 138v16M1084 146h16"/>
+   <path d="M120 596v14M113 603h14M600 608v16M592 616h16M1068 588v14M1061 595h14"/>
+   <path d="M72 220h48M72 480h36M1080 240h48M1092 484h36" stroke-dasharray="4 6"/>
+  </g>
+  <g class="entry-signal-layer entry-signal-layer--routes" fill="none">
+   <!-- Origin bus feeding both routes -->
+   <path class="entry-trace entry-trace--bus" d="M600 44V136" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5"/>
+   <rect class="entry-node" x="595" y="131" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+   <!-- Calm drafted route -> Primary Professional Portfolio -->
+   <path class="entry-trace entry-trace--primary" d="M595 136H340L300 176V268H188L164 292V472L204 512H452" stroke="currentColor" stroke-width="1.6"/>
+   <path class="entry-trace entry-trace--primary-sub" d="M300 220H120V380H164" stroke="currentColor" stroke-width="1" stroke-dasharray="6 6"/>
+   <circle class="entry-node entry-node--primary" cx="300" cy="176" r="4" fill="currentColor"/>
+   <circle class="entry-node entry-node--primary" cx="164" cy="292" r="3.5" fill="currentColor"/>
+   <!-- Pixel-stepped route -> Explore CRT Workstation -->
+   <path class="entry-trace entry-trace--explore" d="M605 136H848V176H988V256H1044V440H960V504H764" stroke="#3bd47f" stroke-width="1.6"/>
+   <path class="entry-trace entry-trace--explore-sub" d="M848 176V216H1088V356H1044" stroke="#e6b86a" stroke-width="1.1" stroke-dasharray="4 4"/>
+   <rect class="entry-node entry-node--explore" x="844" y="172" width="8" height="8" fill="#3bd47f"/>
+   <rect class="entry-node entry-node--explore" x="984" y="252" width="8" height="8" fill="#3bd47f"/>
+   <rect class="entry-node entry-node--amber" x="1040" y="352" width="7" height="7" fill="#e6b86a"/>
+  </g>
+ </svg>
+
+ <section class="entry-panel" aria-label="Portfolio experience selector">
+  <header class="entry-head">
+   <p class="entry-eyebrow mono"><span class="entry-eyebrow-dot" aria-hidden="true"></span>HELLO, WORLD!</p>
+   <h2 id="entry-heading" class="entry-title">Welcome to my portfolio.</h2>
+   <p id="entry-desc" class="entry-copy">Choose the experience that fits your visit. Continue to the focused professional portfolio for my r&eacute;sum&eacute;, selected projects, contributions, and contact details, or open the interactive workstation to explore experiments and prototypes.</p>
+  </header>
+
+  <div class="entry-choices" role="group" aria-label="Portfolio experiences">
+   <button type="button" id="entry-primary-btn" class="entry-choice entry-choice--primary">
+    <span class="entry-choice-kicker mono">01 // CANONICAL PORTFOLIO &middot; RECOMMENDED</span>
+    <span class="entry-choice-title">View Professional Portfolio</span>
+    <span class="entry-choice-sub">For recruiters, collaborators, and focused project review</span>
+    <span class="entry-meta-list" aria-hidden="true">
+     <span class="entry-meta-pill mono">R&eacute;sum&eacute; &amp; Case Studies</span>
+     <span class="entry-meta-pill mono">System Evidence</span>
+     <span class="entry-meta-pill mono">Direct Contact</span>
+    </span>
+    <span class="entry-cta">Continue to Portfolio <span aria-hidden="true">&#x25B8;</span></span>
+   </button>
+
+   <a href="/explore/" id="entry-explore-link" class="entry-choice entry-choice--explore">
+    <span class="entry-choice-kicker mono">02 // WORKSTATION &middot; 3D &amp; PIXEL 2D</span>
+    <span class="entry-choice-title">Explore the Workstation</span>
+    <span class="entry-choice-sub">For interactive projects, experiments, and the retro-computing experience</span>
+    <span class="entry-meta-list" aria-hidden="true">
+     <span class="entry-meta-pill mono">CRT Hardware Shell</span>
+     <span class="entry-meta-pill mono">Live Dossiers &amp; Demos</span>
+    </span>
+    <span class="entry-cta">Launch Workstation <span aria-hidden="true">&#x25B8;</span></span>
+   </a>
+  </div>
+ </section>
+</div>
 <header class="hdr" id="hdr"><div class="wrap">
  <a class="brand" href="#about">JENDRICK<span>/ ENUHRI</span></a>
  <nav class="nav" aria-label="Portfolio sections">

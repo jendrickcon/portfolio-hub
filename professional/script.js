@@ -1,5 +1,152 @@
 
 (() => {
+  /* Portfolio Experience Entry Gate Controller */
+  (() => {
+    const STORAGE_KEY = 'enuhri_entry_choice_seen';
+    const root = document.documentElement;
+    const gate = document.getElementById('entry-gate');
+    const primaryBtn = document.getElementById('entry-primary-btn');
+    const exploreLink = document.getElementById('entry-explore-link');
+    if (!gate || !primaryBtn || !exploreLink) return;
+
+    const bgRegions = [
+      document.querySelector('.skip'),
+      document.getElementById('hdr'),
+      document.getElementById('main'),
+      document.querySelector('footer'),
+    ].filter(Boolean);
+
+    function shouldOpenGate() {
+      try {
+        const inIframe = window.self !== window.top || Boolean(window.frameElement);
+        if (inIframe) return false;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1' || params.get('entry') === '0') return false;
+        if (window.location.hash && window.location.hash.length > 1) return false;
+        if (params.get('entry') === '1') return true;
+        return window.sessionStorage.getItem(STORAGE_KEY) !== '1';
+      } catch (_) {
+        return root.dataset.entryGate === 'open';
+      }
+    }
+
+    if (!shouldOpenGate()) {
+      delete root.dataset.entryGate;
+      gate.hidden = true;
+      return;
+    }
+
+    const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const finePointerMq = window.matchMedia('(pointer: fine)');
+    const focusables = [primaryBtn, exploreLink];
+    let parallaxRaf = 0;
+    let targetDx = 0;
+    let targetDy = 0;
+
+    function setBackgroundInert(isInert) {
+      bgRegions.forEach((el) => {
+        el.inert = isInert;
+        if (isInert) el.setAttribute('aria-hidden', 'true');
+        else el.removeAttribute('aria-hidden');
+      });
+    }
+
+    function applyParallax() {
+      parallaxRaf = 0;
+      if (motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) {
+        gate.style.removeProperty('--signal-dx');
+        gate.style.removeProperty('--signal-dy');
+        return;
+      }
+      gate.style.setProperty('--signal-dx', targetDx.toFixed(4));
+      gate.style.setProperty('--signal-dy', targetDy.toFixed(4));
+    }
+
+    function onPointerMove(event) {
+      if (motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) return;
+      const w = Math.max(window.innerWidth, 1);
+      const h = Math.max(window.innerHeight, 1);
+      targetDx = ((event.clientX / w) - 0.5) * 2;
+      targetDy = ((event.clientY / h) - 0.5) * 2;
+      if (!parallaxRaf) parallaxRaf = window.requestAnimationFrame(applyParallax);
+    }
+
+    function onMotionOrPointerChange() {
+      if (motionMq.matches || !finePointerMq.matches) {
+        if (parallaxRaf) {
+          window.cancelAnimationFrame(parallaxRaf);
+          parallaxRaf = 0;
+        }
+        gate.style.removeProperty('--signal-dx');
+        gate.style.removeProperty('--signal-dy');
+      }
+    }
+
+    function onKeyDown(event) {
+      if (gate.hidden) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        dismissGate();
+        return;
+      }
+      if (event.key === 'Tab') {
+        const activeIdx = focusables.indexOf(document.activeElement);
+        event.preventDefault();
+        if (event.shiftKey) {
+          const prev = activeIdx <= 0 ? focusables[focusables.length - 1] : focusables[activeIdx - 1];
+          prev.focus({ preventScroll: true });
+        } else {
+          const next = (activeIdx === -1 || activeIdx >= focusables.length - 1) ? focusables[0] : focusables[activeIdx + 1];
+          next.focus({ preventScroll: true });
+        }
+      }
+    }
+
+    function markSeen() {
+      try {
+        window.sessionStorage.setItem(STORAGE_KEY, '1');
+      } catch (_) {}
+    }
+
+    function dismissGate() {
+      if (gate.hidden) return;
+      markSeen();
+      if (parallaxRaf) {
+        window.cancelAnimationFrame(parallaxRaf);
+        parallaxRaf = 0;
+      }
+      document.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('pointermove', onPointerMove);
+      motionMq.removeEventListener('change', onMotionOrPointerChange);
+      finePointerMq.removeEventListener('change', onMotionOrPointerChange);
+
+      gate.hidden = true;
+      delete root.dataset.entryGate;
+      setBackgroundInert(false);
+
+      const mainEl = document.getElementById('main');
+      if (mainEl) {
+        if (!mainEl.hasAttribute('tabindex')) mainEl.setAttribute('tabindex', '-1');
+        mainEl.focus({ preventScroll: true });
+      }
+    }
+
+    root.dataset.entryGate = 'open';
+    gate.hidden = false;
+    setBackgroundInert(true);
+
+    primaryBtn.addEventListener('click', dismissGate);
+    exploreLink.addEventListener('click', markSeen);
+    document.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    motionMq.addEventListener('change', onMotionOrPointerChange);
+    finePointerMq.addEventListener('change', onMotionOrPointerChange);
+
+    window.requestAnimationFrame(() => {
+      if (!gate.hidden) primaryBtn.focus({ preventScroll: true });
+    });
+  })();
+
   const $$ = s => [...document.querySelectorAll(s)];
   const html = document.documentElement, hdr = document.getElementById('hdr');
   const run = document.getElementById('story'), track = run.querySelector('.track');

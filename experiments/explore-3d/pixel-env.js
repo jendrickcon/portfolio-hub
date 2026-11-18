@@ -7,6 +7,126 @@ export const PIXEL_HEIGHT = 180;
 export const PIXEL_SEED = 0xE40971;
 export const PIXEL_STEP_FPS = 13.5;
 
+// Centralized 4:3 Pixel 2D logical workstation world (2:1 mapped from 960x720 integer grid)
+export const PIXEL_WORLD = {
+  width: 480,
+  height: 360,
+  monitorBounds: { x: 112, y: 26, w: 256, h: 218 },
+  screenBounds: { x: 136, y: 48, w: 208, h: 156 }, // exact 4:3 CRT glass aperture
+  floppyBounds: { x: 204, y: 216, w: 72, h: 20 },  // centered on [112..368] monitor center x=240
+  powerBounds: { x: 318, y: 216, w: 30, h: 20 },   // lower-right physical power control
+  dadoY: 162,
+  deskTopY: 254,
+  deskLipY: 346,
+};
+
+export const PIXEL_SCENE_POSES = {
+  standby: {
+    name: 'standby',
+    focusY: 186,
+    portrait: { focalW: 332, focalH: 334 },
+    landscape: { focalW: 472, focalH: 330 },
+    shortLandscape: { focalW: 316, focalH: 328 },
+    durationMs: 700,
+  },
+  boot: {
+    name: 'boot',
+    focusY: 152,
+    portrait: { focalW: 288, focalH: 278 },
+    landscape: { focalW: 400, focalH: 274 },
+    shortLandscape: { focalW: 288, focalH: 266 },
+    durationMs: 650,
+  },
+  menu: {
+    name: 'menu',
+    focusY: 136,
+    portrait: { focalW: 264, focalH: 242 },
+    landscape: { focalW: 356, focalH: 236 },
+    shortLandscape: { focalW: 268, focalH: 232 },
+    durationMs: 600,
+  },
+};
+
+export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', stageTop = 0) {
+  const safeW = Math.max(200, stageW);
+  const safeH = Math.max(120, stageH);
+  const pose = PIXEL_SCENE_POSES[poseName] || PIXEL_SCENE_POSES.standby;
+
+  let framing = pose.landscape;
+  if (safeW < safeH && safeW < 760) {
+    framing = pose.portrait;
+  } else if (safeH <= 460 || safeW < 760) {
+    framing = pose.shortLandscape;
+  }
+
+  const rawScale = Math.min(safeW / framing.focalW, safeH / framing.focalH);
+  // Guarantee complete 4:3 CRT outer shell (256x218) remains unclipped inside stage bounds
+  const margin = safeW <= 360 || safeH <= 260 ? 6 : 12;
+  const maxScaleW = (safeW - margin) / PIXEL_WORLD.monitorBounds.w;
+  const maxScaleH = (safeH - margin) / PIXEL_WORLD.monitorBounds.h;
+  const scale = Math.max(0.35, Math.min(rawScale, maxScaleW, maxScaleH));
+
+  const cx = safeW * 0.5;
+  const centerBias = poseName === 'standby' && safeW < 760 && safeH >= 620 ? 0.54 : 0.50;
+  const cy = safeH * centerBias;
+
+  const tx = cx - 240 * scale;
+  let ty = cy - pose.focusY * scale;
+
+  // Keep monitor shell top/bottom inside available stage area
+  const minTy = 4 - PIXEL_WORLD.monitorBounds.y * scale;
+  const maxTy = (safeH - 4) - (PIXEL_WORLD.monitorBounds.y + PIXEL_WORLD.monitorBounds.h) * scale;
+  if (minTy <= maxTy) {
+    ty = Math.max(minTy, Math.min(maxTy, ty));
+  } else {
+    ty = (minTy + maxTy) * 0.5;
+  }
+
+  const toViewportRect = (b, minW = 0, minH = 0) => {
+    const rawW = b.w * scale;
+    const rawH = b.h * scale;
+    const w = Math.max(minW, rawW);
+    const h = Math.max(minH, rawH);
+    const cxRect = tx + (b.x + b.w * 0.5) * scale;
+    const cyRect = stageTop + ty + (b.y + b.h * 0.5) * scale;
+    return {
+      x: cxRect - w * 0.5,
+      y: cyRect - h * 0.5,
+      w,
+      h,
+    };
+  };
+
+  const screenRect = {
+    x: tx + PIXEL_WORLD.screenBounds.x * scale,
+    y: stageTop + ty + PIXEL_WORLD.screenBounds.y * scale,
+    w: PIXEL_WORLD.screenBounds.w * scale,
+    h: PIXEL_WORLD.screenBounds.h * scale,
+  };
+  const diskRect = toViewportRect(PIXEL_WORLD.floppyBounds, 44, 44);
+  const powerRect = toViewportRect(PIXEL_WORLD.powerBounds, 44, 44);
+
+  // Prevent Disk & Power hitboxes colliding at extreme low zoom while keeping Power centered on its switch
+  const overlap = (diskRect.x + diskRect.w + 4) - powerRect.x;
+  if (overlap > 0) {
+    diskRect.x -= overlap;
+  }
+
+  return {
+    pose: pose.name,
+    durationMs: pose.durationMs,
+    scale,
+    tx,
+    ty,
+    screenRect,
+    diskRect,
+    powerRect,
+    dadoY: Math.round(ty + PIXEL_WORLD.dadoY * scale),
+    deskTopY: Math.round(ty + PIXEL_WORLD.deskTopY * scale),
+    deskLipY: Math.round(ty + PIXEL_WORLD.deskLipY * scale),
+  };
+}
+
 function mulberry32(seed) {
   let state = seed >>> 0;
   return () => {

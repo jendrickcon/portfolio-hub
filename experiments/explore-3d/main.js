@@ -1,4 +1,4 @@
-import { PixelEnvironment } from './pixel-env.js';
+import { PixelEnvironment, computePixelSceneFrame } from './pixel-env.js';
 
 const STORAGE_KEY = 'enuhri_explore3d_display_mode';
 const params = new URLSearchParams(window.location.search);
@@ -31,6 +31,9 @@ let webglStatusText = INITIAL_NO_WEBGL ? 'simulated-off' : 'inactive';
 let displayMode = '3d'; // '3d' | '2d'
 
 const canvasEl = document.getElementById('crt-scene-canvas');
+const pixelMainEl = document.getElementById('proto-main');
+const pixelWorldEl = document.getElementById('pixel2d-world');
+const pixelRoomBandsEl = document.getElementById('pixel2d-room-bands');
 const pixel2dCanvasEl = document.getElementById('pixel2d-env-canvas');
 const pixelEnv = new PixelEnvironment(pixel2dCanvasEl);
 
@@ -150,12 +153,81 @@ let currentPixelFrame = 0;
 let driveLatched = false;
 let lastDiskPointerType = 'mouse';
 
-// Pixel 2D 13.5 FPS environment loop & inactivity sleep
+// Pixel 2D 13.5 FPS environment loop, inactivity sleep & unified scene-pose tween
 let pixel2dRafId = null;
 let pixel2dLastMs = performance.now();
 let pixel2dActivityMs = performance.now();
 let pixel2dUploadTimestamps = [];
 let pixel2dStateText = 'idle (0 FPS)';
+let pixelPoseTarget = 'standby';
+let pixelCamCurrent = null;
+let pixelCamTween = null;
+
+function readPixelStageBox() {
+  if (!pixelMainEl) {
+    const vp = readViewportMetrics();
+    return { w: vp.w, h: vp.h, top: 0 };
+  }
+  const rect = pixelMainEl.getBoundingClientRect();
+  const vp = readViewportMetrics();
+  return {
+    w: rect.width > 10 ? rect.width : vp.w,
+    h: rect.height > 10 ? rect.height : Math.max(120, vp.h - 62),
+    top: rect.top || 0,
+  };
+}
+
+function applyPixelSceneProjection(frame) {
+  if (!frame || displayMode !== '2d') return;
+  const rootStyle = document.documentElement.style;
+  if (pixelWorldEl) {
+    pixelWorldEl.style.transform = `translate3d(${frame.tx.toFixed(2)}px, ${frame.ty.toFixed(2)}px, 0) scale(${frame.scale.toFixed(4)})`;
+  }
+  if (pixelRoomBandsEl) {
+    pixelRoomBandsEl.style.setProperty('--px-dado-y', `${frame.dadoY}px`);
+    pixelRoomBandsEl.style.setProperty('--px-desk-top-y', `${frame.deskTopY}px`);
+    pixelRoomBandsEl.style.setProperty('--px-desk-lip-y', `${frame.deskLipY}px`);
+  }
+  rootStyle.setProperty('--screen-x', `${Math.round(frame.screenRect.x)}px`);
+  rootStyle.setProperty('--screen-y', `${Math.round(frame.screenRect.y)}px`);
+  rootStyle.setProperty('--screen-w', `${Math.round(frame.screenRect.w)}px`);
+  rootStyle.setProperty('--screen-h', `${Math.round(frame.screenRect.h)}px`);
+
+  rootStyle.setProperty('--disk-hit-x', `${Math.round(frame.diskRect.x)}px`);
+  rootStyle.setProperty('--disk-hit-y', `${Math.round(frame.diskRect.y)}px`);
+  rootStyle.setProperty('--disk-hit-w', `${Math.round(frame.diskRect.w)}px`);
+  rootStyle.setProperty('--disk-hit-h', `${Math.round(frame.diskRect.h)}px`);
+
+  rootStyle.setProperty('--power-hit-x', `${Math.round(frame.powerRect.x)}px`);
+  rootStyle.setProperty('--power-hit-y', `${Math.round(frame.powerRect.y)}px`);
+  rootStyle.setProperty('--power-hit-w', `${Math.round(frame.powerRect.w)}px`);
+  rootStyle.setProperty('--power-hit-h', `${Math.round(frame.powerRect.h)}px`);
+}
+
+function setPixelScenePose(poseName, immediate = false) {
+  pixelPoseTarget = poseName || 'standby';
+  if (displayMode !== '2d') return;
+
+  const { w, h, top } = readPixelStageBox();
+  const targetFrame = computePixelSceneFrame(w, h, pixelPoseTarget, top);
+
+  if (immediate || reducedMotion || !pixelCamCurrent) {
+    pixelCamTween = null;
+    pixelCamCurrent = targetFrame;
+    applyPixelSceneProjection(targetFrame);
+    renderDebugHud();
+    return;
+  }
+
+  pixelCamTween = {
+    from: { ...pixelCamCurrent },
+    to: targetFrame,
+    startMs: performance.now(),
+    durationMs: targetFrame.durationMs || 650,
+  };
+  pixel2dActivityMs = performance.now();
+  startOrResumePixel2dLoop();
+}
 
 function clearActiveTimers() {
   activeTimers.forEach(clearTimeout);
@@ -225,12 +297,14 @@ function setPixelFloppyFrameTarget(targetFrame) {
   if (immediate || currentPixelFrame === targetFrame) {
     currentPixelFrame = targetFrame;
     hwDiskBtn.dataset.pixelFrame = String(targetFrame);
+    document.body.dataset.pixelFrame = String(targetFrame);
     return;
   }
   driveStepInterval = setInterval(() => {
     if (currentPixelFrame < targetFrame) currentPixelFrame += 1;
     else if (currentPixelFrame > targetFrame) currentPixelFrame -= 1;
     hwDiskBtn.dataset.pixelFrame = String(currentPixelFrame);
+    document.body.dataset.pixelFrame = String(currentPixelFrame);
     if (currentPixelFrame === targetFrame) {
       clearInterval(driveStepInterval);
       driveStepInterval = null;
@@ -240,6 +314,7 @@ function setPixelFloppyFrameTarget(targetFrame) {
 
 function syncFloppyDomAndScene() {
   hwDiskBtn.dataset.driveState = drivePhase;
+  document.body.dataset.driveState = drivePhase;
   const isExpanded = drivePhase === 'opening' || drivePhase === 'open';
   hwDiskBtn.setAttribute('aria-expanded', String(isExpanded));
 
@@ -267,6 +342,7 @@ function closeFloppyTray(immediate = false) {
       if (driveStepInterval) { clearInterval(driveStepInterval); driveStepInterval = null; }
       currentPixelFrame = 0;
       hwDiskBtn.dataset.pixelFrame = '0';
+      document.body.dataset.pixelFrame = '0';
     }
     syncFloppyDomAndScene();
   }
@@ -328,6 +404,19 @@ function stopPixel2dLoop(reasonState) {
   renderDebugHud();
 }
 
+function lerpNum(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpRect(r0, r1, t) {
+  return {
+    x: lerpNum(r0.x, r1.x, t),
+    y: lerpNum(r0.y, r1.y, t),
+    w: lerpNum(r0.w, r1.w, t),
+    h: lerpNum(r0.h, r1.h, t),
+  };
+}
+
 function tickPixel2dLoop(now) {
   pixel2dRafId = null;
   if (displayMode !== '2d') {
@@ -339,11 +428,42 @@ function tickPixel2dLoop(now) {
     return;
   }
   if (reducedMotion) {
+    if (pixelCamTween) {
+      pixelCamCurrent = pixelCamTween.to;
+      pixelCamTween = null;
+      applyPixelSceneProjection(pixelCamCurrent);
+    }
     pixelEnv.renderStatic();
     stopPixel2dLoop('reduced-motion (0 FPS)');
     return;
   }
-  if (now - pixel2dActivityMs > 10000) {
+
+  // Advance active camera pose tween in lockstep inside the single Pixel 2D loop
+  if (pixelCamTween) {
+    const rawT = Math.min(1, (now - pixelCamTween.startMs) / pixelCamTween.durationMs);
+    const e = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+    const { from, to } = pixelCamTween;
+    pixelCamCurrent = {
+      ...to,
+      scale: lerpNum(from.scale, to.scale, e),
+      tx: lerpNum(from.tx, to.tx, e),
+      ty: lerpNum(from.ty, to.ty, e),
+      dadoY: Math.round(lerpNum(from.dadoY, to.dadoY, e)),
+      deskTopY: Math.round(lerpNum(from.deskTopY, to.deskTopY, e)),
+      deskLipY: Math.round(lerpNum(from.deskLipY, to.deskLipY, e)),
+      screenRect: lerpRect(from.screenRect, to.screenRect, e),
+      diskRect: lerpRect(from.diskRect, to.diskRect, e),
+      powerRect: lerpRect(from.powerRect, to.powerRect, e),
+    };
+    applyPixelSceneProjection(pixelCamCurrent);
+    if (rawT >= 1) {
+      pixelCamCurrent = to;
+      pixelCamTween = null;
+      renderDebugHud();
+    }
+  }
+
+  if (!pixelCamTween && now - pixel2dActivityMs > 10000) {
     stopPixel2dLoop('pixel2d-idle (0 FPS)');
     return;
   }
@@ -398,7 +518,7 @@ function renderDebugHud(sceneMetrics = null) {
         dpr: 1,
         renderScale: 1,
         pixelMode: 'pixel-2d',
-        cameraPose: '2d-ortho',
+        cameraPose: `pixel-${pixelPoseTarget}`,
         pixelTickMs: +pixelEnv.lastTickMs.toFixed(2),
         pixelUploadsPerSec: pixel2dUploadTimestamps.length,
         loopState: pixel2dStateText,
@@ -515,6 +635,8 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     closeFloppyTray(true);
   }
 
+  const poseName = currentView === 'boot' ? 'boot' : currentView === 'standby' || currentView === 'restarting' ? 'standby' : 'menu';
+
   if (displayMode === '2d') {
     if (webglScene) {
       webglScene.setQuality('low');
@@ -523,6 +645,7 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     document.body.classList.add('mode-pixel-2d');
     canvasEl.setAttribute('data-active', 'false');
     pixelEnv.renderStatic();
+    setPixelScenePose(poseName, true);
     startOrResumePixel2dLoop();
   } else {
     stopPixel2dLoop('inactive (3D mode)');
@@ -531,7 +654,6 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
       applyDisplayMode('2d', { manual: false, announceChange: false, immediate: true });
       return;
     }
-    const poseName = currentView === 'boot' ? 'boot' : currentView === 'standby' || currentView === 'restarting' ? 'standby' : 'menu';
     webglScene.setReducedMotion(reducedMotion);
     webglScene.setQuality(resolve3dQualityTier());
     webglScene.syncBeforeShow(poseName);
@@ -590,6 +712,8 @@ function renderStandby(restoreFocus = false) {
 
   if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('standby');
+  } else {
+    setPixelScenePose('standby');
   }
   setScreenLightState('standby');
 
@@ -614,6 +738,8 @@ function startWorkstation() {
   document.body.classList.add('is-powered');
   if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('boot');
+  } else {
+    setPixelScenePose('boot');
   }
   setScreenLightState('menu');
   renderBoot();
@@ -710,6 +836,8 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   document.body.classList.add('is-powered');
   if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('menu');
+  } else {
+    setPixelScenePose('menu');
   }
   setScreenLightState('menu');
 
@@ -817,6 +945,11 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
 
 function renderDossier(appId) {
   currentView = 'dossier';
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setCameraState('menu');
+  } else {
+    setPixelScenePose('menu');
+  }
   const entry = appId === 'sandbox'
     ? SANDBOX_SLOT
     : CATALOG_SLOTS.find((a) => a.id === appId) || CATALOG_SLOTS[0];
@@ -910,11 +1043,13 @@ function triggerRestart() {
   if (reducedMotion) {
     rLogEl.textContent = restartLines.join('\n');
     if (displayMode === '3d' && webglScene) webglScene.setCameraState('standby', 0);
+    else setPixelScenePose('standby', true);
     scheduleTimer(() => renderStandby(true), 380);
   } else {
     rLogEl.textContent = restartLines[0];
     scheduleTimer(() => {
       if (displayMode === '3d' && webglScene) webglScene.setCameraState('standby', 850);
+      else setPixelScenePose('standby');
     }, 60);
     scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[1]; }, 340);
     scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[2]; }, 680);
@@ -1094,6 +1229,8 @@ function syncAppViewportHeight(force = false) {
   if (displayMode === '3d' && webglScene) {
     webglScene.setQuality(resolve3dQualityTier());
     webglScene.resizeViewport(w, h);
+  } else if (displayMode === '2d') {
+    setPixelScenePose(pixelPoseTarget, true);
   }
 }
 

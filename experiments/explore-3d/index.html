@@ -9,14 +9,13 @@
 </head>
 <body>
 
-  <!-- Layer 1/2: Decorative WebGL Canvas (3D mode) + Shared 320x180 Pixel Environment Canvas (Pixel 2D mode) -->
+  <!-- Layer 1 WebGL Canvas (3D mode; offscreen bitmap shared cleanly with Pixel 2D backdrop) -->
   <canvas id="crt-scene-canvas" class="crt-canvas" aria-hidden="true" tabindex="-1"></canvas>
-  <canvas id="pixel2d-env-canvas" width="320" height="180" class="pixel2d-env-canvas" aria-hidden="true" tabindex="-1"></canvas>
 
   <!-- Fixed Full-Viewport App Shell -->
   <div id="prototype-app" class="prototype-app">
 
-    <!-- Layer 3: One-Row Mobile Header & Display-Mode Selector -->
+    <!-- Layer 3: Strict One-Row Mobile Header & Display-Mode Selector -->
     <header class="proto-header" id="proto-header">
       <nav class="proto-nav" aria-label="Prototype controls and return navigation">
         <a href="/explore/" class="ctrl-btn ctrl-btn--return" aria-label="Current Explore">
@@ -63,30 +62,414 @@
       </nav>
     </header>
 
-    <main class="proto-main">
+    <main id="proto-main" class="proto-main">
       <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+      <!-- Seamless full-bleed desk/wall bands matched to projected Pixel 2D coordinates -->
+      <div id="pixel2d-room-bands" class="pixel2d-room-bands" aria-hidden="true">
+        <div class="px-band-dado"></div>
+        <div class="px-band-desk"></div>
+        <div class="px-band-desk-lip"></div>
+        <div class="px-band-fascia"></div>
+      </div>
+
+      <!-- Fixed 4:3 Logical Pixel 2D Workstation Stage (480x360 integer grid, scaled/translated uniformly per scene pose) -->
+      <div id="pixel2d-world" class="pixel2d-world" aria-hidden="true">
+        <canvas id="pixel2d-env-canvas" width="320" height="180" class="pixel2d-env-canvas" tabindex="-1"></canvas>
+
+        <svg id="pixel2d-scene-svg" class="pixel2d-scene-svg" viewBox="0 0 480 360" shape-rendering="crispEdges">
+          <!-- ===== WALLS SURROUNDING ANIMATED CITY WINDOW (transparent aperture x:80..392, y:20..162) ===== -->
+          <rect x="0" y="0" width="480" height="20" fill="#070a10" />
+          <rect x="0" y="20" width="80" height="142" fill="#070a10" />
+          <rect x="392" y="20" width="88" height="142" fill="#070a10" />
+          <rect x="0" y="162" width="480" height="92" fill="#0c131f" />
+
+          <!-- Dado trim & subtle wall routing panel on right upper wall -->
+          <rect x="0" y="162" width="480" height="2" fill="#26282b" />
+          <rect x="0" y="164" width="480" height="2" fill="#181a1d" />
+          <rect x="0" y="166" width="480" height="1" fill="#0c0e11" />
+          <rect x="410" y="68" width="52" height="4" fill="#26282b" />
+          <rect x="410" y="72" width="52" height="2" fill="#181a1d" />
+          <rect x="416" y="42" width="16" height="26" fill="#223044" />
+          <rect x="418" y="44" width="12" height="22" fill="#17253b" />
+          <rect x="420" y="47" width="8" height="2" fill="#1f5e70" />
+          <rect x="420" y="51" width="6" height="1" fill="#3c5068" />
+          <rect x="436" y="54" width="18" height="14" fill="#594014" />
+          <rect x="438" y="56" width="14" height="3" fill="#c49010" />
+
+          <!-- Stepped 3-Pane Studio Window Molding & Mullions -->
+          <rect x="76" y="16" width="320" height="4" fill="#181a1d" />
+          <rect x="76" y="16" width="4" height="146" fill="#181a1d" />
+          <rect x="392" y="16" width="4" height="146" fill="#181a1d" />
+          <rect x="79" y="19" width="314" height="1" fill="#26282b" />
+          <rect x="79" y="19" width="1" height="143" fill="#26282b" />
+          <rect x="183" y="20" width="3" height="142" fill="#181a1d" />
+          <rect x="287" y="20" width="3" height="142" fill="#181a1d" />
+          <rect x="80" y="92" width="312" height="3" fill="#181a1d" />
+          <rect x="72" y="160" width="328" height="4" fill="#343840" />
+          <rect x="72" y="164" width="328" height="2" fill="#181a1d" />
+
+          <!-- ===== DESK PLANE, BEVEL & CONTACT SHADOWS ===== -->
+          <rect x="0" y="254" width="480" height="92" fill="#131822" />
+          <rect x="0" y="254" width="480" height="2" fill="#242c3a" />
+          <rect x="0" y="256" width="480" height="1" fill="#181a1d" />
+          <rect x="0" y="344" width="480" height="4" fill="#26282b" />
+          <rect x="0" y="348" width="480" height="12" fill="#0c0e11" />
+          <!-- Sparse surface detail clusters (no dithering noise) -->
+          <rect x="36" y="316" width="10" height="1" fill="#1d2d45" />
+          <rect x="82" y="328" width="6" height="1" fill="#18273e" />
+          <rect x="386" y="318" width="12" height="1" fill="#1d2d45" />
+          <rect x="424" y="330" width="8" height="1" fill="#18273e" />
+
+          <!-- Subtle pixel phosphor glow projected from CRT onto desk and keyboard top -->
+          <rect class="px-desk-glow" x="128" y="255" width="224" height="18" opacity="0.22" />
+          <rect class="px-desk-glow" x="116" y="272" width="248" height="20" opacity="0.09" />
+
+          <!-- Desk contact shadows -->
+          <rect x="4" y="282" width="96" height="7" fill="#070a10" />
+          <rect x="166" y="264" width="148" height="8" fill="#070a10" />
+          <rect x="108" y="341" width="264" height="6" fill="#070a10" />
+          <rect x="380" y="274" width="38" height="7" fill="#070a10" />
+          <rect x="430" y="280" width="46" height="6" fill="#070a10" />
+
+          <!-- ===== LEFT STUDIO EQUIPMENT: DUAL DECK / TAPE STACK & CABLES ===== -->
+          <!-- Thick cable routed behind desk to workstation -->
+          <rect x="92" y="264" width="18" height="3" fill="#0c0e11" />
+          <rect x="106" y="258" width="12" height="3" fill="#181a1d" />
+          <rect x="94" y="264" width="12" height="1" fill="#343840" />
+          <!-- Lower Stereo/Disk Deck (x:6..94, y:240..284) -->
+          <rect x="6" y="240" width="88" height="44" fill="#0c0e11" />
+          <rect x="8" y="242" width="84" height="8" fill="#343840" />
+          <rect x="8" y="250" width="84" height="32" fill="#26282b" />
+          <rect x="8" y="250" width="84" height="1" fill="#464b54" />
+          <rect x="12" y="254" width="48" height="22" fill="#181a1d" />
+          <rect x="16" y="258" width="40" height="14" fill="#133642" />
+          <rect x="20" y="261" width="10" height="8" fill="#0c0e11" />
+          <rect x="22" y="263" width="6" height="4" fill="#464b54" />
+          <rect x="38" y="261" width="10" height="8" fill="#0c0e11" />
+          <rect x="40" y="263" width="6" height="4" fill="#464b54" />
+          <rect x="64" y="256" width="22" height="8" fill="#181a1d" />
+          <rect x="66" y="258" width="10" height="4" fill="#c49010" />
+          <rect x="78" y="258" width="6" height="4" fill="#1f5e70" />
+          <rect x="66" y="270" width="4" height="4" fill="#a83232" />
+          <rect x="74" y="270" width="4" height="4" fill="#39ff14" />
+          <rect x="82" y="270" width="4" height="4" fill="#464b54" />
+          <!-- Upper Drive Unit (x:10..90, y:198..240) -->
+          <rect x="10" y="198" width="80" height="42" fill="#0c0e11" />
+          <rect x="12" y="200" width="76" height="7" fill="#464b54" />
+          <rect x="12" y="207" width="76" height="31" fill="#26282b" />
+          <rect x="12" y="207" width="76" height="1" fill="#68737d" />
+          <rect x="16" y="212" width="32" height="18" fill="#181a1d" />
+          <rect x="20" y="217" width="24" height="3" fill="#0c0e11" />
+          <rect x="24" y="224" width="16" height="2" fill="#464b54" />
+          <rect x="54" y="212" width="28" height="20" fill="#181a1d" />
+          <rect x="57" y="215" width="22" height="14" fill="#131822" />
+          <rect x="63" y="218" width="10" height="8" fill="#26282b" />
+          <rect x="66" y="220" width="4" height="4" fill="#c49010" />
+          <!-- Leaning spare 3.5" diskette on left corner -->
+          <rect x="96" y="246" width="9" height="18" fill="#0c0e11" />
+          <rect x="97" y="247" width="7" height="16" fill="#223044" />
+          <rect x="98" y="248" width="5" height="6" fill="#9ea8b4" />
+          <rect x="98" y="257" width="5" height="2" fill="#00a8be" />
+
+          <!-- ===== RIGHT STUDIO PROPS: CERAMIC POT PLANT + ARTICULATED LAMP ===== -->
+          <!-- Botanical Plant in Terracotta Ceramic Pot (x:374..422, y:186..278) -->
+          <rect x="383" y="243" width="32" height="34" fill="#0c0e11" />
+          <rect x="380" y="240" width="38" height="8" fill="#0c0e11" />
+          <rect x="382" y="242" width="34" height="5" fill="#7a5518" />
+          <rect x="382" y="242" width="14" height="2" fill="#c49010" opacity="0.45" />
+          <rect x="385" y="248" width="28" height="27" fill="#594014" />
+          <rect x="385" y="248" width="8" height="27" fill="#7a5518" />
+          <rect x="385" y="248" width="28" height="2" fill="#3b2b10" />
+          <!-- Organic Multi-Shade Pixel Foliage (no outline noise) -->
+          <rect x="394" y="226" width="10" height="15" fill="#133324" />
+          <rect x="386" y="222" width="10" height="18" fill="#133324" />
+          <rect x="402" y="220" width="12" height="20" fill="#133324" />
+          <rect x="378" y="210" width="14" height="12" fill="#226e45" />
+          <rect x="374" y="206" width="10" height="7" fill="#358f58" />
+          <rect x="388" y="196" width="10" height="26" fill="#226e45" />
+          <rect x="390" y="190" width="6" height="12" fill="#358f58" />
+          <rect x="398" y="204" width="14" height="18" fill="#226e45" />
+          <rect x="402" y="198" width="8" height="8" fill="#358f58" />
+          <rect x="408" y="214" width="14" height="12" fill="#226e45" />
+          <rect x="414" y="210" width="8" height="6" fill="#358f58" />
+          <rect x="394" y="226" width="8" height="12" fill="#226e45" />
+
+          <!-- Articulated Metal Desk Lamp (x:418..476, y:158..284) -->
+          <polygon points="416,204 442,204 446,246 402,246" fill="#7a5518" opacity="0.16" />
+          <rect x="430" y="264" width="44" height="18" fill="#0c0e11" />
+          <rect x="432" y="266" width="40" height="5" fill="#464b54" />
+          <rect x="432" y="271" width="40" height="9" fill="#26282b" />
+          <rect x="442" y="267" width="6" height="3" fill="#c49010" />
+          <rect x="456" y="164" width="8" height="102" fill="#0c0e11" />
+          <rect x="458" y="166" width="4" height="98" fill="#343840" />
+          <rect x="458" y="166" width="2" height="98" fill="#464b54" />
+          <rect x="432" y="158" width="32" height="8" fill="#0c0e11" />
+          <rect x="434" y="160" width="28" height="4" fill="#464b54" />
+          <rect x="456" y="162" width="6" height="6" fill="#68737d" />
+          <rect x="424" y="166" width="18" height="8" fill="#0c0e11" />
+          <rect x="414" y="172" width="28" height="34" fill="#0c0e11" />
+          <rect x="416" y="174" width="24" height="28" fill="#343840" />
+          <rect x="416" y="174" width="6" height="28" fill="#464b54" />
+          <rect x="418" y="200" width="20" height="4" fill="#c49010" />
+
+          <!-- ===== ARTICULATED CRT MONITOR SWIVEL STAND (x:172..308, y:242..268) ===== -->
+          <rect x="192" y="242" width="96" height="11" fill="#0c0e11" />
+          <rect x="196" y="243" width="88" height="9" fill="#26282b" />
+          <rect x="200" y="246" width="80" height="2" fill="#343840" />
+          <rect x="172" y="252" width="136" height="16" fill="#0c0e11" />
+          <rect x="174" y="253" width="132" height="3" fill="#d8cfc0" />
+          <rect x="174" y="256" width="132" height="6" fill="#c8bfb0" />
+          <rect x="176" y="262" width="128" height="4" fill="#857c6d" />
+          <rect x="180" y="266" width="120" height="1" fill="#595246" />
+
+          <!-- ===== 4:3 CRT MONITOR CASING (centered x:112..368 [w:256], y:26..244 [h:218]) ===== -->
+          <!-- Curved cornered dark charcoal outer casing outline -->
+          <rect x="118" y="26" width="244" height="218" fill="#0c0e11" />
+          <rect x="114" y="28" width="252" height="214" fill="#0c0e11" />
+          <rect x="112" y="32" width="256" height="206" fill="#0c0e11" />
+
+          <!-- Stepped Top Roof Plane & 3 Recessed Cooling Vent Groups -->
+          <rect x="119" y="28" width="242" height="10" fill="#ebe3d4" />
+          <rect x="116" y="30" width="248" height="8" fill="#d8cfc0" />
+          <g fill="#26282b">
+            <rect x="128" y="30" width="2" height="5" /><rect x="132" y="30" width="2" height="5" />
+            <rect x="136" y="30" width="2" height="5" /><rect x="140" y="30" width="2" height="5" />
+            <rect x="144" y="30" width="2" height="5" /><rect x="148" y="30" width="2" height="5" />
+            <rect x="202" y="30" width="2" height="5" /><rect x="206" y="30" width="2" height="5" />
+            <rect x="210" y="30" width="2" height="5" /><rect x="214" y="30" width="2" height="5" />
+            <rect x="218" y="30" width="2" height="5" /><rect x="222" y="30" width="2" height="5" />
+            <rect x="226" y="30" width="2" height="5" /><rect x="230" y="30" width="2" height="5" />
+            <rect x="234" y="30" width="2" height="5" /><rect x="238" y="30" width="2" height="5" />
+            <rect x="242" y="30" width="2" height="5" /><rect x="246" y="30" width="2" height="5" />
+            <rect x="250" y="30" width="2" height="5" /><rect x="254" y="30" width="2" height="5" />
+            <rect x="258" y="30" width="2" height="5" /><rect x="262" y="30" width="2" height="5" />
+            <rect x="266" y="30" width="2" height="5" /><rect x="270" y="30" width="2" height="5" />
+            <rect x="274" y="30" width="2" height="5" /><rect x="278" y="30" width="2" height="5" />
+            <rect x="330" y="30" width="2" height="5" /><rect x="334" y="30" width="2" height="5" />
+            <rect x="338" y="30" width="2" height="5" /><rect x="342" y="30" width="2" height="5" />
+            <rect x="346" y="30" width="2" height="5" /><rect x="350" y="30" width="2" height="5" />
+          </g>
+
+          <!-- Main Front Face & Side Depth Cheeks (5-shade putty-beige ramp) -->
+          <rect x="114" y="36" width="252" height="202" fill="#c8bfb0" />
+          <rect x="118" y="36" width="244" height="206" fill="#c8bfb0" />
+          <!-- Left Cheek Depth & Highlight -->
+          <rect x="114" y="36" width="6" height="202" fill="#d8cfc0" />
+          <rect x="114" y="36" width="2" height="200" fill="#ebe3d4" />
+          <!-- Right Cheek Shadow Plane + Side Cooling Slots -->
+          <rect x="358" y="36" width="8" height="202" fill="#857c6d" />
+          <rect x="363" y="36" width="3" height="200" fill="#595246" />
+          <rect x="116" y="236" width="248" height="6" fill="#857c6d" />
+          <rect x="118" y="240" width="244" height="2" fill="#595246" />
+          <!-- Front upper highlight & molded casing seams -->
+          <rect x="120" y="36" width="238" height="2" fill="#ebe3d4" />
+          <rect x="120" y="38" width="238" height="2" fill="#d8cfc0" />
+          <rect x="120" y="208" width="238" height="1" fill="#857c6d" />
+          <rect x="120" y="209" width="238" height="1" fill="#d8cfc0" />
+          <!-- Side cheek micro vents & corner bezel screws -->
+          <rect x="116" y="172" width="2" height="28" fill="#595246" />
+          <rect x="360" y="172" width="2" height="28" fill="#26282b" />
+          <rect x="123" y="40" width="3" height="3" fill="#595246" />
+          <rect x="352" y="40" width="3" height="3" fill="#595246" />
+          <rect x="123" y="202" width="3" height="3" fill="#595246" />
+          <rect x="352" y="202" width="3" height="3" fill="#595246" />
+
+          <!-- 3-Layer Stepped Charcoal Front Bezel (x:127..353, y:41..208) -->
+          <rect x="127" y="41" width="226" height="167" fill="#595246" />
+          <rect x="128" y="42" width="224" height="165" fill="#343840" />
+          <rect x="129" y="43" width="222" height="1" fill="#464b54" />
+          <rect x="129" y="44" width="1" height="162" fill="#464b54" />
+          <rect x="131" y="44" width="218" height="161" fill="#26282b" />
+          <rect x="133" y="46" width="214" height="157" fill="#181a1d" />
+          <!-- Deep 4:3 Curved Glass Rim Collar (x:136..344, y:48..204 [208x156]) -->
+          <rect x="135" y="47" width="210" height="158" fill="#0c0e11" />
+          <rect x="136" y="48" width="208" height="156" fill="#061015" />
+
+          <!-- Bezel utility micro-badge & dual monitor calibration preset buttons -->
+          <rect x="132" y="209" width="44" height="5" fill="#181a1d" />
+          <rect x="134" y="211" width="18" height="1" fill="#9ea8b4" />
+          <rect x="155" y="211" width="10" height="1" fill="#00a8be" />
+          <rect x="312" y="209" width="12" height="5" fill="#181a1d" />
+          <rect x="313" y="210" width="10" height="3" fill="#343840" />
+          <rect x="328" y="209" width="12" height="5" fill="#181a1d" />
+          <rect x="329" y="210" width="10" height="3" fill="#343840" />
+
+          <!-- ===== LOWER HARDWARE CHIN (y:214..238) ===== -->
+          <!-- Bottom-Left Multi-Rib Vent Grille (13 vertical slots) -->
+          <rect x="126" y="217" width="54" height="18" fill="#ada393" />
+          <g fill="#181a1d">
+            <rect x="128" y="219" width="2" height="14" /><rect x="132" y="219" width="2" height="14" />
+            <rect x="136" y="219" width="2" height="14" /><rect x="140" y="219" width="2" height="14" />
+            <rect x="144" y="219" width="2" height="14" /><rect x="148" y="219" width="2" height="14" />
+            <rect x="152" y="219" width="2" height="14" /><rect x="156" y="219" width="2" height="14" />
+            <rect x="160" y="219" width="2" height="14" /><rect x="164" y="219" width="2" height="14" />
+            <rect x="168" y="219" width="2" height="14" /><rect x="172" y="219" width="2" height="14" />
+            <rect x="176" y="219" width="2" height="14" />
+          </g>
+
+          <!-- Centered 3.5" Recessed Floppy Bay (center x=240, bounds 204..276) -->
+          <rect x="204" y="217" width="72" height="18" fill="#595246" />
+          <rect x="205" y="218" width="70" height="16" fill="#26282b" />
+          <rect x="206" y="219" width="68" height="1" fill="#464b54" />
+          <rect x="210" y="222" width="54" height="5" fill="#0c0e11" />
+          <rect x="229" y="227" width="16" height="3" fill="#181a1d" />
+          <rect x="231" y="227" width="12" height="1" fill="#464b54" />
+          <!-- Drive LED & Eject Nub -->
+          <rect x="266" y="223" width="6" height="4" fill="#0c0e11" />
+          <rect id="px2d-drive-led" class="px2d-drive-led" x="267" y="224" width="4" height="2" fill="#133642" />
+          <!-- Animated 6-frame Sliding Floppy Sprite (SANDBOX.SYS) -->
+          <g id="px2d-disk-sprite" class="px2d-disk-sprite">
+            <rect x="214" y="223" width="46" height="5" fill="#1d2d45" />
+            <rect x="214" y="223" width="46" height="1" fill="#3c5068" />
+            <rect x="227" y="223" width="18" height="4" fill="#9ea8b4" />
+            <rect x="238" y="224" width="4" height="2" fill="#464b54" />
+            <rect x="218" y="226" width="32" height="2" fill="#00a8be" />
+            <rect x="218" y="227" width="18" height="1" fill="#c49010" />
+          </g>
+
+          <!-- Lower-Right Power Status LED & Tactile Physical Power Button -->
+          <rect x="303" y="222" width="8" height="8" fill="#181a1d" />
+          <rect id="px2d-pwr-led" class="px2d-pwr-led" x="305" y="224" width="4" height="4" fill="#5c6b34" />
+          <rect x="318" y="218" width="26" height="16" fill="#0c0e11" />
+          <rect x="319" y="219" width="24" height="14" fill="#26282b" />
+          <rect x="319" y="219" width="24" height="2" fill="#464b54" />
+          <rect x="319" y="219" width="2" height="14" fill="#343840" />
+          <rect x="325" y="224" width="12" height="4" fill="#181a1d" />
+          <rect x="329" y="225" width="4" height="2" fill="#857c6d" />
+
+          <!-- ===== 5-ROW SCULPTED PERSPECTIVE TWO-TONE KEYBOARD (y:270..344) ===== -->
+          <!-- Coiled keyboard cable sneaking up right behind -->
+          <rect x="334" y="256" width="4" height="14" fill="#0c0e11" />
+          <rect x="335" y="257" width="2" height="12" fill="#343840" />
+          <rect x="334" y="254" width="16" height="3" fill="#0c0e11" />
+
+          <!-- Stepped Perspective Trapezoid Beige Shell + 2px Charcoal Outline -->
+          <rect x="124" y="268" width="232" height="16" fill="#0c0e11" />
+          <rect x="118" y="284" width="244" height="28" fill="#0c0e11" />
+          <rect x="112" y="312" width="256" height="32" fill="#0c0e11" />
+          <rect x="126" y="270" width="228" height="14" fill="#c8bfb0" />
+          <rect x="120" y="284" width="240" height="28" fill="#c8bfb0" />
+          <rect x="114" y="312" width="252" height="28" fill="#c8bfb0" />
+          <rect x="114" y="338" width="252" height="4" fill="#857c6d" />
+          <rect x="114" y="340" width="252" height="2" fill="#595246" />
+          <!-- Top & Left Highlight Bevels -->
+          <rect x="126" y="270" width="228" height="2" fill="#ebe3d4" />
+          <rect x="120" y="284" width="6" height="28" fill="#d8cfc0" />
+          <rect x="114" y="312" width="6" height="26" fill="#d8cfc0" />
+          <rect x="354" y="284" width="6" height="28" fill="#857c6d" />
+          <rect x="360" y="312" width="6" height="26" fill="#857c6d" />
+
+          <!-- Top-Right Lock LED Strip (NUM / CAPS / SCRL) -->
+          <rect x="132" y="274" width="176" height="2" fill="#ada393" />
+          <rect x="314" y="273" width="34" height="4" fill="#181a1d" />
+          <rect class="px2d-kbd-led" x="318" y="274" width="4" height="2" fill="#39ff14" />
+          <rect x="328" y="274" width="4" height="2" fill="#133642" />
+          <rect x="338" y="274" width="4" height="2" fill="#133642" />
+
+          <!-- Deep Dark Key Well -->
+          <rect x="128" y="279" width="224" height="12" fill="#262420" />
+          <rect x="122" y="291" width="236" height="22" fill="#262420" />
+          <rect x="118" y="313" width="244" height="23" fill="#262420" />
+
+          <!-- ROW 1: Esc + 3 Function Key Clusters + Del/Prt -->
+          <g>
+            <!-- Esc (dark mod) -->
+            <rect x="130" y="281" width="13" height="8" fill="#595246" /><rect x="130" y="281" width="13" height="5" fill="#857c6d" /><rect x="131" y="281" width="11" height="1" fill="#ada393" />
+            <!-- F1-F4 -->
+            <rect x="148" y="281" width="12" height="8" fill="#857c6d" /><rect x="148" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="149" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="162" y="281" width="12" height="8" fill="#857c6d" /><rect x="162" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="163" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="176" y="281" width="12" height="8" fill="#857c6d" /><rect x="176" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="177" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="190" y="281" width="12" height="8" fill="#857c6d" /><rect x="190" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="191" y="281" width="10" height="1" fill="#ebe3d4" />
+            <!-- F5-F8 -->
+            <rect x="207" y="281" width="12" height="8" fill="#857c6d" /><rect x="207" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="208" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="221" y="281" width="12" height="8" fill="#857c6d" /><rect x="221" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="222" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="235" y="281" width="12" height="8" fill="#857c6d" /><rect x="235" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="236" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="249" y="281" width="12" height="8" fill="#857c6d" /><rect x="249" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="250" y="281" width="10" height="1" fill="#ebe3d4" />
+            <!-- F9-F12 + Power/Prt -->
+            <rect x="266" y="281" width="12" height="8" fill="#857c6d" /><rect x="266" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="267" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="280" y="281" width="12" height="8" fill="#857c6d" /><rect x="280" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="281" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="294" y="281" width="12" height="8" fill="#857c6d" /><rect x="294" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="295" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="308" y="281" width="12" height="8" fill="#857c6d" /><rect x="308" y="281" width="12" height="5" fill="#d8cfc0" /><rect x="309" y="281" width="10" height="1" fill="#ebe3d4" />
+            <rect x="325" y="281" width="24" height="8" fill="#595246" /><rect x="325" y="281" width="24" height="5" fill="#857c6d" /><rect x="326" y="281" width="22" height="1" fill="#ada393" />
+          </g>
+
+          <!-- ROW 2: Numeric Row + Backspace -->
+          <g>
+            <rect x="125" y="292" width="14" height="9" fill="#595246" /><rect x="125" y="292" width="14" height="6" fill="#857c6d" /><rect x="126" y="292" width="12" height="1" fill="#ada393" />
+            <rect x="141" y="292" width="14" height="9" fill="#857c6d" /><rect x="141" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="142" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="157" y="292" width="14" height="9" fill="#857c6d" /><rect x="157" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="158" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="173" y="292" width="14" height="9" fill="#857c6d" /><rect x="173" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="174" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="189" y="292" width="14" height="9" fill="#857c6d" /><rect x="189" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="190" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="205" y="292" width="14" height="9" fill="#857c6d" /><rect x="205" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="206" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="221" y="292" width="14" height="9" fill="#857c6d" /><rect x="221" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="222" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="237" y="292" width="14" height="9" fill="#857c6d" /><rect x="237" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="238" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="253" y="292" width="14" height="9" fill="#857c6d" /><rect x="253" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="254" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="269" y="292" width="14" height="9" fill="#857c6d" /><rect x="269" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="270" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="285" y="292" width="14" height="9" fill="#857c6d" /><rect x="285" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="286" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="301" y="292" width="14" height="9" fill="#857c6d" /><rect x="301" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="302" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="317" y="292" width="14" height="9" fill="#857c6d" /><rect x="317" y="292" width="14" height="6" fill="#d8cfc0" /><rect x="318" y="292" width="12" height="1" fill="#ebe3d4" />
+            <rect x="333" y="292" width="22" height="9" fill="#595246" /><rect x="333" y="292" width="22" height="6" fill="#857c6d" /><rect x="334" y="292" width="20" height="1" fill="#ada393" />
+          </g>
+
+          <!-- ROW 3: Tab + QWERTY Row -->
+          <g>
+            <rect x="123" y="303" width="22" height="9" fill="#595246" /><rect x="123" y="303" width="22" height="6" fill="#857c6d" /><rect x="124" y="303" width="20" height="1" fill="#ada393" />
+            <rect x="147" y="303" width="14" height="9" fill="#857c6d" /><rect x="147" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="148" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="163" y="303" width="14" height="9" fill="#857c6d" /><rect x="163" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="164" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="179" y="303" width="14" height="9" fill="#857c6d" /><rect x="179" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="180" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="195" y="303" width="14" height="9" fill="#857c6d" /><rect x="195" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="196" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="211" y="303" width="14" height="9" fill="#857c6d" /><rect x="211" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="212" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="227" y="303" width="14" height="9" fill="#857c6d" /><rect x="227" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="228" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="243" y="303" width="14" height="9" fill="#857c6d" /><rect x="243" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="244" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="259" y="303" width="14" height="9" fill="#857c6d" /><rect x="259" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="260" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="275" y="303" width="14" height="9" fill="#857c6d" /><rect x="275" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="276" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="291" y="303" width="14" height="9" fill="#857c6d" /><rect x="291" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="292" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="307" y="303" width="14" height="9" fill="#857c6d" /><rect x="307" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="308" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="323" y="303" width="14" height="9" fill="#857c6d" /><rect x="323" y="303" width="14" height="6" fill="#d8cfc0" /><rect x="324" y="303" width="12" height="1" fill="#ebe3d4" />
+            <rect x="339" y="303" width="18" height="9" fill="#595246" /><rect x="339" y="303" width="18" height="6" fill="#857c6d" /><rect x="340" y="303" width="16" height="1" fill="#ada393" />
+          </g>
+
+          <!-- ROW 4: Caps + ASDF + Dark Return Key -->
+          <g>
+            <rect x="121" y="314" width="26" height="9" fill="#595246" /><rect x="121" y="314" width="26" height="6" fill="#857c6d" /><rect x="122" y="314" width="24" height="1" fill="#ada393" />
+            <rect x="149" y="314" width="15" height="9" fill="#857c6d" /><rect x="149" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="150" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="166" y="314" width="15" height="9" fill="#857c6d" /><rect x="166" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="167" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="183" y="314" width="15" height="9" fill="#857c6d" /><rect x="183" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="184" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="200" y="314" width="15" height="9" fill="#857c6d" /><rect x="200" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="201" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="217" y="314" width="15" height="9" fill="#857c6d" /><rect x="217" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="218" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="234" y="314" width="15" height="9" fill="#857c6d" /><rect x="234" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="235" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="251" y="314" width="15" height="9" fill="#857c6d" /><rect x="251" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="252" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="268" y="314" width="15" height="9" fill="#857c6d" /><rect x="268" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="269" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="285" y="314" width="15" height="9" fill="#857c6d" /><rect x="285" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="286" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="302" y="314" width="15" height="9" fill="#857c6d" /><rect x="302" y="314" width="15" height="6" fill="#d8cfc0" /><rect x="303" y="314" width="13" height="1" fill="#ebe3d4" />
+            <rect x="319" y="314" width="40" height="9" fill="#262420" /><rect x="319" y="314" width="40" height="6" fill="#595246" /><rect x="320" y="314" width="38" height="1" fill="#857c6d" />
+          </g>
+
+          <!-- ROW 5: Bottom Shift / Modifiers / Long Spacebar / Arrows -->
+          <g>
+            <rect x="120" y="325" width="22" height="9" fill="#595246" /><rect x="120" y="325" width="22" height="6" fill="#857c6d" /><rect x="121" y="325" width="20" height="1" fill="#ada393" />
+            <rect x="144" y="325" width="18" height="9" fill="#595246" /><rect x="144" y="325" width="18" height="6" fill="#857c6d" /><rect x="145" y="325" width="16" height="1" fill="#ada393" />
+            <rect x="164" y="325" width="114" height="9" fill="#857c6d" /><rect x="164" y="325" width="114" height="6" fill="#d8cfc0" /><rect x="165" y="325" width="112" height="1" fill="#ebe3d4" />
+            <rect x="280" y="325" width="18" height="9" fill="#595246" /><rect x="280" y="325" width="18" height="6" fill="#857c6d" /><rect x="281" y="325" width="16" height="1" fill="#ada393" />
+            <rect x="300" y="325" width="14" height="9" fill="#857c6d" /><rect x="300" y="325" width="14" height="6" fill="#d8cfc0" /><rect x="301" y="325" width="12" height="1" fill="#ebe3d4" />
+            <rect x="316" y="325" width="14" height="9" fill="#857c6d" /><rect x="316" y="325" width="14" height="6" fill="#d8cfc0" /><rect x="317" y="325" width="12" height="1" fill="#ebe3d4" />
+            <rect x="332" y="325" width="14" height="9" fill="#857c6d" /><rect x="332" y="325" width="14" height="6" fill="#d8cfc0" /><rect x="333" y="325" width="12" height="1" fill="#ebe3d4" />
+            <rect x="348" y="325" width="12" height="9" fill="#595246" /><rect x="348" y="325" width="12" height="6" fill="#857c6d" /><rect x="349" y="325" width="10" height="1" fill="#ada393" />
+          </g>
+        </svg>
+      </div>
 
       <section class="proto-intro" aria-label="Prototype introduction">
         <span class="proto-badge">ISOLATED PROTOTYPE · /experiments/explore-3d/</span>
         <h1 class="proto-title">ENUHRI WORKSTATION</h1>
         <p class="proto-desc">
-          Hybrid procedural 3D hardware and enriched 64-bit-era Pixel 2D workstation sharing one semantic CRT screen and deterministic 320×180 studio environment.
+          Procedural 3D workstation and fixed-aspect 64-bit Pixel 2D workstation sharing one semantic CRT screen and deterministic 320×180 studio window.
         </p>
       </section>
 
+      <!-- Layer 3 Projected Semantic CRT Screen Aperture + Hardware Chin Hit Targets (Shared by 3D & Pixel 2D) -->
       <section id="crt-chassis" class="crt-chassis" aria-label="CRT workstation display">
-        <!-- Pixel 2D Monitor Upper Casing Chrome (screws, badge plate, molded seams, 10 recessed vents) -->
-        <div class="pixel2d-top-chrome" aria-hidden="true">
-          <span class="px-screw"></span>
-          <span class="px-badge-plate">ENUHRI // PC-88</span>
-          <span class="pixel2d-seam"></span>
-          <span class="pixel2d-vents">
-            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-          </span>
-          <span class="pixel2d-seam"></span>
-          <span class="px-screw"></span>
-        </div>
-
         <div class="screen-overlay">
           <div class="screen-glass-corners" aria-hidden="true"></div>
           <div class="screen-scanlines" aria-hidden="true"></div>
@@ -94,155 +477,16 @@
         </div>
 
         <div class="hw-controls" role="group" aria-label="Monitor bezel hardware controls">
-          <span class="px-chin-deco px-chin-deco--left" aria-hidden="true">
-            <span class="px-screw"></span>
-            <span class="px-chin-groove"></span>
-          </span>
-
           <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox disk" aria-expanded="false" data-drive-state="closed" data-pixel-frame="0">
             <span class="hw-disk-glow" aria-hidden="true"></span>
             <span class="hw-disk-badge" aria-hidden="true">DISK · SANDBOX.SYS</span>
-            <svg class="pixel2d-floppy-svg" viewBox="0 0 104 28" shape-rendering="crispEdges" aria-hidden="true">
-              <!-- Outer molded bay bezel ramp + dark screw wings -->
-              <rect x="0" y="2" width="90" height="24" fill="#857c6d" />
-              <rect x="1" y="3" width="88" height="22" fill="#343840" />
-              <rect x="2" y="4" width="86" height="20" fill="#26282b" />
-              <!-- Bay wing micro screws -->
-              <rect x="4" y="12" width="2" height="2" fill="#464b54" />
-              <rect x="84" y="12" width="2" height="2" fill="#464b54" />
-              <!-- Deep recessed floppy drive well -->
-              <rect x="9" y="8" width="72" height="8" fill="#0c0e11" />
-              <rect x="9" y="8" width="72" height="1" fill="#181a1d" />
-              <!-- Finger-eject thumb notch + silver bevel accent -->
-              <rect x="35" y="16" width="20" height="4" fill="#181a1d" />
-              <rect x="37" y="16" width="16" height="1" fill="#464b54" />
-              <!-- Drive activity LED bezel & glowing core -->
-              <rect x="92" y="9" width="10" height="9" fill="#181a1d" />
-              <rect class="px-drive-led" x="94" y="11" width="6" height="5" fill="#133642" />
-              <!-- Stepped 6-frame sliding 3.5" diskette sprite -->
-              <g class="px-disk-sprite">
-                <rect x="14" y="9" width="62" height="8" fill="#1d2d45" />
-                <rect x="14" y="9" width="62" height="2" fill="#343840" />
-                <rect x="30" y="10" width="26" height="6" fill="#9ea8b4" />
-                <rect x="46" y="11" width="6" height="4" fill="#464b54" />
-                <rect x="20" y="13" width="42" height="2" fill="#00a8be" />
-                <rect x="20" y="15" width="24" height="1" fill="#c49010" />
-              </g>
-            </svg>
           </button>
 
           <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation">
-            <span class="hw-power-led-dot" aria-hidden="true"></span>
             <span class="hw-power-indicator" aria-hidden="true"></span>
-            <span class="hw-power-glyph" aria-hidden="true">PWR</span>
           </button>
         </div>
       </section>
-
-      <!-- Pixel 2D Enriched Swivel Stand, Cable, Lock-LED Two-Tone Keyboard & Desk Reflection -->
-      <figure id="pixel2d-lower-rig" class="pixel2d-lower-rig" aria-hidden="true">
-        <svg class="pixel2d-rig-svg" viewBox="0 0 360 96" shape-rendering="crispEdges">
-          <!-- Desk surface ramp, subtle desk mat groove & front chamfer edge -->
-          <rect x="0" y="18" width="360" height="78" fill="#181a1d" />
-          <rect x="0" y="18" width="360" height="2" fill="#26282b" />
-          <rect x="16" y="21" width="328" height="1" fill="#181a1d" />
-          <rect x="0" y="84" width="360" height="4" fill="#181a1d" />
-          <rect x="0" y="88" width="360" height="8" fill="#0c0e11" />
-
-          <!-- Blocky stepped CRT screen reflection on desk top & around keyboard -->
-          <rect class="px-desk-glow" x="48" y="20" width="264" height="6" opacity="0.34" />
-          <rect class="px-desk-glow" x="34" y="26" width="292" height="54" opacity="0.11" />
-          <rect class="px-desk-glow" x="56" y="75" width="248" height="4" opacity="0.16" />
-
-          <!-- Keyboard coiled serial cable snaking up into pedestal joint -->
-          <rect x="252" y="10" width="4" height="18" fill="#181a1d" />
-          <rect x="252" y="12" width="1" height="14" fill="#343840" />
-          <rect x="252" y="26" width="16" height="3" fill="#181a1d" />
-
-          <!-- Pedestal contact shadow & articulated swivel joint -->
-          <rect x="96" y="18" width="168" height="5" fill="#0c0e11" />
-          <rect x="142" y="0" width="76" height="9" fill="#26282b" />
-          <rect x="138" y="0" width="4" height="9" fill="#181a1d" />
-          <rect x="218" y="0" width="4" height="9" fill="#181a1d" />
-          <rect x="146" y="3" width="68" height="1" fill="#343840" />
-          <rect x="146" y="6" width="68" height="1" fill="#181a1d" />
-          <!-- Stepped putty-beige stand base (6-shade ramp) -->
-          <rect x="100" y="8" width="160" height="9" fill="#c8bfb0" />
-          <rect x="100" y="8" width="160" height="2" fill="#e2dac9" />
-          <rect x="102" y="10" width="156" height="1" fill="#d8cfc0" />
-          <rect x="104" y="15" width="152" height="3" fill="#857c6d" />
-          <rect x="108" y="18" width="144" height="2" fill="#595246" />
-
-          <!-- Keyboard contact shadow on desk -->
-          <rect x="44" y="74" width="276" height="5" fill="#0c0e11" />
-
-          <!-- Sculpted Keyboard Casing (beige multi-shade ramp + lock LEDs) -->
-          <rect x="42" y="25" width="276" height="50" fill="#c8bfb0" />
-          <rect x="42" y="25" width="276" height="2" fill="#e2dac9" />
-          <rect x="42" y="27" width="2" height="46" fill="#d8cfc0" />
-          <rect x="316" y="27" width="2" height="46" fill="#857c6d" />
-          <rect x="42" y="73" width="276" height="3" fill="#595246" />
-          <!-- Molded upper groove + 3 status LEDs (NUM/CAP/SCR) -->
-          <rect x="48" y="28" width="214" height="1" fill="#ada393" />
-          <rect x="276" y="27" width="32" height="3" fill="#26282b" />
-          <rect x="280" y="28" width="4" height="1" fill="#39ff14" />
-          <rect x="289" y="28" width="4" height="1" fill="#133642" />
-          <rect x="298" y="28" width="4" height="1" fill="#133642" />
-
-          <!-- Dark Keyboard Well -->
-          <rect x="48" y="31" width="264" height="40" fill="#262420" />
-
-          <!-- Row 1 (Num / Esc accent + alpha + backspace) -->
-          <rect x="50" y="33" width="18" height="8" fill="#595246" /><rect x="50" y="33" width="18" height="6" fill="#857c6d" /><rect x="51" y="33" width="16" height="1" fill="#ada393" />
-          <rect x="71" y="33" width="18" height="8" fill="#857c6d" /><rect x="71" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="72" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="92" y="33" width="18" height="8" fill="#857c6d" /><rect x="92" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="93" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="113" y="33" width="18" height="8" fill="#857c6d" /><rect x="113" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="114" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="134" y="33" width="18" height="8" fill="#857c6d" /><rect x="134" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="135" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="155" y="33" width="18" height="8" fill="#857c6d" /><rect x="155" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="156" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="176" y="33" width="18" height="8" fill="#857c6d" /><rect x="176" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="177" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="197" y="33" width="18" height="8" fill="#857c6d" /><rect x="197" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="198" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="218" y="33" width="18" height="8" fill="#857c6d" /><rect x="218" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="219" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="239" y="33" width="18" height="8" fill="#857c6d" /><rect x="239" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="240" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="260" y="33" width="18" height="8" fill="#857c6d" /><rect x="260" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="261" y="33" width="16" height="1" fill="#ebe3d4" />
-          <rect x="281" y="33" width="29" height="8" fill="#595246" /><rect x="281" y="33" width="29" height="6" fill="#857c6d" /><rect x="282" y="33" width="27" height="1" fill="#ada393" />
-
-          <!-- Row 2 (QWERTY) -->
-          <rect x="50" y="42" width="23" height="8" fill="#595246" /><rect x="50" y="42" width="23" height="6" fill="#857c6d" /><rect x="51" y="42" width="21" height="1" fill="#ada393" />
-          <rect x="76" y="42" width="18" height="8" fill="#857c6d" /><rect x="76" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="77" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="97" y="42" width="18" height="8" fill="#857c6d" /><rect x="97" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="98" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="118" y="42" width="18" height="8" fill="#857c6d" /><rect x="118" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="119" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="139" y="42" width="18" height="8" fill="#857c6d" /><rect x="139" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="140" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="160" y="42" width="18" height="8" fill="#857c6d" /><rect x="160" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="161" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="181" y="42" width="18" height="8" fill="#857c6d" /><rect x="181" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="182" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="202" y="42" width="18" height="8" fill="#857c6d" /><rect x="202" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="203" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="223" y="42" width="18" height="8" fill="#857c6d" /><rect x="223" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="224" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="244" y="42" width="18" height="8" fill="#857c6d" /><rect x="244" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="245" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="265" y="42" width="18" height="8" fill="#857c6d" /><rect x="265" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="266" y="42" width="16" height="1" fill="#ebe3d4" />
-          <rect x="286" y="42" width="24" height="8" fill="#595246" /><rect x="286" y="42" width="24" height="6" fill="#857c6d" /><rect x="287" y="42" width="22" height="1" fill="#ada393" />
-
-          <!-- Row 3 (ASDF + Dark Return key accent) -->
-          <rect x="50" y="51" width="26" height="8" fill="#595246" /><rect x="50" y="51" width="26" height="6" fill="#857c6d" /><rect x="51" y="51" width="24" height="1" fill="#ada393" />
-          <rect x="79" y="51" width="18" height="8" fill="#857c6d" /><rect x="79" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="80" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="100" y="51" width="18" height="8" fill="#857c6d" /><rect x="100" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="101" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="121" y="51" width="18" height="8" fill="#857c6d" /><rect x="121" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="122" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="142" y="51" width="18" height="8" fill="#857c6d" /><rect x="142" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="143" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="163" y="51" width="18" height="8" fill="#857c6d" /><rect x="163" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="164" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="184" y="51" width="18" height="8" fill="#857c6d" /><rect x="184" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="185" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="205" y="51" width="18" height="8" fill="#857c6d" /><rect x="205" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="206" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="226" y="51" width="18" height="8" fill="#857c6d" /><rect x="226" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="227" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="247" y="51" width="18" height="8" fill="#857c6d" /><rect x="247" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="248" y="51" width="16" height="1" fill="#ebe3d4" />
-          <rect x="268" y="51" width="42" height="8" fill="#262420" /><rect x="268" y="51" width="42" height="6" fill="#595246" /><rect x="269" y="51" width="40" height="1" fill="#857c6d" />
-
-          <!-- Row 4 (Modifiers + Beveled Spacebar) -->
-          <rect x="50" y="60" width="23" height="8" fill="#595246" /><rect x="50" y="60" width="23" height="6" fill="#857c6d" /><rect x="51" y="60" width="21" height="1" fill="#ada393" />
-          <rect x="76" y="60" width="23" height="8" fill="#595246" /><rect x="76" y="60" width="23" height="6" fill="#857c6d" /><rect x="77" y="60" width="21" height="1" fill="#ada393" />
-          <rect x="102" y="60" width="118" height="8" fill="#857c6d" /><rect x="102" y="60" width="118" height="6" fill="#d8cfc0" /><rect x="103" y="60" width="116" height="1" fill="#ebe3d4" />
-          <rect x="223" y="60" width="22" height="8" fill="#595246" /><rect x="223" y="60" width="22" height="6" fill="#857c6d" /><rect x="224" y="60" width="20" height="1" fill="#ada393" />
-          <rect x="248" y="60" width="18" height="8" fill="#857c6d" /><rect x="248" y="60" width="18" height="6" fill="#d8cfc0" /><rect x="249" y="60" width="16" height="1" fill="#ebe3d4" />
-          <rect x="269" y="60" width="18" height="8" fill="#857c6d" /><rect x="269" y="60" width="18" height="6" fill="#d8cfc0" /><rect x="270" y="60" width="16" height="1" fill="#ebe3d4" />
-          <rect x="290" y="60" width="20" height="8" fill="#595246" /><rect x="290" y="60" width="20" height="6" fill="#857c6d" /><rect x="291" y="60" width="18" height="1" fill="#ada393" />
-        </svg>
-      </figure>
     </main>
 
   </div>

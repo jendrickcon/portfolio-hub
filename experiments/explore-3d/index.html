@@ -3,30 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Explore 3D Workstation Prototype — Enuhri</title>
+  <title>Explore Workstation Prototype — Enuhri</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- Layer 1 + Layer 2 decorative WebGL canvas -->
+  <!-- Layer 1/2: Decorative WebGL Canvas (3D mode) + Shared 320x180 Pixel Environment Canvas (Pixel 2D mode) -->
   <canvas id="crt-scene-canvas" class="crt-canvas" aria-hidden="true" tabindex="-1"></canvas>
-  <div id="static-pixel-bg" class="static-pixel-bg" aria-hidden="true"></div>
+  <canvas id="pixel2d-env-canvas" width="320" height="180" class="pixel2d-env-canvas" aria-hidden="true" tabindex="-1"></canvas>
 
-  <!-- Layer 3: Interactive Semantic HTML Controls -->
+  <!-- Layer 3: Visitor Display-Mode Header & Optional Debug Controls -->
   <header class="proto-header">
     <nav class="proto-nav" aria-label="Prototype controls and return navigation">
       <a href="/explore/" class="ctrl-btn ctrl-btn--return" aria-label="Return to current production Explore Hub">◂ Current Explore</a>
-      <div class="ctrl-group" role="group" aria-label="Workstation and quality controls">
-        <button type="button" id="toggle-motion-btn" class="ctrl-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
-        <label for="quality-select" class="sr-only">Graphics quality tier</label>
-        <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="Graphics quality tier">
-          <option value="auto">QUALITY: AUTO</option>
-          <option value="high">QUALITY: HIGH</option>
-          <option value="medium">QUALITY: MEDIUM</option>
-          <option value="low">QUALITY: LOW / STATIC</option>
+
+      <fieldset class="display-mode-fieldset" id="display-mode-group">
+        <legend class="display-mode-legend">DISPLAY MODE</legend>
+        <label class="mode-option" for="mode-radio-3d">
+          <input type="radio" name="display-mode" id="mode-radio-3d" value="3d" class="mode-radio sr-only" />
+          <span class="mode-pill">3D WORKSTATION</span>
+        </label>
+        <label class="mode-option" for="mode-radio-2d">
+          <input type="radio" name="display-mode" id="mode-radio-2d" value="2d" class="mode-radio sr-only" />
+          <span class="mode-pill">PIXEL 2D</span>
+        </label>
+      </fieldset>
+
+      <div id="debug-controls" class="ctrl-group ctrl-group--debug" role="group" aria-label="Debug inspection controls" hidden>
+        <label for="quality-select" class="sr-only">3D graphics quality tier</label>
+        <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="3D graphics quality tier">
+          <option value="auto">3D TIER: AUTO</option>
+          <option value="high">3D TIER: HIGH</option>
+          <option value="medium">3D TIER: MEDIUM</option>
         </select>
-      </div>
-      <div id="debug-controls" class="ctrl-group ctrl-group--debug" role="group" aria-label="Debug comparison controls" hidden>
         <label for="pixel-mode-select" class="sr-only">Pixel 3D comparison mode</label>
         <select id="pixel-mode-select" class="ctrl-btn ctrl-select" aria-label="Pixel 3D comparison mode">
           <option value="smooth">3D: SMOOTH RETRO</option>
@@ -35,6 +45,7 @@
           <option value="lowres50">3D: PIXEL 0.50× SCALE</option>
         </select>
         <button type="button" id="toggle-webgl-btn" class="ctrl-btn" aria-pressed="false">SIMULATE NO-WEBGL: OFF</button>
+        <button type="button" id="reset-pref-btn" class="ctrl-btn">RESET PREF</button>
       </div>
     </nav>
   </header>
@@ -46,28 +57,119 @@
       <span class="proto-badge">ISOLATED PROTOTYPE · /experiments/explore-3d/</span>
       <h1 class="proto-title">ENUHRI WORKSTATION</h1>
       <p class="proto-desc">
-        Hybrid procedural Three.js hardware and deterministic 320×180 pixel environment paired with a semantic HTML CRT screen.
+        Hybrid procedural 3D hardware and first-class Pixel 2D workstation sharing one semantic CRT screen and deterministic 320×180 studio environment.
       </p>
     </section>
 
     <section id="crt-chassis" class="crt-chassis" aria-label="CRT workstation display">
+      <!-- Pixel 2D top vent slots & stepped monitor frame chrome -->
+      <div class="pixel2d-top-chrome" aria-hidden="true">
+        <span class="pixel2d-seam pixel2d-seam--left"></span>
+        <span class="pixel2d-vents">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="pixel2d-seam pixel2d-seam--right"></span>
+      </div>
+
       <div class="screen-overlay">
+        <div class="screen-glass-corners" aria-hidden="true"></div>
         <div class="screen-scanlines" aria-hidden="true"></div>
         <div id="screen-content" class="screen-content"></div>
       </div>
 
       <div class="hw-controls" role="group" aria-label="Monitor bezel hardware controls">
-        <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox disk" aria-expanded="false">
+        <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox disk" aria-expanded="false" data-drive-state="closed" data-pixel-frame="0">
           <span class="hw-disk-glow" aria-hidden="true"></span>
           <span class="hw-disk-badge" aria-hidden="true">DISK · SANDBOX.SYS</span>
-          <span class="hw-disk-glyph" aria-hidden="true">FLOPPY BAY</span>
+          <svg class="pixel2d-floppy-svg" viewBox="0 0 96 26" shape-rendering="crispEdges" aria-hidden="true">
+            <!-- Outer bay & dark slot frame -->
+            <rect x="0" y="2" width="84" height="22" fill="#3a3f47" />
+            <rect x="2" y="4" width="80" height="18" fill="#151618" />
+            <rect x="8" y="8" width="68" height="7" fill="#090b0d" />
+            <!-- Eject notch & slot lip -->
+            <rect x="34" y="15" width="16" height="3" fill="#23272e" />
+            <!-- Activity LED pixel next to slot -->
+            <rect class="px-drive-led" x="87" y="10" width="7" height="5" fill="#16383e" />
+            <!-- Stepped sliding diskette sprite -->
+            <g class="px-disk-sprite">
+              <rect x="12" y="9" width="60" height="7" fill="#1d242c" />
+              <rect x="12" y="9" width="60" height="2" fill="#33404e" />
+              <rect x="28" y="10" width="26" height="5" fill="#8b959e" />
+              <rect x="44" y="11" width="6" height="3" fill="#545e68" />
+              <rect x="18" y="13" width="38" height="2" fill="#00a8be" />
+              <rect x="18" y="15" width="22" height="1" fill="#c49010" />
+            </g>
+          </svg>
         </button>
-        <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation" disabled>
+
+        <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation">
+          <span class="hw-power-led-dot" aria-hidden="true"></span>
           <span class="hw-power-indicator" aria-hidden="true"></span>
-          <span class="hw-power-glyph" aria-hidden="true">POWER</span>
+          <span class="hw-power-glyph" aria-hidden="true">PWR</span>
         </button>
       </div>
     </section>
+
+    <!-- Pixel 2D monitor stand, full 4x12 two-tone retro keyboard & blocky desk reflection -->
+    <figure id="pixel2d-lower-rig" class="pixel2d-lower-rig" aria-hidden="true">
+      <svg class="pixel2d-rig-svg" viewBox="0 0 360 88" shape-rendering="crispEdges">
+        <!-- Desk surface + stepped front edge -->
+        <rect x="0" y="16" width="360" height="72" fill="#14181f" />
+        <rect x="0" y="16" width="360" height="2" fill="#232a35" />
+        <rect x="0" y="80" width="360" height="8" fill="#0d1016" />
+
+        <!-- Blocky phosphor reflection across stand & desk -->
+        <rect class="px-desk-glow" x="48" y="18" width="264" height="6" opacity="0.34" />
+        <rect class="px-desk-glow" x="38" y="24" width="284" height="54" opacity="0.12" />
+
+        <!-- Stepped Pixel Swivel Neck & Stand Base -->
+        <rect x="148" y="0" width="64" height="8" fill="#26282b" />
+        <rect x="144" y="0" width="4" height="8" fill="#17191c" />
+        <rect x="212" y="0" width="4" height="8" fill="#17191c" />
+        <rect x="100" y="8" width="160" height="8" fill="#b8af9f" />
+        <rect x="100" y="8" width="160" height="2" fill="#dcd4c4" />
+        <rect x="104" y="16" width="152" height="4" fill="#6f685c" />
+
+        <!-- Two-Tone Pixel Retro Keyboard Chassis (4 rows x 12 cols) -->
+        <rect x="44" y="25" width="272" height="48" fill="#bfb6a6" />
+        <rect x="44" y="25" width="272" height="2" fill="#e2daca" />
+        <rect x="44" y="71" width="272" height="4" fill="#6d6659" />
+        <rect x="314" y="27" width="2" height="44" fill="#827a6c" />
+
+        <!-- Keyboard Well -->
+        <rect x="50" y="30" width="260" height="38" fill="#3a352e" />
+
+        <!-- Row 1 (Num / Fn row) -->
+        <rect x="52" y="32" width="18" height="7" fill="#7c7466" /><rect x="73" y="32" width="18" height="7" fill="#cfc7b6" />
+        <rect x="94" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="115" y="32" width="18" height="7" fill="#cfc7b6" />
+        <rect x="136" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="157" y="32" width="18" height="7" fill="#cfc7b6" />
+        <rect x="178" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="199" y="32" width="18" height="7" fill="#cfc7b6" />
+        <rect x="220" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="241" y="32" width="18" height="7" fill="#cfc7b6" />
+        <rect x="262" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="283" y="32" width="25" height="7" fill="#7c7466" />
+
+        <!-- Row 2 (QWERTY) -->
+        <rect x="52" y="41" width="22" height="7" fill="#7c7466" /><rect x="77" y="41" width="18" height="7" fill="#cfc7b6" />
+        <rect x="98" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="119" y="41" width="18" height="7" fill="#cfc7b6" />
+        <rect x="140" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="161" y="41" width="18" height="7" fill="#cfc7b6" />
+        <rect x="182" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="203" y="41" width="18" height="7" fill="#cfc7b6" />
+        <rect x="224" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="245" y="41" width="18" height="7" fill="#cfc7b6" />
+        <rect x="266" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="287" y="41" width="21" height="7" fill="#7c7466" />
+
+        <!-- Row 3 (ASDF + Return) -->
+        <rect x="52" y="50" width="25" height="7" fill="#7c7466" /><rect x="80" y="50" width="18" height="7" fill="#cfc7b6" />
+        <rect x="101" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="122" y="50" width="18" height="7" fill="#cfc7b6" />
+        <rect x="143" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="164" y="50" width="18" height="7" fill="#cfc7b6" />
+        <rect x="185" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="206" y="50" width="18" height="7" fill="#cfc7b6" />
+        <rect x="227" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="248" y="50" width="18" height="7" fill="#cfc7b6" />
+        <rect x="269" y="50" width="39" height="7" fill="#7c7466" />
+
+        <!-- Row 4 (Mod + Spacebar + Mod) -->
+        <rect x="52" y="59" width="22" height="7" fill="#7c7466" /><rect x="77" y="59" width="22" height="7" fill="#7c7466" />
+        <rect x="102" y="59" width="118" height="7" fill="#cfc7b6" />
+        <rect x="223" y="59" width="22" height="7" fill="#7c7466" /><rect x="248" y="59" width="18" height="7" fill="#cfc7b6" />
+        <rect x="269" y="59" width="18" height="7" fill="#cfc7b6" /><rect x="290" y="59" width="18" height="7" fill="#7c7466" />
+      </svg>
+    </figure>
   </main>
 
   <!-- Development Performance HUD (hidden unless ?debug=1) -->

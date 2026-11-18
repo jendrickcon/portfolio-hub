@@ -1,5 +1,6 @@
 import { PixelEnvironment } from './pixel-env.js';
 
+const STORAGE_KEY = 'enuhri_explore3d_display_mode';
 const params = new URLSearchParams(window.location.search);
 const DEBUG_MODE = params.get('debug') === '1';
 const INITIAL_NO_WEBGL = params.get('nowebgl') === '1';
@@ -11,29 +12,41 @@ const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-moti
 const coarseQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
 
 let reducedMotion = Boolean(motionQuery && motionQuery.matches);
-let manualMotionOverride = false;
-let manualQuality = 'auto';
+let coarsePointer = Boolean(coarseQuery && coarseQuery.matches);
+let storedManualMode = (() => {
+  try {
+    const val = window.localStorage.getItem(STORAGE_KEY);
+    return val === '3d' || val === '2d' ? val : null;
+  } catch {
+    return null;
+  }
+})();
+
+let manual3dQuality = 'auto';
 let pixelMode = INITIAL_PIXEL_MODE;
 let simulatedNoWebgl = INITIAL_NO_WEBGL;
+let webglFailed = false;
 let webglScene = null;
-let webglStatusText = 'inactive';
-
-const pixelEnv = new PixelEnvironment();
-const staticBgEl = document.getElementById('static-pixel-bg');
-staticBgEl.style.backgroundImage = `url("${pixelEnv.getSnapshotDataUrl()}")`;
+let webglStatusText = INITIAL_NO_WEBGL ? 'simulated-off' : 'inactive';
+let displayMode = '3d'; // '3d' | '2d'
 
 const canvasEl = document.getElementById('crt-scene-canvas');
+const pixel2dCanvasEl = document.getElementById('pixel2d-env-canvas');
+const pixelEnv = new PixelEnvironment(pixel2dCanvasEl);
+
 const chassisEl = document.getElementById('crt-chassis');
 const overlayEl = chassisEl.querySelector('.screen-overlay');
 const screenContentEl = document.getElementById('screen-content');
 const srStatusEl = document.getElementById('sr-status');
 const perfHudEl = document.getElementById('perf-hud');
 
-const motionBtn = document.getElementById('toggle-motion-btn');
-const qualitySelect = document.getElementById('quality-select');
+const modeRadio3d = document.getElementById('mode-radio-3d');
+const modeRadio2d = document.getElementById('mode-radio-2d');
 const debugControlsEl = document.getElementById('debug-controls');
+const qualitySelect = document.getElementById('quality-select');
 const pixelModeSelect = document.getElementById('pixel-mode-select');
 const webglBtn = document.getElementById('toggle-webgl-btn');
+const resetPrefBtn = document.getElementById('reset-pref-btn');
 
 const hwDiskBtn = document.getElementById('hw-disk-btn');
 const hwPowerBtn = document.getElementById('hw-power-btn');
@@ -44,7 +57,7 @@ if (DEBUG_MODE) {
 }
 pixelModeSelect.value = pixelMode;
 
-// Final six visible catalog slots (DevPath occupies slot 06; Sandbox moves to hidden floppy bay)
+// Six visible catalog slots (DevPath occupies slot 06; Sandbox moves to centered floppy bay)
 const CATALOG_SLOTS = [
   {
     index: '01',
@@ -52,7 +65,7 @@ const CATALOG_SLOTS = [
     name: 'Professional Portfolio',
     status: 'LIVE',
     category: 'Placeholder — Primary Hiring Portfolio (/ in production)',
-    summary: 'Demonstrates cyan LIVE bounce-light tint and accessible tile action without navigating away from the isolated prototype.',
+    summary: 'Demonstrates cyan LIVE illumination and accessible tile action without navigating away from the isolated prototype.',
   },
   {
     index: '02',
@@ -69,7 +82,7 @@ const CATALOG_SLOTS = [
     name: 'StudyQuest',
     status: 'READY',
     category: 'Placeholder — AI-Assisted Learning Platform',
-    summary: 'Demonstrates inline catalog presentation and keyboard geometry traversal inside the 3D aperture.',
+    summary: 'Demonstrates inline catalog presentation and keyboard geometry traversal inside the CRT aperture.',
     devStatus: 'PLACEHOLDER SAMPLE SLOT',
   },
   {
@@ -86,7 +99,7 @@ const CATALOG_SLOTS = [
     name: 'CyberDefender',
     status: 'READY',
     category: 'Placeholder — Tactical Web Reimagining',
-    summary: 'Placeholder sample card confirming readable 1:1 DOM text and keyboard focus restoration.',
+    summary: 'Placeholder sample card confirming crisp readable monospace body text and predictable focus restoration.',
   },
   {
     index: '06',
@@ -105,25 +118,43 @@ const SANDBOX_SLOT = {
   name: 'SANDBOX.SYS',
   status: 'HIDDEN FLOPPY DISK',
   category: 'Hidden Diskette Preview — Cellular Automata Experiment',
-  summary: 'Loaded from the lower-bezel 3.5" floppy bay (UNKNOWN DISK DETECTED). In this isolated prototype, launching /sandbox/ is simulated safely inside this preview dossier.',
+  summary: 'Loaded from the centered 3.5" floppy drive bay (UNKNOWN DISK DETECTED). In this isolated prototype, launching /sandbox/ is simulated inside this preview dossier.',
   devStatus: 'HIDDEN FLOPPY PREVIEW — EXTERNAL ROUTE DISABLED IN PROTOTYPE',
+};
+
+const STATE_GLOW_HEX = {
+  standby: '#6b7c3e',
+  menu: '#39ff14',
+  live: '#00e5ff',
+  paused: '#ffbf00',
+  off: '#122014',
 };
 
 let currentView = 'standby'; // 'standby' | 'boot' | 'menu' | 'dossier' | 'restarting'
 let preDossierView = 'menu';
 let lastTriggerAppId = null;
-let lastTriggerSource = 'catalog'; // 'catalog' | 'disk'
+let lastTriggerSource = 'catalog';
 let activeTimers = [];
 let bootDone = false;
 let isRestarting = false;
+let modeSwitchTimer = null;
 
-// Floppy bay state machine
+// Floppy bay state machine + 6-frame Pixel 2D stepper
 let drivePhase = 'closed'; // 'closed' | 'intent' | 'opening' | 'open'
 let driveIntentTimer = null;
 let driveOpenTimer = null;
 let driveLeaveTimer = null;
+let driveStepInterval = null;
+let currentPixelFrame = 0;
 let driveLatched = false;
 let lastDiskPointerType = 'mouse';
+
+// Pixel 2D 13.5 FPS environment loop & inactivity sleep
+let pixel2dRafId = null;
+let pixel2dLastMs = performance.now();
+let pixel2dActivityMs = performance.now();
+let pixel2dUploadTimestamps = [];
+let pixel2dStateText = 'idle (0 FPS)';
 
 function clearActiveTimers() {
   activeTimers.forEach(clearTimeout);
@@ -154,11 +185,47 @@ function isCompactViewport() {
   return window.innerWidth <= 639 || window.innerHeight <= 560;
 }
 
-function resolveEffectiveQuality() {
-  if (simulatedNoWebgl || webglStatusText.startsWith('failed')) return 'low';
-  if (reducedMotion || isCompactViewport()) return 'low';
-  if (manualQuality !== 'auto') return manualQuality;
+function resolveDisplayMode() {
+  if (simulatedNoWebgl || webglFailed) return '2d';
+  if (storedManualMode === '3d' || storedManualMode === '2d') return storedManualMode;
+  if (isCompactViewport() || coarsePointer || reducedMotion) return '2d';
+  return '3d';
+}
+
+function resolve3dQualityTier() {
+  if (displayMode !== '3d' || simulatedNoWebgl || webglFailed) return 'low';
+  if (manual3dQuality === 'medium') return 'medium';
   return 'high';
+}
+
+function setScreenLightState(stateName) {
+  const color = STATE_GLOW_HEX[stateName] || STATE_GLOW_HEX.menu;
+  document.documentElement.style.setProperty('--pixel-desk-glow', color);
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setScreenState(stateName);
+  }
+}
+
+function setPixelFloppyFrameTarget(targetFrame) {
+  if (driveStepInterval) {
+    clearInterval(driveStepInterval);
+    driveStepInterval = null;
+  }
+  const immediate = reducedMotion || displayMode === '3d';
+  if (immediate || currentPixelFrame === targetFrame) {
+    currentPixelFrame = targetFrame;
+    hwDiskBtn.dataset.pixelFrame = String(targetFrame);
+    return;
+  }
+  driveStepInterval = setInterval(() => {
+    if (currentPixelFrame < targetFrame) currentPixelFrame += 1;
+    else if (currentPixelFrame > targetFrame) currentPixelFrame -= 1;
+    hwDiskBtn.dataset.pixelFrame = String(currentPixelFrame);
+    if (currentPixelFrame === targetFrame) {
+      clearInterval(driveStepInterval);
+      driveStepInterval = null;
+    }
+  }, 210); // 5 steps * 210ms = ~1.05s stepped pixel animation
 }
 
 function syncFloppyDomAndScene() {
@@ -166,13 +233,11 @@ function syncFloppyDomAndScene() {
   const isExpanded = drivePhase === 'opening' || drivePhase === 'open';
   hwDiskBtn.setAttribute('aria-expanded', String(isExpanded));
 
-  if (webglScene) {
-    const progress = drivePhase === 'opening' || drivePhase === 'open' ? 1 : 0;
-    const led = drivePhase === 'open' || drivePhase === 'opening'
-      ? 'open'
-      : drivePhase === 'intent'
-        ? 'intent'
-        : 'idle';
+  setPixelFloppyFrameTarget(isExpanded ? 5 : 0);
+
+  if (displayMode === '3d' && webglScene) {
+    const progress = isExpanded ? 1 : 0;
+    const led = isExpanded ? 'open' : drivePhase === 'intent' ? 'intent' : 'idle';
     webglScene.setFloppyState({ progress, led });
   }
 }
@@ -188,6 +253,11 @@ function closeFloppyTray(immediate = false) {
   driveLatched = false;
   if (drivePhase !== 'closed' || immediate) {
     drivePhase = 'closed';
+    if (immediate) {
+      if (driveStepInterval) { clearInterval(driveStepInterval); driveStepInterval = null; }
+      currentPixelFrame = 0;
+      hwDiskBtn.dataset.pixelFrame = '0';
+    }
     syncFloppyDomAndScene();
   }
 }
@@ -199,7 +269,7 @@ function openFloppyTrayFromHover() {
 
   driveIntentTimer = setTimeout(() => {
     driveIntentTimer = null;
-    const immediate = reducedMotion || resolveEffectiveQuality() === 'low';
+    const immediate = reducedMotion;
     drivePhase = immediate ? 'open' : 'opening';
     syncFloppyDomAndScene();
 
@@ -213,7 +283,7 @@ function openFloppyTrayFromHover() {
           syncFloppyDomAndScene();
           announce('Unknown disk detected: SANDBOX.SYS. Activate to inspect.');
         }
-      }, 1250);
+      }, 1200);
     }
   }, 600);
 }
@@ -221,7 +291,7 @@ function openFloppyTrayFromHover() {
 function openFloppyTrayLatched() {
   clearFloppyTimers();
   driveLatched = true;
-  const immediate = reducedMotion || resolveEffectiveQuality() === 'low';
+  const immediate = reducedMotion;
   drivePhase = immediate ? 'open' : 'opening';
   syncFloppyDomAndScene();
   announce('Hidden Sandbox disk opening. SANDBOX.SYS detected. Activate again to open.');
@@ -233,15 +303,255 @@ function openFloppyTrayLatched() {
         drivePhase = 'open';
         syncFloppyDomAndScene();
       }
-    }, 1250);
+    }, 1150);
   }
 }
 
-function applyMotionUI() {
+// ---- Pixel 2D 13.5 FPS Environment Loop ----
+function stopPixel2dLoop(reasonState) {
+  if (pixel2dRafId) {
+    cancelAnimationFrame(pixel2dRafId);
+    pixel2dRafId = null;
+  }
+  pixel2dStateText = reasonState || 'paused (0 FPS)';
+  pixel2dUploadTimestamps = [];
+  renderDebugHud();
+}
+
+function tickPixel2dLoop(now) {
+  pixel2dRafId = null;
+  if (displayMode !== '2d') {
+    stopPixel2dLoop('inactive');
+    return;
+  }
+  if (document.hidden) {
+    stopPixel2dLoop('hidden (0 FPS)');
+    return;
+  }
+  if (reducedMotion) {
+    pixelEnv.renderStatic();
+    stopPixel2dLoop('reduced-motion (0 FPS)');
+    return;
+  }
+  if (now - pixel2dActivityMs > 10000) {
+    stopPixel2dLoop('pixel2d-idle (0 FPS)');
+    return;
+  }
+
+  const dt = Math.min(0.1, (now - pixel2dLastMs) / 1000);
+  pixel2dLastMs = now;
+  const updated = pixelEnv.step(dt, true);
+  if (updated) {
+    pixel2dUploadTimestamps.push(now);
+    pixel2dUploadTimestamps = pixel2dUploadTimestamps.filter((ts) => now - ts <= 1000);
+    renderDebugHud();
+  }
+  pixel2dStateText = 'pixel2d-active (13.5 FPS)';
+  pixel2dRafId = requestAnimationFrame(tickPixel2dLoop);
+}
+
+function startOrResumePixel2dLoop() {
+  if (displayMode !== '2d') return;
+  if (document.hidden) {
+    stopPixel2dLoop('hidden (0 FPS)');
+    return;
+  }
+  if (reducedMotion) {
+    pixelEnv.renderStatic();
+    stopPixel2dLoop('reduced-motion (0 FPS)');
+    return;
+  }
+  if (!pixel2dRafId) {
+    pixel2dLastMs = performance.now();
+    pixel2dStateText = 'pixel2d-active (13.5 FPS)';
+    pixel2dRafId = requestAnimationFrame(tickPixel2dLoop);
+  }
+}
+
+function recordUserActivity() {
+  pixel2dActivityMs = performance.now();
+  if (displayMode === '2d' && !pixel2dRafId && !reducedMotion && !document.hidden) {
+    startOrResumePixel2dLoop();
+  }
+}
+
+// ---- HUD / Metrics ----
+function renderDebugHud(sceneMetrics = null) {
+  const m = displayMode === '3d' && webglScene
+    ? (sceneMetrics || webglScene.getMetrics())
+    : {
+        fps: pixel2dStateText.startsWith('pixel2d-active') ? (pixel2dUploadTimestamps.length || 14) : 0,
+        avgFrameMs: +pixelEnv.lastTickMs.toFixed(2),
+        maxFrameMs: +pixelEnv.lastTickMs.toFixed(2),
+        drawCalls: 0,
+        triangles: 0,
+        dpr: 1,
+        renderScale: 1,
+        pixelMode: 'pixel-2d',
+        cameraPose: '2d-ortho',
+        pixelTickMs: +pixelEnv.lastTickMs.toFixed(2),
+        pixelUploadsPerSec: pixel2dUploadTimestamps.length,
+        loopState: pixel2dStateText,
+      };
+
+  const effQuality = displayMode === '2d' ? 'low' : resolve3dQualityTier();
+  window.__explore3dMetrics = {
+    displayMode,
+    effectiveQuality: effQuality,
+    storedPreference: storedManualMode,
+    manual3dQuality,
+    webglStatus: webglStatusText,
+    reducedMotion,
+    coarsePointer,
+    currentView,
+    drivePhase,
+    ...m,
+  };
+
+  if (!DEBUG_MODE || perfHudEl.hidden) return;
+  perfHudEl.innerHTML = [
+    `<div><strong>MODE:</strong> ${displayMode.toUpperCase()} (${storedManualMode ? 'manual' : 'auto'}) | <strong>RM:</strong> ${reducedMotion ? 'ON' : 'OFF'}</div>`,
+    `<div><strong>FPS:</strong> ${m.fps} | <strong>LOOP:</strong> ${m.loopState}</div>`,
+    `<div><strong>FRAME:</strong> avg ${m.avgFrameMs}ms / max ${m.maxFrameMs}ms</div>`,
+    `<div><strong>GPU:</strong> ${m.drawCalls} calls | ${m.triangles} tris | DPR ${m.dpr}</div>`,
+    `<div><strong>PIXEL 320×180:</strong> ${m.pixelTickMs}ms | ${m.pixelUploadsPerSec} up/s | <strong>DISK:</strong> ${drivePhase}</div>`,
+    `<div><strong>WEBGL:</strong> ${webglStatusText}</div>`,
+  ].join('');
+}
+
+async function ensureWebGL() {
+  if (webglScene || simulatedNoWebgl || webglFailed) return Boolean(webglScene);
+
+  try {
+    const mod = await import('./crt-scene.js');
+    webglScene = await mod.createCrtScene({
+      canvas: canvasEl,
+      overlayContainer: chassisEl,
+      pixelEnv,
+      initialQuality: resolve3dQualityTier() === 'low' ? 'high' : resolve3dQualityTier(),
+      initialPixelMode: pixelMode,
+      reducedMotion,
+      onFatalFallback(reason) {
+        webglFailed = true;
+        webglStatusText = 'failed: ' + reason;
+        applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true });
+      },
+    });
+    webglStatusText = 'active (three r170)';
+    webglScene.setCallbacks({
+      autoDowngrade(nextQ, avgMs) {
+        if (manual3dQuality === 'auto' && displayMode === '3d') {
+          webglStatusText = `active (auto -> ${nextQ}, ${avgMs.toFixed(1)}ms)`;
+          webglScene.setQuality(nextQ);
+          renderDebugHud();
+        }
+      },
+      metricsCb: renderDebugHud,
+    });
+    return true;
+  } catch (err) {
+    webglFailed = true;
+    webglStatusText = 'failed: ' + (err?.message || 'load error');
+    webglScene = null;
+    return false;
+  }
+}
+
+async function applyDisplayMode(targetMode, { manual = false, announceChange = false, immediate = false } = {}) {
+  const prevFocus = document.activeElement;
+  if (manual) {
+    storedManualMode = targetMode;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, targetMode);
+    } catch {}
+  }
+
+  let nextMode = targetMode;
+  if (simulatedNoWebgl || webglFailed) {
+    nextMode = '2d';
+  }
+
+  const changed = displayMode !== nextMode;
+  displayMode = nextMode;
+
+  modeRadio3d.checked = displayMode === '3d';
+  modeRadio2d.checked = displayMode === '2d';
+
+  if (modeSwitchTimer) {
+    clearTimeout(modeSwitchTimer);
+    modeSwitchTimer = null;
+  }
+  if (changed && !immediate && !reducedMotion) {
+    document.body.classList.add('mode-switching');
+    modeSwitchTimer = setTimeout(() => {
+      document.body.classList.remove('mode-switching');
+      modeSwitchTimer = null;
+    }, 300);
+  } else {
+    document.body.classList.remove('mode-switching');
+  }
+
+  // Safely reset transient floppy tray animation without disturbing active screen view
+  if (drivePhase !== 'closed') {
+    closeFloppyTray(true);
+  }
+
+  if (displayMode === '2d') {
+    if (webglScene) {
+      webglScene.setQuality('low');
+    }
+    document.body.classList.remove('mode-3d');
+    document.body.classList.add('mode-pixel-2d');
+    canvasEl.setAttribute('data-active', 'false');
+    pixelEnv.renderStatic();
+    startOrResumePixel2dLoop();
+  } else {
+    stopPixel2dLoop('inactive (3D mode)');
+    const ok = await ensureWebGL();
+    if (!ok || displayMode !== '3d') {
+      applyDisplayMode('2d', { manual: false, announceChange: false, immediate: true });
+      return;
+    }
+    const poseName = currentView === 'boot' ? 'boot' : currentView === 'standby' || currentView === 'restarting' ? 'standby' : 'menu';
+    webglScene.setReducedMotion(reducedMotion);
+    webglScene.setQuality(resolve3dQualityTier());
+    webglScene.syncBeforeShow(poseName);
+    let targetLight = 'menu';
+    if (currentView === 'standby') targetLight = 'standby';
+    else if (currentView === 'restarting') targetLight = 'paused';
+    else if (currentView === 'dossier') {
+      if (lastTriggerAppId === 'devpath') targetLight = 'paused';
+      else if (lastTriggerAppId === 'professional' || lastTriggerAppId === 'sandbox') targetLight = 'live';
+    }
+    setScreenLightState(targetLight);
+    webglScene.renderSingleFrame();
+    document.body.classList.remove('mode-pixel-2d');
+    document.body.classList.add('mode-3d');
+    canvasEl.setAttribute('data-active', 'true');
+  }
+
+  if (prevFocus && document.body.contains(prevFocus) && document.activeElement !== prevFocus) {
+    focusSafely(prevFocus);
+  }
+
+  if (announceChange) {
+    announce(`Display mode switched to ${displayMode === '3d' ? '3D workstation' : 'Pixel 2D workstation'}.`);
+  }
+  renderDebugHud();
+}
+
+function applyMotionPreference() {
   document.body.classList.toggle('reduce-motion', reducedMotion);
-  motionBtn.setAttribute('aria-pressed', String(reducedMotion));
-  motionBtn.textContent = `REDUCE MOTION: ${reducedMotion ? 'ON' : 'OFF'}`;
   if (webglScene) webglScene.setReducedMotion(reducedMotion);
+  if (displayMode === '2d') {
+    if (reducedMotion) {
+      pixelEnv.renderStatic();
+      stopPixel2dLoop('reduced-motion (0 FPS)');
+    } else {
+      startOrResumePixel2dLoop();
+    }
+  }
+  renderDebugHud();
 }
 
 function applyNoWebglUI() {
@@ -250,108 +560,7 @@ function applyNoWebglUI() {
   webglBtn.textContent = `SIMULATE NO-WEBGL: ${simulatedNoWebgl ? 'ON' : 'OFF'}`;
 }
 
-function updateQualityAndFallback() {
-  const eff = resolveEffectiveQuality();
-  const useCssFallback = eff === 'low' || !webglScene;
-  document.body.classList.toggle('crt-fallback-css', useCssFallback);
-
-  if (webglScene) {
-    webglScene.setQuality(eff);
-  }
-  canvasEl.setAttribute('data-active', useCssFallback ? 'false' : 'true');
-
-  renderDebugHud(webglScene ? webglScene.getMetrics() : {
-    fps: 0,
-    avgFrameMs: 0,
-    maxFrameMs: 0,
-    drawCalls: 0,
-    triangles: 0,
-    dpr: 1,
-    renderScale: 1,
-    pixelMode,
-    cameraPose: currentView === 'boot' ? 'boot' : currentView === 'standby' ? 'standby' : 'menu',
-    pixelTickMs: +pixelEnv.lastTickMs.toFixed(2),
-    pixelUploadsPerSec: 0,
-    loopState: 'css-fallback (0 FPS)',
-  });
-}
-
-function renderDebugHud(m) {
-  const eff = resolveEffectiveQuality();
-  window.__explore3dMetrics = {
-    effectiveQuality: eff,
-    manualQuality,
-    webglStatus: webglStatusText,
-    reducedMotion,
-    currentView,
-    drivePhase,
-    ...m,
-  };
-  if (!DEBUG_MODE || perfHudEl.hidden) return;
-  perfHudEl.innerHTML = [
-    `<div><strong>TIER:</strong> ${eff.toUpperCase()} (${manualQuality}) | <strong>CAM:</strong> ${m.cameraPose || currentView}</div>`,
-    `<div><strong>FPS:</strong> ${m.fps} | <strong>LOOP:</strong> ${m.loopState}</div>`,
-    `<div><strong>FRAME:</strong> avg ${m.avgFrameMs}ms / max ${m.maxFrameMs}ms</div>`,
-    `<div><strong>GPU:</strong> ${m.drawCalls} calls | ${m.triangles} tris | DPR ${m.dpr} (${m.renderScale || 1}x)</div>`,
-    `<div><strong>3D STYLE:</strong> ${m.pixelMode || pixelMode} | <strong>DISK:</strong> ${drivePhase}</div>`,
-    `<div><strong>PIXEL 320×180:</strong> ${m.pixelTickMs}ms | ${m.pixelUploadsPerSec} up/s</div>`,
-    `<div><strong>WEBGL:</strong> ${webglStatusText}</div>`,
-  ].join('');
-}
-
-async function ensureWebGL() {
-  if (webglScene || simulatedNoWebgl || resolveEffectiveQuality() === 'low') {
-    if (simulatedNoWebgl) webglStatusText = 'simulated-off (css-fallback)';
-    updateQualityAndFallback();
-    return;
-  }
-
-  try {
-    const mod = await import('./crt-scene.js');
-    webglScene = await mod.createCrtScene({
-      canvas: canvasEl,
-      overlayContainer: chassisEl,
-      pixelEnv,
-      initialQuality: resolveEffectiveQuality(),
-      initialPixelMode: pixelMode,
-      reducedMotion,
-      onFatalFallback(reason) {
-        webglStatusText = 'failed: ' + reason;
-        updateQualityAndFallback();
-      },
-    });
-    webglStatusText = 'active (three r170)';
-    webglScene.setCallbacks({
-      autoDowngrade(nextQ, avgMs) {
-        if (manualQuality === 'auto') {
-          webglStatusText = `active (auto -> ${nextQ}, ${avgMs.toFixed(1)}ms)`;
-          webglScene.setQuality(nextQ);
-          updateQualityAndFallback();
-        }
-      },
-      metricsCb: renderDebugHud,
-    });
-
-    if (currentView === 'boot') {
-      webglScene.setCameraState('boot', 0);
-      webglScene.setScreenState('menu');
-    } else if (currentView === 'menu' || currentView === 'dossier') {
-      webglScene.setCameraState('menu', 0);
-      webglScene.setScreenState('menu');
-    } else {
-      webglScene.setCameraState('standby', 0);
-      webglScene.setScreenState('standby');
-    }
-    syncFloppyDomAndScene();
-    updateQualityAndFallback();
-  } catch (err) {
-    webglStatusText = 'failed: ' + (err?.message || 'load error');
-    webglScene = null;
-    updateQualityAndFallback();
-  }
-}
-
-// ---- Screen States (Layer 3) ----
+// ---- Shared Screen States (Layer 3) ----
 function renderStandby(restoreFocus = false) {
   clearActiveTimers();
   currentView = 'standby';
@@ -360,10 +569,10 @@ function renderStandby(restoreFocus = false) {
   document.body.classList.remove('is-powered', 'is-restarting');
   overlayEl.classList.remove('is-collapsing');
 
-  if (webglScene) {
+  if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('standby');
-    webglScene.setScreenState('standby');
   }
+  setScreenLightState('standby');
 
   screenContentEl.innerHTML = `
     <div class="standby-view">
@@ -376,17 +585,17 @@ function renderStandby(restoreFocus = false) {
   if (restoreFocus) {
     focusSafely(startBtn);
   }
-  updateQualityAndFallback();
+  renderDebugHud();
 }
 
 function startWorkstation() {
   if (isRestarting) return;
   closeFloppyTray(true);
   document.body.classList.add('is-powered');
-  if (webglScene) {
+  if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('boot');
-    webglScene.setScreenState('menu');
   }
+  setScreenLightState('menu');
   renderBoot();
 }
 
@@ -418,7 +627,7 @@ function renderBoot() {
     announce('Workstation ready. Activate Continue to open catalog.');
   };
 
-  if (reducedMotion || resolveEffectiveQuality() === 'low') {
+  if (reducedMotion) {
     logEl.textContent = lines.join('\n');
     finishBoot();
   } else {
@@ -453,7 +662,7 @@ function renderBoot() {
   });
 
   focusSafely(skipBtn);
-  updateQualityAndFallback();
+  renderDebugHud();
 }
 
 function getGridRows(gridItems) {
@@ -478,10 +687,10 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   clearActiveTimers();
   currentView = 'menu';
   document.body.classList.add('is-powered');
-  if (webglScene) {
+  if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('menu');
-    webglScene.setScreenState('menu');
   }
+  setScreenLightState('menu');
 
   screenContentEl.innerHTML = `
     <div id="app-menu" class="app-menu">
@@ -513,13 +722,12 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
     const status = btn.dataset.status;
 
     const hintLight = () => {
-      if (!webglScene) return;
-      if (status === 'live') webglScene.setScreenState('live');
-      else if (status === 'paused') webglScene.setScreenState('paused');
-      else webglScene.setScreenState('menu');
+      if (status === 'live') setScreenLightState('live');
+      else if (status === 'paused') setScreenLightState('paused');
+      else setScreenLightState('menu');
     };
     const resetLight = () => {
-      if (webglScene && currentView === 'menu') webglScene.setScreenState('menu');
+      if (currentView === 'menu') setScreenLightState('menu');
     };
 
     btn.addEventListener('mouseenter', hintLight);
@@ -582,7 +790,7 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   } else if (shouldFocus) {
     focusSafely(items[0]);
   }
-  updateQualityAndFallback();
+  renderDebugHud();
 }
 
 function renderDossier(appId) {
@@ -591,11 +799,9 @@ function renderDossier(appId) {
     ? SANDBOX_SLOT
     : CATALOG_SLOTS.find((a) => a.id === appId) || CATALOG_SLOTS[0];
 
-  if (webglScene) {
-    if (entry.status === 'LIVE' || entry.id === 'sandbox') webglScene.setScreenState('live');
-    else if (entry.id === 'devpath') webglScene.setScreenState('paused');
-    else webglScene.setScreenState('menu');
-  }
+  if (entry.status === 'LIVE' || entry.id === 'sandbox') setScreenLightState('live');
+  else if (entry.id === 'devpath') setScreenLightState('paused');
+  else setScreenLightState('menu');
 
   const returnLabel = preDossierView === 'standby' ? '◂ RETURN TO STANDBY' : '◂ RETURN TO CATALOG';
   const closeAria = preDossierView === 'standby'
@@ -643,7 +849,7 @@ function renderDossier(appId) {
 
   focusSafely(document.getElementById('dossier-title'));
   announce(`${entry.name} sample dossier opened.`);
-  updateQualityAndFallback();
+  renderDebugHud();
 }
 
 function triggerRestart() {
@@ -675,27 +881,22 @@ function triggerRestart() {
     </div>
   `;
   const rLogEl = document.getElementById('restart-log');
+  setScreenLightState('paused');
 
-  if (webglScene) {
-    webglScene.setScreenState('paused');
-  }
-
-  if (reducedMotion || resolveEffectiveQuality() === 'low') {
+  if (reducedMotion) {
     rLogEl.textContent = restartLines.join('\n');
-    if (webglScene) webglScene.setCameraState('standby', 0);
-    scheduleTimer(() => {
-      renderStandby(true);
-    }, 420);
+    if (displayMode === '3d' && webglScene) webglScene.setCameraState('standby', 0);
+    scheduleTimer(() => renderStandby(true), 380);
   } else {
     rLogEl.textContent = restartLines[0];
     scheduleTimer(() => {
-      if (webglScene) webglScene.setCameraState('standby', 850);
+      if (displayMode === '3d' && webglScene) webglScene.setCameraState('standby', 850);
     }, 60);
     scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[1]; }, 340);
     scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[2]; }, 680);
     scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[3]; }, 1040);
     scheduleTimer(() => {
-      if (webglScene) webglScene.setScreenState('off');
+      setScreenLightState('off');
       rLogEl.style.opacity = '0.35';
     }, 1360);
     scheduleTimer(() => {
@@ -708,10 +909,10 @@ function triggerRestart() {
       renderStandby(true);
     }, 1980);
   }
-  updateQualityAndFallback();
+  renderDebugHud();
 }
 
-// ---- Physical Hardware Button Bindings (Layer 3 Projected Controls) ----
+// ---- Hardware Controls & Floppy Interaction ----
 hwPowerBtn.addEventListener('click', triggerRestart);
 
 hwDiskBtn.addEventListener('pointerdown', (e) => {
@@ -729,13 +930,7 @@ hwDiskBtn.addEventListener('mouseenter', () => {
 hwDiskBtn.addEventListener('mouseleave', () => {
   if (driveIntentTimer) { clearTimeout(driveIntentTimer); driveIntentTimer = null; }
   if (driveOpenTimer) { clearTimeout(driveOpenTimer); driveOpenTimer = null; }
-  if (driveLatched || document.activeElement === hwDiskBtn) {
-    if (drivePhase === 'intent') {
-      drivePhase = 'intent';
-      syncFloppyDomAndScene();
-    }
-    return;
-  }
+  if (driveLatched || document.activeElement === hwDiskBtn) return;
   driveLeaveTimer = setTimeout(() => {
     driveLeaveTimer = null;
     closeFloppyTray();
@@ -783,61 +978,92 @@ hwDiskBtn.addEventListener('click', (e) => {
   openFloppyTrayLatched();
 });
 
-// ---- Global Header Controls ----
-motionBtn.addEventListener('click', () => {
-  manualMotionOverride = true;
-  reducedMotion = !reducedMotion;
-  applyMotionUI();
-  updateQualityAndFallback();
-  if (!reducedMotion) ensureWebGL();
+// ---- Display Mode Selector & Debug Bindings ----
+modeRadio3d.addEventListener('change', () => {
+  if (modeRadio3d.checked) applyDisplayMode('3d', { manual: true, announceChange: true });
+});
+
+modeRadio2d.addEventListener('change', () => {
+  if (modeRadio2d.checked) applyDisplayMode('2d', { manual: true, announceChange: true });
 });
 
 qualitySelect.addEventListener('change', () => {
-  manualQuality = qualitySelect.value;
-  if (manualQuality === 'low') {
-    updateQualityAndFallback();
-  } else {
-    ensureWebGL().then(updateQualityAndFallback);
+  manual3dQuality = qualitySelect.value;
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setQuality(resolve3dQualityTier());
+    renderDebugHud();
   }
 });
 
 pixelModeSelect.addEventListener('change', () => {
   pixelMode = pixelModeSelect.value;
   if (webglScene) webglScene.setPixelMode(pixelMode);
-  updateQualityAndFallback();
+  renderDebugHud();
 });
 
 webglBtn.addEventListener('click', () => {
   simulatedNoWebgl = !simulatedNoWebgl;
   applyNoWebglUI();
   if (simulatedNoWebgl) {
-    webglStatusText = 'simulated-off (css-fallback)';
-    updateQualityAndFallback();
+    webglStatusText = 'simulated-off';
+    applyDisplayMode('2d', { manual: false, announceChange: true });
   } else {
-    webglStatusText = webglScene ? 'active (three r170)' : 'initializing';
-    ensureWebGL().then(updateQualityAndFallback);
+    webglFailed = false;
+    webglStatusText = webglScene ? 'active (three r170)' : 'inactive';
+    applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: true });
   }
 });
 
+resetPrefBtn.addEventListener('click', () => {
+  storedManualMode = null;
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
+  const nextAuto = resolveDisplayMode();
+  applyDisplayMode(nextAuto, { manual: false, announceChange: true });
+  announce(`Preference cleared. Automatic display mode selected: ${nextAuto === '3d' ? '3D workstation' : 'Pixel 2D workstation'}.`);
+});
+
+// Internal OS reduced-motion & pointer/viewport adaptation
 if (motionQuery && typeof motionQuery.addEventListener === 'function') {
   motionQuery.addEventListener('change', (e) => {
-    if (!manualMotionOverride) {
-      reducedMotion = e.matches;
-      applyMotionUI();
-      updateQualityAndFallback();
-      if (!reducedMotion) ensureWebGL();
+    reducedMotion = e.matches;
+    applyMotionPreference();
+    if (!storedManualMode) {
+      applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
+    }
+  });
+}
+
+if (coarseQuery && typeof coarseQuery.addEventListener === 'function') {
+  coarseQuery.addEventListener('change', (e) => {
+    coarsePointer = e.matches;
+    if (!storedManualMode) {
+      applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
     }
   });
 }
 
 window.addEventListener('resize', () => {
-  updateQualityAndFallback();
-  if (!isCompactViewport() && !simulatedNoWebgl && !reducedMotion && manualQuality !== 'low') {
-    ensureWebGL();
+  if (!storedManualMode) {
+    const autoMode = resolveDisplayMode();
+    if (autoMode !== displayMode) {
+      applyDisplayMode(autoMode, { manual: false, announceChange: false, immediate: true });
+    }
   }
 }, { passive: true });
 
-applyMotionUI();
+document.addEventListener('visibilitychange', () => {
+  if (displayMode === '2d') {
+    if (document.hidden) stopPixel2dLoop('hidden (0 FPS)');
+    else startOrResumePixel2dLoop();
+  }
+});
+
+['pointerdown', 'pointermove', 'keydown', 'focusin'].forEach((evName) => {
+  window.addEventListener(evName, recordUserActivity, { passive: true });
+});
+
+// ---- Initialize Prototype ----
+applyMotionPreference();
 applyNoWebglUI();
 renderStandby(false);
-ensureWebGL();
+applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });

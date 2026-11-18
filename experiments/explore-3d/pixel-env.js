@@ -18,8 +18,8 @@ function mulberry32(seed) {
 }
 
 export class PixelEnvironment {
-  constructor() {
-    this.canvas = document.createElement('canvas');
+  constructor(targetCanvas = null) {
+    this.canvas = targetCanvas || document.createElement('canvas');
     this.canvas.width = PIXEL_WIDTH;
     this.canvas.height = PIXEL_HEIGHT;
     this.ctx = this.canvas.getContext('2d', { alpha: false });
@@ -255,11 +255,13 @@ export class PixelEnvironment {
     ctx.fillStyle = '#1c3a44';
     ctx.fillRect(16, 147, 6, 3);
 
-    // Coiled desk cable silhouette (left-to-center)
+    // Coiled desk cable silhouette (left-to-center) + subtle 2-frame connector pulse
     ctx.fillStyle = '#141922';
     ctx.fillRect(32, 156, 12, 2);
     ctx.fillRect(43, 154, 4, 2);
     ctx.fillRect(46, 152, 12, 2);
+    ctx.fillStyle = this.ledOn ? '#1e303c' : '#141922';
+    ctx.fillRect(47, 152, 2, 1);
 
     // Small plant silhouette on right ledge
     ctx.fillStyle = '#161b23';

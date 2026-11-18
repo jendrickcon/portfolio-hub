@@ -560,6 +560,20 @@ export async function createCrtScene({
     keyLight.castShadow = useShadow;
     dustPoints.visible = quality === 'high' && !isReduced;
 
+    if (quality === 'low' || isReduced) {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      pixelEnv.renderStatic();
+      pixelTexture.needsUpdate = true;
+      metrics.fps = 0;
+      metrics.loopState = quality === 'low' ? 'paused (0 FPS)' : 'static-3d (0 FPS)';
+      if (quality !== 'low') renderSingleFrame();
+      else if (onMetrics) onMetrics(metrics);
+      return;
+    }
+
     if (quality !== 'high') {
       pixelEnv.renderStatic();
       pixelTexture.needsUpdate = true;
@@ -725,8 +739,9 @@ export async function createCrtScene({
 
   function tick(now) {
     rafId = null;
-    if (isHidden || contextLost || quality === 'low') {
-      metrics.loopState = isHidden ? 'hidden (0 FPS)' : 'paused (0 FPS)';
+    if (isHidden || contextLost || quality === 'low' || isReduced) {
+      metrics.fps = 0;
+      metrics.loopState = isHidden ? 'hidden (0 FPS)' : isReduced ? 'static-3d (0 FPS)' : 'paused (0 FPS)';
       if (onMetrics) onMetrics(metrics);
       return;
     }
@@ -862,7 +877,7 @@ export async function createCrtScene({
   }
 
   function requestFrameOrLoop() {
-    if (isHidden || contextLost || quality === 'low') return;
+    if (isHidden || contextLost || quality === 'low' || isReduced) return;
     if (!rafId) {
       lastFrameMs = performance.now();
       rafId = requestAnimationFrame(tick);
@@ -919,14 +934,28 @@ export async function createCrtScene({
       isReduced = Boolean(val);
       dustPoints.visible = quality === 'high' && !isReduced;
       if (isReduced) {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
         pixelEnv.renderStatic();
         pixelTexture.needsUpdate = true;
+        metrics.fps = 0;
+        metrics.loopState = 'static-3d (0 FPS)';
         renderSingleFrame();
       } else {
         lastActiveMs = performance.now();
         requestFrameOrLoop();
       }
     },
+    syncBeforeShow(poseName) {
+      fpsCount = 0;
+      fpsWindowStart = performance.now();
+      frameTimeSamples = [];
+      pixelTexture.needsUpdate = true;
+      setCameraState(poseName, 0);
+    },
+    renderSingleFrame,
     setCameraState,
     setScreenState,
     setFloppyState,

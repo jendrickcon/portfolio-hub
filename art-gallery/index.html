@@ -443,6 +443,27 @@
       pointer-events: none;
     }
 
+    .artwork-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      text-align: center;
+      background: linear-gradient(180deg, var(--marble-cream), var(--marble-warm));
+      color: var(--ink-soft);
+      font-size: 0.72rem;
+      line-height: 1.35;
+      font-style: italic;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .artwork-fallback[hidden] {
+      display: none !important;
+    }
+
     #layer-decorations {
       z-index: 5;
       width: 4200px;
@@ -1617,6 +1638,9 @@
       <div class="modal-columns">
         <div id="modal-image-wrap">
           <img id="modal-image" alt="" />
+          <div id="modal-image-fallback" class="artwork-fallback" role="img" aria-label="Artwork preview unavailable" hidden>
+            <span>Artwork preview unavailable</span>
+          </div>
         </div>
         <div class="modal-details">
           <div class="modal-title-row">
@@ -1797,14 +1821,102 @@ const authReady = new Promise((resolve, reject) => {
   });
 });
 
+const TRUSTED_BUILTIN_SVG_SOURCES = new Set();
+const MAX_RASTER_DATA_URL_LENGTH = 2 * 1024 * 1024; // 2 MiB ceiling (> Firestore 1 MiB doc limit)
+
+function isSafeSvgMarkup(svgText) {
+  if (typeof svgText !== 'string' || !svgText.trim()) return false;
+  if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(svgText)) return false;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+    if (doc.querySelector('parsererror')) return false;
+    const root = doc.documentElement;
+    if (!root || root.tagName.toLowerCase() !== 'svg') return false;
+
+    const forbiddenTags = new Set([
+      'script', 'foreignobject', 'iframe', 'object', 'embed',
+      'audio', 'video', 'animate', 'set', 'animatetransform', 'animatemotion'
+    ]);
+    const elements = [root, ...root.querySelectorAll('*')];
+    for (const el of elements) {
+      const tag = el.tagName.toLowerCase();
+      if (forbiddenTags.has(tag)) return false;
+      for (const attr of el.attributes) {
+        const name = attr.name.toLowerCase();
+        const val = attr.value.trim();
+        if (name.startsWith('on')) return false;
+        if (name === 'href' || name === 'xlink:href' || name === 'src' || name === 'action' || name === 'formaction') {
+          if (tag === 'use' && val && !val.startsWith('#')) return false;
+          if (/^(?:javascript|vbscript|data):/i.test(val)) return false;
+          if (/^https?:/i.test(val) || val.startsWith('//')) return false;
+        }
+        if (/javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|expression\s*\(/i.test(val)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function registerTrustedBuiltinSvg(dataUri) {
+  if (typeof dataUri !== 'string' || !dataUri.startsWith('data:image/svg+xml,')) return '';
+  try {
+    const decoded = decodeURIComponent(dataUri.slice('data:image/svg+xml,'.length));
+    if (!isSafeSvgMarkup(decoded)) return '';
+    TRUSTED_BUILTIN_SVG_SOURCES.add(dataUri);
+    return dataUri;
+  } catch {
+    return '';
+  }
+}
+
 function sanitizeImageSrc(src) {
   if (typeof src !== 'string') return '';
+  if (/[\u0000-\u001F\u007F]/.test(src)) return '';
   const trimmed = src.trim();
   if (!trimmed) return '';
-  if (/^data:image\/(?:png|jpeg|jpg|webp|gif|svg\+xml);/i.test(trimmed)) return trimmed;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return trimmed;
-  return '';
+
+  // 1. Trusted built-in procedural SVG data URLs (allowlisted & DOMParser-verified)
+  if (TRUSTED_BUILTIN_SVG_SOURCES.has(trimmed)) {
+    return trimmed;
+  }
+
+  // 2. Raster data URLs (PNG, JPEG, WebP base64 only; bounded size & strict base64 alphabet)
+  if (/^data:/i.test(trimmed)) {
+    if (trimmed.length > MAX_RASTER_DATA_URL_LENGTH) return '';
+    const rasterMatch = trimmed.match(/^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/i);
+    if (!rasterMatch) return '';
+    const b64 = rasterMatch[1];
+    if (!b64 || b64.length % 4 !== 0) return '';
+    return trimmed;
+  }
+
+  // Reject explicit dangerous or unsupported schemes before relative resolution
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) && !/^https?:/i.test(trimmed)) {
+    return '';
+  }
+  if (trimmed.startsWith('//')) return '';
+
+  // 3. Same-origin relative URLs or clean https: URLs
+  try {
+    const resolved = new URL(trimmed, window.location.href);
+    if (resolved.username || resolved.password) return '';
+    const isSameOrigin = resolved.origin === window.location.origin;
+    if (isSameOrigin) {
+      if (resolved.pathname === window.location.pathname || resolved.pathname.endsWith('/')) return '';
+      return trimmed;
+    }
+    if (resolved.protocol === 'https:') {
+      return resolved.href;
+    }
+    return '';
+  } catch {
+    return '';
+  }
 }
 
 function renderFeedbackNotes(notes) {
@@ -2059,13 +2171,27 @@ function subscribeToArtworkData(artwork) {
     // ---- Artwork modal behavior ----
     // Step 7 will call this from each artwork's click handler,
     // passing that artwork's own data.
+    const modalImageFallback = document.getElementById('modal-image-fallback');
+
+    function showModalFallback() {
+      modalImage.removeAttribute('src');
+      modalImage.hidden = true;
+      if (modalImageFallback) modalImageFallback.hidden = false;
+    }
+
     function openArtworkModal(artwork) {
       activeArtwork = artwork;
       const safeImage = sanitizeImageSrc(artwork.image);
       if (safeImage) {
+        if (modalImageFallback) modalImageFallback.hidden = true;
+        modalImage.hidden = false;
+        modalImage.onerror = () => {
+          modalImage.onerror = null;
+          showModalFallback();
+        };
         modalImage.src = safeImage;
       } else {
-        modalImage.removeAttribute('src');
+        showModalFallback();
       }
       modalImage.alt = artwork.title || '';
       modalTitle.textContent = artwork.title || '';
@@ -2081,7 +2207,10 @@ function subscribeToArtworkData(artwork) {
 
     function closeArtworkModal() {
       modal.classList.add('hidden-room');
+      modalImage.onerror = null;
       modalImage.removeAttribute('src');
+      modalImage.hidden = false;
+      if (modalImageFallback) modalImageFallback.hidden = true;
     }
 
     modalCloseBtn.addEventListener('click', closeArtworkModal);
@@ -2510,7 +2639,7 @@ function subscribeToArtworkData(artwork) {
 
     artworks.forEach((art) => {
       const generator = artGenerators[art.style] || artGenerators.abstract;
-      art.image = svgToDataUri(generator(art.colors));
+      art.image = registerTrustedBuiltinSvg(svgToDataUri(generator(art.colors)));
     });
 
     async function loadSharedArtworks() {
@@ -2539,6 +2668,17 @@ function subscribeToArtworkData(artwork) {
   }
 }
 
+    function createArtworkFallbackEl() {
+      const fallback = document.createElement('div');
+      fallback.className = 'artwork-fallback';
+      fallback.setAttribute('role', 'img');
+      fallback.setAttribute('aria-label', 'Artwork preview unavailable');
+      const label = document.createElement('span');
+      label.textContent = 'Artwork preview unavailable';
+      fallback.appendChild(label);
+      return fallback;
+    }
+
     function createArtworkFrame(art) {
       const frame = document.createElement('div');
       frame.className = 'artwork-frame';
@@ -2546,12 +2686,20 @@ function subscribeToArtworkData(artwork) {
       frame.setAttribute('role', 'button');
       frame.setAttribute('aria-label', `View artwork: ${art.title}`);
 
-      const img = document.createElement('img');
       const safeSrc = sanitizeImageSrc(art.image);
-      if (safeSrc) img.src = safeSrc;
-      img.alt = art.title || '';
+      if (safeSrc) {
+        const img = document.createElement('img');
+        img.alt = art.title || '';
+        img.addEventListener('error', () => {
+          img.remove();
+          frame.appendChild(createArtworkFallbackEl());
+        }, { once: true });
+        img.src = safeSrc;
+        frame.appendChild(img);
+      } else {
+        frame.appendChild(createArtworkFallbackEl());
+      }
 
-      frame.appendChild(img);
       frame.addEventListener('click', () => openArtworkModal(art));
       frame.addEventListener('mouseenter', () => setArtworkAttention(frame, true));
       frame.addEventListener('mouseleave', () => {
@@ -3056,7 +3204,13 @@ function subscribeToArtworkData(artwork) {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
-        uploadedImageDataUrl = reader.result;
+        const safeDataUrl = sanitizeImageSrc(typeof reader.result === 'string' ? reader.result : '');
+        if (!safeDataUrl) {
+          uploadedImageDataUrl = null;
+          studioStatus.textContent = 'Unsupported image format. Please use PNG, JPEG, or WebP.';
+          return;
+        }
+        uploadedImageDataUrl = safeDataUrl;
         restoreDrawingState(uploadedImageDataUrl);
       };
       reader.readAsDataURL(file);

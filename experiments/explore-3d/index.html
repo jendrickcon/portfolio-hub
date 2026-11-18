@@ -17,7 +17,6 @@
     <nav class="proto-nav" aria-label="Prototype controls and return navigation">
       <a href="/explore/" class="ctrl-btn ctrl-btn--return" aria-label="Return to current production Explore Hub">◂ Current Explore</a>
       <div class="ctrl-group" role="group" aria-label="Workstation and quality controls">
-        <button type="button" id="toggle-power-btn" class="ctrl-btn ctrl-btn--power" aria-pressed="false">POWER: OFF</button>
         <button type="button" id="toggle-motion-btn" class="ctrl-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
         <label for="quality-select" class="sr-only">Graphics quality tier</label>
         <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="Graphics quality tier">
@@ -25,6 +24,15 @@
           <option value="high">QUALITY: HIGH</option>
           <option value="medium">QUALITY: MEDIUM</option>
           <option value="low">QUALITY: LOW / STATIC</option>
+        </select>
+      </div>
+      <div id="debug-controls" class="ctrl-group ctrl-group--debug" role="group" aria-label="Debug comparison controls" hidden>
+        <label for="pixel-mode-select" class="sr-only">Pixel 3D comparison mode</label>
+        <select id="pixel-mode-select" class="ctrl-btn ctrl-select" aria-label="Pixel 3D comparison mode">
+          <option value="smooth">3D: SMOOTH RETRO</option>
+          <option value="quantized">3D: QUANTIZED + FACETED</option>
+          <option value="lowres75">3D: PIXEL 0.75× SCALE</option>
+          <option value="lowres50">3D: PIXEL 0.50× SCALE</option>
         </select>
         <button type="button" id="toggle-webgl-btn" class="ctrl-btn" aria-pressed="false">SIMULATE NO-WEBGL: OFF</button>
       </div>
@@ -46,6 +54,18 @@
       <div class="screen-overlay">
         <div class="screen-scanlines" aria-hidden="true"></div>
         <div id="screen-content" class="screen-content"></div>
+      </div>
+
+      <div class="hw-controls" role="group" aria-label="Monitor bezel hardware controls">
+        <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox disk" aria-expanded="false">
+          <span class="hw-disk-glow" aria-hidden="true"></span>
+          <span class="hw-disk-badge" aria-hidden="true">DISK · SANDBOX.SYS</span>
+          <span class="hw-disk-glyph" aria-hidden="true">FLOPPY BAY</span>
+        </button>
+        <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation" disabled>
+          <span class="hw-power-indicator" aria-hidden="true"></span>
+          <span class="hw-power-glyph" aria-hidden="true">POWER</span>
+        </button>
       </div>
     </section>
   </main>

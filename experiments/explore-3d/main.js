@@ -3,6 +3,9 @@ import { PixelEnvironment } from './pixel-env.js';
 const params = new URLSearchParams(window.location.search);
 const DEBUG_MODE = params.get('debug') === '1';
 const INITIAL_NO_WEBGL = params.get('nowebgl') === '1';
+const INITIAL_PIXEL_MODE = ['smooth', 'quantized', 'lowres75', 'lowres50'].includes(params.get('pixel3d'))
+  ? params.get('pixel3d')
+  : 'smooth';
 
 const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 const coarseQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
@@ -10,6 +13,7 @@ const coarseQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') :
 let reducedMotion = Boolean(motionQuery && motionQuery.matches);
 let manualMotionOverride = false;
 let manualQuality = 'auto';
+let pixelMode = INITIAL_PIXEL_MODE;
 let simulatedNoWebgl = INITIAL_NO_WEBGL;
 let webglScene = null;
 let webglStatusText = 'inactive';
@@ -20,19 +24,27 @@ staticBgEl.style.backgroundImage = `url("${pixelEnv.getSnapshotDataUrl()}")`;
 
 const canvasEl = document.getElementById('crt-scene-canvas');
 const chassisEl = document.getElementById('crt-chassis');
+const overlayEl = chassisEl.querySelector('.screen-overlay');
 const screenContentEl = document.getElementById('screen-content');
 const srStatusEl = document.getElementById('sr-status');
 const perfHudEl = document.getElementById('perf-hud');
 
-const powerBtn = document.getElementById('toggle-power-btn');
 const motionBtn = document.getElementById('toggle-motion-btn');
 const qualitySelect = document.getElementById('quality-select');
+const debugControlsEl = document.getElementById('debug-controls');
+const pixelModeSelect = document.getElementById('pixel-mode-select');
 const webglBtn = document.getElementById('toggle-webgl-btn');
 
+const hwDiskBtn = document.getElementById('hw-disk-btn');
+const hwPowerBtn = document.getElementById('hw-power-btn');
+
 if (DEBUG_MODE) {
+  debugControlsEl.hidden = false;
   perfHudEl.hidden = false;
 }
+pixelModeSelect.value = pixelMode;
 
+// Final six visible catalog slots (DevPath occupies slot 06; Sandbox moves to hidden floppy bay)
 const CATALOG_SLOTS = [
   {
     index: '01',
@@ -74,31 +86,55 @@ const CATALOG_SLOTS = [
     name: 'CyberDefender',
     status: 'READY',
     category: 'Placeholder — Tactical Web Reimagining',
-    summary: 'Placeholder sample card confirming readable `1:1` DOM text and keyboard focus restoration.',
+    summary: 'Placeholder sample card confirming readable 1:1 DOM text and keyboard focus restoration.',
   },
   {
     index: '06',
-    id: 'sandbox',
-    name: 'Sandbox',
-    status: 'READY',
-    category: 'Placeholder — Cellular Automata Experiment',
-    summary: 'Placeholder sample card verifying 3×2 desktop and 2×3 / 1×6 responsive grid reflow.',
+    id: 'devpath',
+    name: 'DevPath',
+    status: 'PAUSED PROTOTYPE',
+    statusKey: 'paused',
+    category: 'Architecture & Decision-Graph Prototype (Paused)',
+    summary: 'Slot 06 placeholder retaining the honest PAUSED PROTOTYPE framing and amber status treatment while external navigation stays disabled.',
+    devStatus: 'PAUSED PROTOTYPE — BROADER DOMAINS INTENTIONALLY PAUSED',
   },
 ];
 
-const DEVPATH_SLOT = {
-  id: 'devpath',
-  name: 'DevPath',
-  status: 'PAUSED PROTOTYPE',
-  category: 'Architecture & Decision-Graph Prototype (Paused)',
-  summary: 'Separate paused entry demonstrating amber workstation illumination and accessible non-color status badges. Broader domains remain intentionally paused.',
-  devStatus: 'PAUSED PROTOTYPE — SAMPLE DOSSIER VIEW',
+const SANDBOX_SLOT = {
+  id: 'sandbox',
+  name: 'SANDBOX.SYS',
+  status: 'HIDDEN FLOPPY DISK',
+  category: 'Hidden Diskette Preview — Cellular Automata Experiment',
+  summary: 'Loaded from the lower-bezel 3.5" floppy bay (UNKNOWN DISK DETECTED). In this isolated prototype, launching /sandbox/ is simulated safely inside this preview dossier.',
+  devStatus: 'HIDDEN FLOPPY PREVIEW — EXTERNAL ROUTE DISABLED IN PROTOTYPE',
 };
 
-let currentView = 'standby'; // 'standby' | 'boot' | 'menu' | 'dossier'
+let currentView = 'standby'; // 'standby' | 'boot' | 'menu' | 'dossier' | 'restarting'
+let preDossierView = 'menu';
 let lastTriggerAppId = null;
-let bootTimers = [];
+let lastTriggerSource = 'catalog'; // 'catalog' | 'disk'
+let activeTimers = [];
 let bootDone = false;
+let isRestarting = false;
+
+// Floppy bay state machine
+let drivePhase = 'closed'; // 'closed' | 'intent' | 'opening' | 'open'
+let driveIntentTimer = null;
+let driveOpenTimer = null;
+let driveLeaveTimer = null;
+let driveLatched = false;
+let lastDiskPointerType = 'mouse';
+
+function clearActiveTimers() {
+  activeTimers.forEach(clearTimeout);
+  activeTimers = [];
+}
+
+function scheduleTimer(fn, ms) {
+  const id = setTimeout(fn, ms);
+  activeTimers.push(id);
+  return id;
+}
 
 function announce(text) {
   if (!srStatusEl) return;
@@ -125,6 +161,82 @@ function resolveEffectiveQuality() {
   return 'high';
 }
 
+function syncFloppyDomAndScene() {
+  hwDiskBtn.dataset.driveState = drivePhase;
+  const isExpanded = drivePhase === 'opening' || drivePhase === 'open';
+  hwDiskBtn.setAttribute('aria-expanded', String(isExpanded));
+
+  if (webglScene) {
+    const progress = drivePhase === 'opening' || drivePhase === 'open' ? 1 : 0;
+    const led = drivePhase === 'open' || drivePhase === 'opening'
+      ? 'open'
+      : drivePhase === 'intent'
+        ? 'intent'
+        : 'idle';
+    webglScene.setFloppyState({ progress, led });
+  }
+}
+
+function clearFloppyTimers() {
+  if (driveIntentTimer) { clearTimeout(driveIntentTimer); driveIntentTimer = null; }
+  if (driveOpenTimer) { clearTimeout(driveOpenTimer); driveOpenTimer = null; }
+  if (driveLeaveTimer) { clearTimeout(driveLeaveTimer); driveLeaveTimer = null; }
+}
+
+function closeFloppyTray(immediate = false) {
+  clearFloppyTimers();
+  driveLatched = false;
+  if (drivePhase !== 'closed' || immediate) {
+    drivePhase = 'closed';
+    syncFloppyDomAndScene();
+  }
+}
+
+function openFloppyTrayFromHover() {
+  clearFloppyTimers();
+  drivePhase = 'intent';
+  syncFloppyDomAndScene();
+
+  driveIntentTimer = setTimeout(() => {
+    driveIntentTimer = null;
+    const immediate = reducedMotion || resolveEffectiveQuality() === 'low';
+    drivePhase = immediate ? 'open' : 'opening';
+    syncFloppyDomAndScene();
+
+    if (immediate) {
+      announce('Unknown disk detected: SANDBOX.SYS. Activate to inspect.');
+    } else {
+      driveOpenTimer = setTimeout(() => {
+        driveOpenTimer = null;
+        if (drivePhase === 'opening') {
+          drivePhase = 'open';
+          syncFloppyDomAndScene();
+          announce('Unknown disk detected: SANDBOX.SYS. Activate to inspect.');
+        }
+      }, 1250);
+    }
+  }, 600);
+}
+
+function openFloppyTrayLatched() {
+  clearFloppyTimers();
+  driveLatched = true;
+  const immediate = reducedMotion || resolveEffectiveQuality() === 'low';
+  drivePhase = immediate ? 'open' : 'opening';
+  syncFloppyDomAndScene();
+  announce('Hidden Sandbox disk opening. SANDBOX.SYS detected. Activate again to open.');
+
+  if (!immediate) {
+    driveOpenTimer = setTimeout(() => {
+      driveOpenTimer = null;
+      if (drivePhase === 'opening') {
+        drivePhase = 'open';
+        syncFloppyDomAndScene();
+      }
+    }, 1250);
+  }
+}
+
 function applyMotionUI() {
   document.body.classList.toggle('reduce-motion', reducedMotion);
   motionBtn.setAttribute('aria-pressed', String(reducedMotion));
@@ -133,6 +245,7 @@ function applyMotionUI() {
 }
 
 function applyNoWebglUI() {
+  if (!webglBtn) return;
   webglBtn.setAttribute('aria-pressed', String(simulatedNoWebgl));
   webglBtn.textContent = `SIMULATE NO-WEBGL: ${simulatedNoWebgl ? 'ON' : 'OFF'}`;
 }
@@ -145,33 +258,42 @@ function updateQualityAndFallback() {
   if (webglScene) {
     webglScene.setQuality(eff);
   }
-  if (useCssFallback) {
-    canvasEl.setAttribute('data-active', 'false');
-  } else {
-    canvasEl.setAttribute('data-active', 'true');
-  }
+  canvasEl.setAttribute('data-active', useCssFallback ? 'false' : 'true');
 
   renderDebugHud(webglScene ? webglScene.getMetrics() : {
-    fps: 0, avgFrameMs: 0, maxFrameMs: 0, drawCalls: 0, triangles: 0, dpr: 1, pixelTickMs: +pixelEnv.lastTickMs.toFixed(2), pixelUploadsPerSec: 0, loopState: 'css-fallback (0 FPS)'
+    fps: 0,
+    avgFrameMs: 0,
+    maxFrameMs: 0,
+    drawCalls: 0,
+    triangles: 0,
+    dpr: 1,
+    renderScale: 1,
+    pixelMode,
+    cameraPose: currentView === 'boot' ? 'boot' : currentView === 'standby' ? 'standby' : 'menu',
+    pixelTickMs: +pixelEnv.lastTickMs.toFixed(2),
+    pixelUploadsPerSec: 0,
+    loopState: 'css-fallback (0 FPS)',
   });
 }
 
 function renderDebugHud(m) {
   const eff = resolveEffectiveQuality();
-  const payload = {
+  window.__explore3dMetrics = {
     effectiveQuality: eff,
     manualQuality,
     webglStatus: webglStatusText,
     reducedMotion,
+    currentView,
+    drivePhase,
     ...m,
   };
-  window.__explore3dMetrics = payload;
   if (!DEBUG_MODE || perfHudEl.hidden) return;
   perfHudEl.innerHTML = [
-    `<div><strong>TIER:</strong> ${eff.toUpperCase()} (${manualQuality})</div>`,
+    `<div><strong>TIER:</strong> ${eff.toUpperCase()} (${manualQuality}) | <strong>CAM:</strong> ${m.cameraPose || currentView}</div>`,
     `<div><strong>FPS:</strong> ${m.fps} | <strong>LOOP:</strong> ${m.loopState}</div>`,
     `<div><strong>FRAME:</strong> avg ${m.avgFrameMs}ms / max ${m.maxFrameMs}ms</div>`,
-    `<div><strong>GPU:</strong> ${m.drawCalls} calls | ${m.triangles} tris | DPR ${m.dpr}</div>`,
+    `<div><strong>GPU:</strong> ${m.drawCalls} calls | ${m.triangles} tris | DPR ${m.dpr} (${m.renderScale || 1}x)</div>`,
+    `<div><strong>3D STYLE:</strong> ${m.pixelMode || pixelMode} | <strong>DISK:</strong> ${drivePhase}</div>`,
     `<div><strong>PIXEL 320×180:</strong> ${m.pixelTickMs}ms | ${m.pixelUploadsPerSec} up/s</div>`,
     `<div><strong>WEBGL:</strong> ${webglStatusText}</div>`,
   ].join('');
@@ -191,8 +313,8 @@ async function ensureWebGL() {
       overlayContainer: chassisEl,
       pixelEnv,
       initialQuality: resolveEffectiveQuality(),
+      initialPixelMode: pixelMode,
       reducedMotion,
-      coarsePointer: Boolean(coarseQuery && coarseQuery.matches),
       onFatalFallback(reason) {
         webglStatusText = 'failed: ' + reason;
         updateQualityAndFallback();
@@ -209,10 +331,18 @@ async function ensureWebGL() {
       },
       metricsCb: renderDebugHud,
     });
-    if (currentView !== 'standby') {
-      webglScene.setPoweredView(true);
-      webglScene.setScreenState(currentView === 'dossier' ? 'menu' : 'menu');
+
+    if (currentView === 'boot') {
+      webglScene.setCameraState('boot', 0);
+      webglScene.setScreenState('menu');
+    } else if (currentView === 'menu' || currentView === 'dossier') {
+      webglScene.setCameraState('menu', 0);
+      webglScene.setScreenState('menu');
+    } else {
+      webglScene.setCameraState('standby', 0);
+      webglScene.setScreenState('standby');
     }
+    syncFloppyDomAndScene();
     updateQualityAndFallback();
   } catch (err) {
     webglStatusText = 'failed: ' + (err?.message || 'load error');
@@ -221,15 +351,17 @@ async function ensureWebGL() {
   }
 }
 
-// ---- Prototype Screen States (Layer 3) ----
+// ---- Screen States (Layer 3) ----
 function renderStandby(restoreFocus = false) {
-  clearBootTimers();
+  clearActiveTimers();
   currentView = 'standby';
-  document.body.classList.remove('is-powered');
-  powerBtn.setAttribute('aria-pressed', 'false');
-  powerBtn.textContent = 'POWER: OFF';
+  isRestarting = false;
+  hwPowerBtn.disabled = false;
+  document.body.classList.remove('is-powered', 'is-restarting');
+  overlayEl.classList.remove('is-collapsing');
+
   if (webglScene) {
-    webglScene.setPoweredView(false);
+    webglScene.setCameraState('standby');
     webglScene.setScreenState('standby');
   }
 
@@ -243,27 +375,23 @@ function renderStandby(restoreFocus = false) {
   startBtn.addEventListener('click', startWorkstation);
   if (restoreFocus) {
     focusSafely(startBtn);
-    announce('Workstation powered off.');
   }
-}
-
-function clearBootTimers() {
-  bootTimers.forEach(clearTimeout);
-  bootTimers = [];
+  updateQualityAndFallback();
 }
 
 function startWorkstation() {
+  if (isRestarting) return;
+  closeFloppyTray(true);
   document.body.classList.add('is-powered');
-  powerBtn.setAttribute('aria-pressed', 'true');
-  powerBtn.textContent = 'POWER: ON';
   if (webglScene) {
-    webglScene.setPoweredView(true);
+    webglScene.setCameraState('boot');
     webglScene.setScreenState('menu');
   }
   renderBoot();
 }
 
 function renderBoot() {
+  clearActiveTimers();
   currentView = 'boot';
   bootDone = false;
   const lines = [
@@ -271,7 +399,7 @@ function renderBoot() {
     'CHECKING CRT APERTURE SYNC .... OK',
     'LOADING 320x180 ENVIRONMENT ... OK',
     'INDEXING 6 CATALOG SLOTS ...... READY',
-    'DEVPATH MODULE STATUS ......... PAUSED',
+    'SANDBOX.SYS FLOPPY BAY ........ STANDBY',
   ];
 
   screenContentEl.innerHTML = `
@@ -299,16 +427,16 @@ function renderBoot() {
     let d = 0;
     lines.forEach((line, idx) => {
       d += 180;
-      bootTimers.push(setTimeout(() => {
+      scheduleTimer(() => {
         logEl.textContent += (idx ? '\n' : '') + line;
-      }, d));
+      }, d);
     });
-    bootTimers.push(setTimeout(finishBoot, d + 200));
+    scheduleTimer(finishBoot, d + 200);
   }
 
   skipBtn.addEventListener('click', () => {
     if (!bootDone) {
-      clearBootTimers();
+      clearActiveTimers();
       logEl.textContent = lines.join('\n');
       finishBoot();
       focusSafely(skipBtn);
@@ -320,11 +448,12 @@ function renderBoot() {
   document.getElementById('boot-view').addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      renderStandby(true);
+      triggerRestart();
     }
   });
 
   focusSafely(skipBtn);
+  updateQualityAndFallback();
 }
 
 function getGridRows(gridItems) {
@@ -346,37 +475,38 @@ function getGridRows(gridItems) {
 }
 
 function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
-  clearBootTimers();
+  clearActiveTimers();
   currentView = 'menu';
-  if (webglScene) webglScene.setScreenState('menu');
+  document.body.classList.add('is-powered');
+  if (webglScene) {
+    webglScene.setCameraState('menu');
+    webglScene.setScreenState('menu');
+  }
 
   screenContentEl.innerHTML = `
     <div id="app-menu" class="app-menu">
       <h2 class="app-menu-header" tabindex="-1">SAMPLE CATALOG (PROTOTYPE)</h2>
       <nav class="app-nav" aria-label="Prototype applications">
         <ul class="app-grid">
-          ${CATALOG_SLOTS.map((app) => `
+          ${CATALOG_SLOTS.map((app) => {
+            const stateType = app.statusKey || app.status.toLowerCase();
+            return `
             <li class="app-grid-item">
-              <button type="button" class="app-tile" data-app-id="${app.id}" data-status="${app.status.toLowerCase()}" aria-label="${app.name}, ${app.status}">
+              <button type="button" class="app-tile" data-app-id="${app.id}" data-status="${stateType}" aria-label="${app.name}, ${app.status}">
                 <span class="app-index" aria-hidden="true">${app.index}</span>
                 <span class="app-name">${app.name}</span>
                 <span class="app-status" aria-hidden="true">${app.status}</span>
               </button>
             </li>
-          `).join('')}
+          `;
+          }).join('')}
         </ul>
       </nav>
-      <section class="app-secondary-bar" aria-label="Paused Prototype">
-        <button type="button" class="app-secondary-entry" data-app-id="devpath" data-status="paused" aria-label="DevPath, Paused prototype, inspect sample">
-          <span class="app-secondary-name">DevPath</span>
-          <span class="app-secondary-status" aria-hidden="true">PAUSED PROTOTYPE</span>
-        </button>
-      </section>
     </div>
   `;
 
   const menuEl = document.getElementById('app-menu');
-  const items = Array.from(menuEl.querySelectorAll('.app-tile, .app-secondary-entry'));
+  const items = Array.from(menuEl.querySelectorAll('.app-tile'));
 
   items.forEach((btn) => {
     const id = btn.dataset.appId;
@@ -397,7 +527,9 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
     btn.addEventListener('mouseleave', resetLight);
     btn.addEventListener('blur', resetLight);
     btn.addEventListener('click', () => {
+      lastTriggerSource = 'catalog';
       lastTriggerAppId = id;
+      preDossierView = 'menu';
       renderDossier(id);
     });
   });
@@ -405,14 +537,11 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   menuEl.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      renderStandby(true);
+      triggerRestart();
       return;
     }
     const idx = items.indexOf(document.activeElement);
     if (idx === -1) return;
-
-    const gridItems = items.slice(0, CATALOG_SLOTS.length);
-    const secIdx = CATALOG_SLOTS.length;
 
     if (event.key === 'Home') {
       event.preventDefault();
@@ -429,27 +558,16 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
     if (event.key === 'ArrowRight') next = (idx + 1) % items.length;
     else if (event.key === 'ArrowLeft') next = (idx - 1 + items.length) % items.length;
     else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      const rows = getGridRows(gridItems);
+      const rows = getGridRows(items);
       const isDown = event.key === 'ArrowDown';
-      if (idx === secIdx) {
-        next = isDown ? 0 : (rows[rows.length - 1]?.cells[0].idx ?? secIdx - 1);
-      } else {
-        const curRect = items[idx].getBoundingClientRect();
-        const cx = curRect.left + curRect.width / 2;
-        const rIdx = rows.findIndex((r) => r.cells.some((c) => c.idx === idx));
-        if (rIdx !== -1) {
-          if (isDown) {
-            if (rIdx < rows.length - 1) {
-              next = rows[rIdx + 1].cells.reduce((a, b) => (Math.abs(b.cx - cx) < Math.abs(a.cx - cx) ? b : a)).idx;
-            } else {
-              next = secIdx;
-            }
-          } else if (rIdx > 0) {
-            next = rows[rIdx - 1].cells.reduce((a, b) => (Math.abs(b.cx - cx) < Math.abs(a.cx - cx) ? b : a)).idx;
-          } else {
-            next = secIdx;
-          }
-        }
+      const curRect = items[idx].getBoundingClientRect();
+      const cx = curRect.left + curRect.width / 2;
+      const rIdx = rows.findIndex((r) => r.cells.some((c) => c.idx === idx));
+      if (rIdx !== -1) {
+        const targetRow = isDown
+          ? rows[(rIdx + 1) % rows.length]
+          : rows[(rIdx - 1 + rows.length) % rows.length];
+        next = targetRow.cells.reduce((a, b) => (Math.abs(b.cx - cx) < Math.abs(a.cx - cx) ? b : a)).idx;
       }
     }
 
@@ -464,54 +582,208 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   } else if (shouldFocus) {
     focusSafely(items[0]);
   }
+  updateQualityAndFallback();
 }
 
 function renderDossier(appId) {
   currentView = 'dossier';
-  const entry = appId === 'devpath' ? DEVPATH_SLOT : CATALOG_SLOTS.find((a) => a.id === appId) || CATALOG_SLOTS[1];
+  const entry = appId === 'sandbox'
+    ? SANDBOX_SLOT
+    : CATALOG_SLOTS.find((a) => a.id === appId) || CATALOG_SLOTS[0];
+
   if (webglScene) {
-    if (entry.status === 'LIVE') webglScene.setScreenState('live');
+    if (entry.status === 'LIVE' || entry.id === 'sandbox') webglScene.setScreenState('live');
     else if (entry.id === 'devpath') webglScene.setScreenState('paused');
     else webglScene.setScreenState('menu');
   }
+
+  const returnLabel = preDossierView === 'standby' ? '◂ RETURN TO STANDBY' : '◂ RETURN TO CATALOG';
+  const closeAria = preDossierView === 'standby'
+    ? `Close ${entry.name} preview and return to standby`
+    : `Close ${entry.name} dossier and return to catalog`;
 
   screenContentEl.innerHTML = `
     <article id="dossier-view" class="dossier-view" aria-labelledby="dossier-title">
       <div class="dossier-head">
         <h2 id="dossier-title" class="dossier-title" tabindex="-1">${entry.name.toUpperCase()}</h2>
-        <button type="button" id="dossier-close-btn" class="dossier-close-btn" aria-label="Close ${entry.name} dossier and return to catalog">✕</button>
+        <button type="button" id="dossier-close-btn" class="dossier-close-btn" aria-label="${closeAria}">✕</button>
       </div>
       <p class="dossier-meta">${entry.category}</p>
       <p class="dossier-body">${entry.summary}</p>
       <p class="dossier-status">Status: ${entry.devStatus || entry.status}</p>
       <p class="dossier-demo-note">Prototype demonstration only — external production navigation is disabled.</p>
       <div class="dossier-footer">
-        <button type="button" id="dossier-return-btn" class="dossier-return-btn">◂ RETURN TO CATALOG</button>
+        <button type="button" id="dossier-return-btn" class="dossier-return-btn">${returnLabel}</button>
       </div>
     </article>
   `;
 
-  const backToMenu = () => {
-    renderMenu({ shouldFocus: true, focusAppId: lastTriggerAppId });
-    announce('Returned to catalog menu.');
+  const backOut = () => {
+    const restoreToDisk = lastTriggerSource === 'disk';
+    if (preDossierView === 'standby') {
+      renderStandby(false);
+    } else {
+      renderMenu({ shouldFocus: !restoreToDisk, focusAppId: restoreToDisk ? null : lastTriggerAppId });
+    }
+    if (restoreToDisk) {
+      closeFloppyTray(true);
+      focusSafely(hwDiskBtn);
+    }
+    announce(preDossierView === 'standby' ? 'Returned to standby.' : 'Returned to catalog menu.');
   };
 
-  document.getElementById('dossier-close-btn').addEventListener('click', backToMenu);
-  document.getElementById('dossier-return-btn').addEventListener('click', backToMenu);
+  document.getElementById('dossier-close-btn').addEventListener('click', backOut);
+  document.getElementById('dossier-return-btn').addEventListener('click', backOut);
   document.getElementById('dossier-view').addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      backToMenu();
+      backOut();
     }
   });
 
   focusSafely(document.getElementById('dossier-title'));
   announce(`${entry.name} sample dossier opened.`);
+  updateQualityAndFallback();
 }
 
-// ---- Global Prototype Bindings ----
-powerBtn.addEventListener('click', () => renderStandby(true));
+function triggerRestart() {
+  if (isRestarting) return;
+  if (currentView === 'standby') {
+    announce('Workstation is already on Standby.');
+    focusSafely(document.getElementById('start-explore-btn'));
+    return;
+  }
 
+  clearActiveTimers();
+  closeFloppyTray(true);
+  isRestarting = true;
+  hwPowerBtn.disabled = true;
+  currentView = 'restarting';
+  document.body.classList.add('is-restarting');
+  announce('Restarting Explore workstation.');
+
+  const restartLines = [
+    'RESTARTING WORKSTATION...',
+    'SAVING TERMINAL STATE...',
+    'CRT APERTURE SYNC RESET...',
+    'SYSTEM READY.',
+  ];
+
+  screenContentEl.innerHTML = `
+    <div id="restart-view" class="restart-view">
+      <pre id="restart-log" class="restart-log"></pre>
+    </div>
+  `;
+  const rLogEl = document.getElementById('restart-log');
+
+  if (webglScene) {
+    webglScene.setScreenState('paused');
+  }
+
+  if (reducedMotion || resolveEffectiveQuality() === 'low') {
+    rLogEl.textContent = restartLines.join('\n');
+    if (webglScene) webglScene.setCameraState('standby', 0);
+    scheduleTimer(() => {
+      renderStandby(true);
+    }, 420);
+  } else {
+    rLogEl.textContent = restartLines[0];
+    scheduleTimer(() => {
+      if (webglScene) webglScene.setCameraState('standby', 850);
+    }, 60);
+    scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[1]; }, 340);
+    scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[2]; }, 680);
+    scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[3]; }, 1040);
+    scheduleTimer(() => {
+      if (webglScene) webglScene.setScreenState('off');
+      rLogEl.style.opacity = '0.35';
+    }, 1360);
+    scheduleTimer(() => {
+      overlayEl.classList.add('is-collapsing');
+    }, 1520);
+    scheduleTimer(() => {
+      overlayEl.classList.remove('is-collapsing');
+    }, 1740);
+    scheduleTimer(() => {
+      renderStandby(true);
+    }, 1980);
+  }
+  updateQualityAndFallback();
+}
+
+// ---- Physical Hardware Button Bindings (Layer 3 Projected Controls) ----
+hwPowerBtn.addEventListener('click', triggerRestart);
+
+hwDiskBtn.addEventListener('pointerdown', (e) => {
+  lastDiskPointerType = e.pointerType || 'mouse';
+});
+
+hwDiskBtn.addEventListener('mouseenter', () => {
+  if (lastDiskPointerType === 'touch' || isRestarting) return;
+  if (driveLeaveTimer) { clearTimeout(driveLeaveTimer); driveLeaveTimer = null; }
+  if (drivePhase === 'closed') {
+    openFloppyTrayFromHover();
+  }
+});
+
+hwDiskBtn.addEventListener('mouseleave', () => {
+  if (driveIntentTimer) { clearTimeout(driveIntentTimer); driveIntentTimer = null; }
+  if (driveOpenTimer) { clearTimeout(driveOpenTimer); driveOpenTimer = null; }
+  if (driveLatched || document.activeElement === hwDiskBtn) {
+    if (drivePhase === 'intent') {
+      drivePhase = 'intent';
+      syncFloppyDomAndScene();
+    }
+    return;
+  }
+  driveLeaveTimer = setTimeout(() => {
+    driveLeaveTimer = null;
+    closeFloppyTray();
+  }, 600);
+});
+
+hwDiskBtn.addEventListener('focus', () => {
+  if (driveLeaveTimer) { clearTimeout(driveLeaveTimer); driveLeaveTimer = null; }
+  if (drivePhase === 'closed') {
+    drivePhase = 'intent';
+    syncFloppyDomAndScene();
+  }
+});
+
+hwDiskBtn.addEventListener('blur', () => {
+  scheduleTimer(() => {
+    if (document.activeElement !== hwDiskBtn && currentView !== 'dossier') {
+      closeFloppyTray();
+    }
+  }, 150);
+});
+
+hwDiskBtn.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && drivePhase !== 'closed') {
+    e.preventDefault();
+    closeFloppyTray(true);
+    announce('Floppy tray closed.');
+  }
+});
+
+hwDiskBtn.addEventListener('click', (e) => {
+  if (isRestarting) return;
+  const fromKeyboard = e.detail === 0;
+  const fromTouch = lastDiskPointerType === 'touch' || lastDiskPointerType === 'pen';
+
+  if (drivePhase === 'open' || (drivePhase === 'opening' && !fromTouch && !fromKeyboard) || (drivePhase === 'opening' && driveLatched)) {
+    lastTriggerSource = 'disk';
+    preDossierView = currentView === 'standby' ? 'standby' : 'menu';
+    lastTriggerAppId = 'sandbox';
+    closeFloppyTray(true);
+    renderDossier('sandbox');
+    return;
+  }
+
+  openFloppyTrayLatched();
+});
+
+// ---- Global Header Controls ----
 motionBtn.addEventListener('click', () => {
   manualMotionOverride = true;
   reducedMotion = !reducedMotion;
@@ -527,6 +799,12 @@ qualitySelect.addEventListener('change', () => {
   } else {
     ensureWebGL().then(updateQualityAndFallback);
   }
+});
+
+pixelModeSelect.addEventListener('change', () => {
+  pixelMode = pixelModeSelect.value;
+  if (webglScene) webglScene.setPixelMode(pixelMode);
+  updateQualityAndFallback();
 });
 
 webglBtn.addEventListener('click', () => {

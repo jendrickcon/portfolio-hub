@@ -277,3 +277,46 @@ export class PixelEnvironment {
     return this.canvas.toDataURL('image/png');
   }
 }
+
+/**
+ * Deterministic 64x32 pixel-grid texture for the 3.5" floppy diskette carrier
+ * so hardware labeling remains integer-aligned with zero external images.
+ */
+export function createFloppyDiskCanvas() {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 32;
+  const ctx = c.getContext('2d', { alpha: false });
+  ctx.imageSmoothingEnabled = false;
+
+  // Matte dark slate diskette shell
+  ctx.fillStyle = '#1d242c';
+  ctx.fillRect(0, 0, 64, 32);
+
+  // Subtle top lip & write-protect corner notch accents
+  ctx.fillStyle = '#2d3844';
+  ctx.fillRect(1, 1, 62, 3);
+  ctx.fillStyle = '#0e1217';
+  ctx.fillRect(4, 24, 5, 5);
+
+  // Brushed silver metal shutter in upper center
+  ctx.fillStyle = '#8b959e';
+  ctx.fillRect(18, 2, 28, 12);
+  ctx.fillStyle = '#5c6670';
+  ctx.fillRect(36, 4, 7, 8);
+  ctx.fillStyle = '#b4bdc4';
+  ctx.fillRect(18, 2, 28, 2);
+
+  // Label block with restrained cyan/amber micro-stripes
+  ctx.fillStyle = '#121820';
+  ctx.fillRect(12, 16, 40, 14);
+  ctx.fillStyle = '#00a8be';
+  ctx.fillRect(14, 18, 36, 2);
+  ctx.fillStyle = '#c49010';
+  ctx.fillRect(14, 21, 18, 2);
+  ctx.fillStyle = '#7e909e';
+  ctx.fillRect(14, 25, 28, 1);
+  ctx.fillRect(14, 27, 20, 1);
+
+  return c;
+}

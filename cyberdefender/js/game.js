@@ -109,7 +109,6 @@ class Game {
     if (btnHub) {
       btnHub.addEventListener("click", () => {
         audio.playSFX("button_click");
-        window.location.assign("/explore/#menu");
       });
     }
 

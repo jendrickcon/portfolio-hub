@@ -519,6 +519,7 @@ export async function createCrtScene({
   let frameTimeSamples = [];
   let slowFrameSamples = [];
   let uploadTimestamps = [];
+  let isActive = true;
   let onAutoDowngrade = null;
   let onMetrics = null;
 
@@ -649,7 +650,7 @@ export async function createCrtScene({
   }
 
   function updateAllProjections() {
-    if (!overlayContainer) return;
+    if (!overlayContainer || !isActive || quality === 'low') return;
     const scr = projectBox(cornerTL, cornerBR, 180, 140, 0);
     overlayContainer.style.setProperty('--screen-x', `${scr.x}px`);
     overlayContainer.style.setProperty('--screen-y', `${scr.y}px`);
@@ -747,7 +748,7 @@ export async function createCrtScene({
   }
 
   function renderSingleFrame() {
-    if (contextLost || quality === 'low') return;
+    if (!isActive || contextLost || quality === 'low') return;
     const frameStart = performance.now();
     camera.position.copy(curCamPos);
     camera.lookAt(curLookAt);
@@ -770,7 +771,7 @@ export async function createCrtScene({
 
   function tick(now) {
     rafId = null;
-    if (isHidden || contextLost || quality === 'low' || isReduced) {
+    if (!isActive || isHidden || contextLost || quality === 'low' || isReduced) {
       metrics.fps = 0;
       metrics.loopState = isHidden ? 'hidden (0 FPS)' : isReduced ? 'static-3d (0 FPS)' : 'paused (0 FPS)';
       if (onMetrics) onMetrics(metrics);
@@ -911,7 +912,7 @@ export async function createCrtScene({
   }
 
   function requestFrameOrLoop() {
-    if (isHidden || contextLost || quality === 'low' || isReduced) return;
+    if (!isActive || isHidden || contextLost || quality === 'low' || isReduced) return;
     if (!rafId) {
       lastFrameMs = performance.now();
       rafId = requestAnimationFrame(tick);
@@ -920,6 +921,7 @@ export async function createCrtScene({
 
   const onVisibility = () => {
     isHidden = Boolean(document.hidden);
+    if (!isActive || quality === 'low') return;
     if (isHidden) {
       if (rafId) {
         cancelAnimationFrame(rafId);
@@ -952,12 +954,19 @@ export async function createCrtScene({
   renderSingleFrame();
 
   return {
+    setActive(val) {
+      isActive = Boolean(val);
+      if (!isActive && rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    },
     setQuality(nextQ) {
       applyQualitySettings(nextQ);
     },
     resizeViewport(w, h) {
       applyQualitySettings(quality, w, h);
-      if (quality !== 'low') renderSingleFrame();
+      if (isActive && quality !== 'low') renderSingleFrame();
     },
     setCoarsePointer(val) {
       isCoarse = Boolean(val);

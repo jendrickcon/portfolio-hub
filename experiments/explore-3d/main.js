@@ -179,7 +179,6 @@ function readPixelStageBox() {
 
 function applyPixelSceneProjection(frame) {
   if (!frame || displayMode !== '2d') return;
-  const rootStyle = document.documentElement.style;
   if (pixelWorldEl) {
     pixelWorldEl.style.transform = `translate3d(${frame.tx.toFixed(2)}px, ${frame.ty.toFixed(2)}px, 0) scale(${frame.scale.toFixed(4)})`;
   }
@@ -188,20 +187,27 @@ function applyPixelSceneProjection(frame) {
     pixelRoomBandsEl.style.setProperty('--px-desk-top-y', `${frame.deskTopY}px`);
     pixelRoomBandsEl.style.setProperty('--px-desk-lip-y', `${frame.deskLipY}px`);
   }
-  rootStyle.setProperty('--screen-x', `${Math.round(frame.screenRect.x)}px`);
-  rootStyle.setProperty('--screen-y', `${Math.round(frame.screenRect.y)}px`);
-  rootStyle.setProperty('--screen-w', `${Math.round(frame.screenRect.w)}px`);
-  rootStyle.setProperty('--screen-h', `${Math.round(frame.screenRect.h)}px`);
+  // Write directly to chassisEl.style (matching crt-scene.js) so 3D inline properties never shadow 2D
+  const cs = chassisEl.style;
+  cs.setProperty('--screen-x', `${frame.screenRect.x.toFixed(2)}px`);
+  cs.setProperty('--screen-y', `${frame.screenRect.y.toFixed(2)}px`);
+  cs.setProperty('--screen-w', `${frame.screenRect.w.toFixed(2)}px`);
+  cs.setProperty('--screen-h', `${frame.screenRect.h.toFixed(2)}px`);
 
-  rootStyle.setProperty('--disk-hit-x', `${Math.round(frame.diskRect.x)}px`);
-  rootStyle.setProperty('--disk-hit-y', `${Math.round(frame.diskRect.y)}px`);
-  rootStyle.setProperty('--disk-hit-w', `${Math.round(frame.diskRect.w)}px`);
-  rootStyle.setProperty('--disk-hit-h', `${Math.round(frame.diskRect.h)}px`);
+  cs.setProperty('--disk-hit-x', `${frame.diskRect.x.toFixed(2)}px`);
+  cs.setProperty('--disk-hit-y', `${frame.diskRect.y.toFixed(2)}px`);
+  cs.setProperty('--disk-hit-w', `${frame.diskRect.w.toFixed(2)}px`);
+  cs.setProperty('--disk-hit-h', `${frame.diskRect.h.toFixed(2)}px`);
 
-  rootStyle.setProperty('--power-hit-x', `${Math.round(frame.powerRect.x)}px`);
-  rootStyle.setProperty('--power-hit-y', `${Math.round(frame.powerRect.y)}px`);
-  rootStyle.setProperty('--power-hit-w', `${Math.round(frame.powerRect.w)}px`);
-  rootStyle.setProperty('--power-hit-h', `${Math.round(frame.powerRect.h)}px`);
+  cs.setProperty('--power-hit-x', `${frame.powerRect.x.toFixed(2)}px`);
+  cs.setProperty('--power-hit-y', `${frame.powerRect.y.toFixed(2)}px`);
+  cs.setProperty('--power-hit-w', `${frame.powerRect.w.toFixed(2)}px`);
+  cs.setProperty('--power-hit-h', `${frame.powerRect.h.toFixed(2)}px`);
+
+  if (frame.powerVis) {
+    cs.setProperty('--power-vis-w', `${frame.powerVis.w.toFixed(2)}px`);
+    cs.setProperty('--power-vis-h', `${frame.powerVis.h.toFixed(2)}px`);
+  }
 }
 
 function setPixelScenePose(poseName, immediate = false) {
@@ -454,6 +460,10 @@ function tickPixel2dLoop(now) {
       screenRect: lerpRect(from.screenRect, to.screenRect, e),
       diskRect: lerpRect(from.diskRect, to.diskRect, e),
       powerRect: lerpRect(from.powerRect, to.powerRect, e),
+      powerVis: {
+        w: lerpNum(from.powerVis.w, to.powerVis.w, e),
+        h: lerpNum(from.powerVis.h, to.powerVis.h, e),
+      },
     };
     applyPixelSceneProjection(pixelCamCurrent);
     if (rawT >= 1) {
@@ -639,6 +649,7 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
 
   if (displayMode === '2d') {
     if (webglScene) {
+      webglScene.setActive(false);
       webglScene.setQuality('low');
     }
     document.body.classList.remove('mode-3d');
@@ -654,6 +665,7 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
       applyDisplayMode('2d', { manual: false, announceChange: false, immediate: true });
       return;
     }
+    webglScene.setActive(true);
     webglScene.setReducedMotion(reducedMotion);
     webglScene.setQuality(resolve3dQualityTier());
     webglScene.syncBeforeShow(poseName);
@@ -676,7 +688,7 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
   }
 
   if (announceChange) {
-    announce(`Display mode switched to ${displayMode === '3d' ? '3D workstation' : 'Pixel 2D workstation'}.`);
+    announce(`Display mode switched to ${displayMode === '3d' ? '3D workstation' : '2D Pixel workstation'}.`);
   }
   renderDebugHud();
 }
@@ -1178,7 +1190,7 @@ resetPrefBtn.addEventListener('click', () => {
   try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
   const nextAuto = resolveDisplayMode();
   applyDisplayMode(nextAuto, { manual: false, announceChange: true });
-  announce(`Preference cleared. Automatic display mode selected: ${nextAuto === '3d' ? '3D workstation' : 'Pixel 2D workstation'}.`);
+  announce(`Preference cleared. Automatic display mode selected: ${nextAuto === '3d' ? '3D workstation' : '2D Pixel workstation'}.`);
 });
 
 // Internal OS reduced-motion & pointer/viewport adaptation

@@ -14,7 +14,7 @@ export const PIXEL_WORLD = {
   monitorBounds: { x: 112, y: 26, w: 256, h: 218 },
   screenBounds: { x: 136, y: 48, w: 208, h: 156 }, // exact 4:3 CRT glass aperture
   floppyBounds: { x: 204, y: 216, w: 72, h: 20 },  // centered on [112..368] monitor center x=240
-  powerBounds: { x: 318, y: 216, w: 30, h: 20 },   // lower-right physical power control
+  powerBounds: { x: 318, y: 218, w: 26, h: 16 },   // exact physical SVG Power switch bounds
   dadoY: 162,
   deskTopY: 254,
   deskLipY: 346,
@@ -121,6 +121,10 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
     screenRect,
     diskRect,
     powerRect,
+    powerVis: {
+      w: +(PIXEL_WORLD.powerBounds.w * scale),
+      h: +(PIXEL_WORLD.powerBounds.h * scale),
+    },
     dadoY: Math.round(ty + PIXEL_WORLD.dadoY * scale),
     deskTopY: Math.round(ty + PIXEL_WORLD.deskTopY * scale),
     deskLipY: Math.round(ty + PIXEL_WORLD.deskLipY * scale),

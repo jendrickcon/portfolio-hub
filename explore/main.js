@@ -1,0 +1,1489 @@
+import { PixelEnvironment, computePixelSceneFrame } from './pixel-env.js';
+
+// Normalize explicit /index.html visits to canonical /explore/
+if (window.location.pathname.endsWith('/index.html') || window.location.pathname.endsWith('index.html')) {
+  const cleanPath = (window.location.pathname.replace(/\/index\.html$/, '/') || '/') + window.location.search + window.location.hash;
+  window.history.replaceState(null, '', cleanPath);
+}
+
+const STORAGE_KEY = 'enuhri_explore_display_mode';
+const params = new URLSearchParams(window.location.search);
+const DEBUG_MODE = params.get('debug') === '1';
+const INITIAL_NO_WEBGL = params.get('nowebgl') === '1';
+const INITIAL_PIXEL_MODE = ['smooth', 'quantized', 'lowres75', 'lowres50'].includes(params.get('pixel3d'))
+  ? params.get('pixel3d')
+  : 'smooth';
+
+const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+const coarseQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+
+let reducedMotion = Boolean(motionQuery && motionQuery.matches);
+let coarsePointer = Boolean(coarseQuery && coarseQuery.matches);
+let storedManualMode = (() => {
+  try {
+    const val = window.localStorage.getItem(STORAGE_KEY);
+    return val === '3d' || val === '2d' ? val : null;
+  } catch {
+    return null;
+  }
+})();
+
+let manual3dQuality = 'auto';
+let pixelMode = INITIAL_PIXEL_MODE;
+let simulatedNoWebgl = INITIAL_NO_WEBGL;
+let webglFailed = false;
+let webglScene = null;
+let webglStatusText = INITIAL_NO_WEBGL ? 'simulated-off' : 'inactive';
+let displayMode = '3d'; // '3d' | '2d'
+
+const canvasEl = document.getElementById('crt-scene-canvas');
+const pixelMainEl = document.getElementById('proto-main');
+const pixelWorldEl = document.getElementById('pixel2d-world');
+const pixelRoomBandsEl = document.getElementById('pixel2d-room-bands');
+const pixel2dCanvasEl = document.getElementById('pixel2d-env-canvas');
+const pixelEnv = new PixelEnvironment(pixel2dCanvasEl);
+
+const chassisEl = document.getElementById('crt-chassis');
+const overlayEl = chassisEl.querySelector('.screen-overlay');
+const screenContentEl = document.getElementById('screen-content');
+const srStatusEl = document.getElementById('sr-status');
+const perfHudEl = document.getElementById('perf-hud');
+
+const modeRadio3d = document.getElementById('mode-radio-3d');
+const modeRadio2d = document.getElementById('mode-radio-2d');
+const debugControlsEl = document.getElementById('debug-controls');
+const qualitySelect = document.getElementById('quality-select');
+const pixelModeSelect = document.getElementById('pixel-mode-select');
+const webglBtn = document.getElementById('toggle-webgl-btn');
+const resetPrefBtn = document.getElementById('reset-pref-btn');
+
+const hwDiskBtn = document.getElementById('hw-disk-btn');
+const hwPowerBtn = document.getElementById('hw-power-btn');
+
+if (DEBUG_MODE) {
+  document.body.classList.add('has-debug');
+  debugControlsEl.hidden = false;
+  perfHudEl.hidden = false;
+}
+pixelModeSelect.value = pixelMode;
+
+// Six visible catalog slots (DevPath occupies Slot 06; Sandbox launches from centered floppy bay)
+const CATALOG_SLOTS = [
+  {
+    index: '01',
+    id: 'professional',
+    name: 'Professional Portfolio',
+    status: 'LIVE',
+    category: 'Primary Hiring-Facing Portfolio',
+    tagline: 'Evidence-Backed Case Studies, Public Résumé & System Reconstructions',
+    summary: 'The canonical hiring-facing portfolio served at /, presenting UDM-RADAR, StudyQuest, Mini PCS, supporting media, project-linked capabilities, and a phone-free public résumé.',
+    devStatus: 'LIVE — Primary Portfolio at /',
+    link: '/',
+  },
+  {
+    index: '02',
+    id: 'udm-radar',
+    name: 'UDM-RADAR',
+    status: 'READY',
+    category: 'Academic Analytics & Decision-Support System (Capstone)',
+    tagline: 'Advisory Risk Analytics and GWA Projection on Synthetic Records',
+    summary: 'A four-member BSIT capstone prototype for the College of Computing Studies at Universidad de Manila. Uses synthetic academic data for privacy; Decision Tree Regressor GWA projections remain advisory to support faculty and student review rather than making autonomous academic decisions.',
+    features: [
+      'Three role-governed portals: Student, Faculty, and Admin',
+      'Advisory GWA projections powered by a Decision Tree Regressor on synthetic records',
+      'Human-in-the-loop intervention workflow supporting faculty review',
+      'Interactive Chart.js longitudinal performance trends and curriculum checklist validation',
+      'Audit trails, risk rosters, and branded Dompdf exports (not deployed on live student records)',
+    ],
+    technologies: ['PHP 8.2', 'MySQL / MariaDB', 'Python', 'Flask', 'scikit-learn', 'Chart.js', 'Dompdf'],
+    devStatus: 'FUNCTIONAL CAPSTONE PROTOTYPE — SYNTHETIC DATASET / HUMAN REVIEW ONLY',
+    image: '../assets/projects/udm-radar.png',
+    actions: [
+      { label: 'VIEW INTERACTIVE CASE STUDY ▸', href: '/#udm-radar', primary: true, external: false },
+      { label: 'VIEW SOURCE REPOSITORY ↗', href: 'https://github.com/jendrickcon/udm-radar', primary: false, external: true },
+    ],
+  },
+  {
+    index: '03',
+    id: 'studyquest',
+    name: 'StudyQuest',
+    status: 'READY',
+    category: 'AI-Assisted Gamified Learning Platform',
+    tagline: 'Turn Syllabi Into Structured Courses and Assessments',
+    summary: 'An AI-assisted team learning platform that transforms uploaded syllabi, modules, and reviewers into structured chapter reviews, mixed assessments, and progression tracks using Gemini API integration with Pydantic-validated structured output.',
+    features: [
+      'Structured course generation from uploaded documents via Gemini API with Pydantic-validated output',
+      'Chapter reviews highlighting core concepts, misconceptions, and exam traps',
+      'Server-graded mixed assessments: Multiple Choice, True/False, Identification, and Enumeration',
+      'Progression engine with XP rewards, streaks, test-out routes, and anti-farming safeguards',
+      'Mobile-first responsive reader and full interactive case study on the main portfolio',
+    ],
+    technologies: ['Django 5.2', 'Python', 'Gemini API', 'Pydantic', 'SQLite', 'Vanilla JS'],
+    devStatus: 'FUNCTIONAL TEAM PROJECT — LEARNING OUTCOMES NOT VERIFIED',
+    image: '../assets/projects/studyquest.png',
+    actions: [
+      { label: 'VIEW INTERACTIVE CASE STUDY ▸', href: '/#studyquest', primary: true, external: false },
+      { label: 'VIEW SOURCE REPOSITORY ↗', href: 'https://github.com/zap1104/studyquest', primary: false, external: true },
+    ],
+  },
+  {
+    index: '04',
+    id: 'art-gallery',
+    name: 'Enuhri Art Gallery',
+    status: 'READY',
+    category: 'Interactive Virtual Museum',
+    link: '/art-gallery/',
+  },
+  {
+    index: '05',
+    id: 'cyberdefender',
+    name: 'CyberDefender',
+    status: 'READY',
+    category: 'Cybersecurity Tactical Simulation (Web Reimagining)',
+    tagline: 'Gamified Threat Neutralization & Incident Response',
+    summary: 'Originally prototyped in Godot 4 as a mobile cybersecurity simulation, CyberDefender has been reimagined and rebuilt as a native HTML/web tactical adventure where players practice threat recognition, defensive scripting, and incident response.',
+    features: [
+      'Turn-based incident response combat (EXECUTE, KNOWLEDGE, PATCHES, RUN)',
+      'Core malware archetypes: Adware, Spyware, Trojans, Rootkits, and Ransomware',
+      'Progressive 3-Tier Difficulty Modes (PCB Sector, Hazard Zone, System Overload)',
+      'Offline Unix timestamp-based resource cooldowns and daily retention penalties',
+      'Dynamic rank progression from SCRIPT KIDDIE to INCIDENT COMMANDER',
+    ],
+    technologies: ['HTML5 & Modern DOM', 'Vanilla ES Modules', 'SVG Vector Graphics', 'Web Audio API', 'Offline LocalStorage'],
+    devStatus: 'LIVE NATIVE WEB REIMAGINING — /cyberdefender/',
+    image: '../assets/projects/cyberdefender.png',
+    actions: [
+      { label: '▶ PLAY WEB REIMAGINING', href: '/cyberdefender/', primary: true, external: false },
+    ],
+  },
+  {
+    index: '06',
+    id: 'devpath',
+    name: 'DevPath',
+    status: 'PAUSED PROTOTYPE',
+    statusKey: 'paused',
+    category: 'Architecture & Decision-Graph Prototype (Paused)',
+    tagline: 'Graph-First Project Architecture Explorer',
+    summary: 'An experimental decision-graph prototype that maps project goals and constraints to candidate technical stacks and architecture trade-offs. Development is currently paused: the Game Architecture branch is interactive, while Software & Systems and Website & Web App domains remain incomplete.',
+    features: [
+      'Interactive Game Architecture decision graph with constraint filtering',
+      'Dual Blueprint / Root visual themes and live architecture breadcrumb trail',
+      'Validated JSON graph schema and standalone Node.js engine test checks',
+      'Development intentionally paused while broader non-game domains remain incomplete',
+    ],
+    technologies: ['HTML5', 'CSS3', 'Vanilla ES Modules', 'SVG Graph', 'JSON Schema'],
+    devStatus: 'PAUSED PROTOTYPE — GAME ARCHITECTURE AVAILABLE; BROADER DOMAINS INCOMPLETE',
+    actions: [
+      { label: 'OPEN PROTOTYPE (/devpath/) ▸', href: '/devpath/', primary: true, external: false },
+    ],
+  },
+];
+
+const INLINE_DOSSIER_IDS = new Set(['udm-radar', 'studyquest', 'cyberdefender', 'devpath']);
+
+const STATE_GLOW_HEX = {
+  standby: '#6b7c3e',
+  menu: '#39ff14',
+  live: '#00e5ff',
+  paused: '#ffbf00',
+  off: '#122014',
+};
+
+let currentView = 'standby'; // 'standby' | 'boot' | 'menu' | 'dossier' | 'restarting'
+let lastTriggerAppId = null;
+let activeTimers = [];
+let bootDone = false;
+let isRestarting = false;
+let modeSwitchTimer = null;
+
+// Floppy bay state machine + 6-frame Pixel 2D stepper
+let drivePhase = 'closed'; // 'closed' | 'intent' | 'opening' | 'open'
+let driveIntentTimer = null;
+let driveOpenTimer = null;
+let driveLeaveTimer = null;
+let driveStepInterval = null;
+let currentPixelFrame = 0;
+let driveLatched = false;
+let lastDiskPointerType = 'mouse';
+
+// Pixel 2D 13.5 FPS environment loop, inactivity sleep & unified scene-pose tween
+let pixel2dRafId = null;
+let pixel2dLastMs = performance.now();
+let pixel2dActivityMs = performance.now();
+let pixel2dUploadTimestamps = [];
+let pixel2dStateText = 'idle (0 FPS)';
+let pixelPoseTarget = 'standby';
+let pixelCamCurrent = null;
+let pixelCamTween = null;
+
+function setUrlHash(hashValue, { replace = false } = {}) {
+  const nextUrl = window.location.pathname + window.location.search + (hashValue || '');
+  const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+  if (nextUrl === currentUrl) return;
+  if (replace) window.history.replaceState(null, '', nextUrl);
+  else window.history.pushState(null, '', nextUrl);
+}
+
+function readPixelStageBox() {
+  if (!pixelMainEl) {
+    const vp = readViewportMetrics();
+    return { w: vp.w, h: vp.h, top: 0 };
+  }
+  const rect = pixelMainEl.getBoundingClientRect();
+  const vp = readViewportMetrics();
+  return {
+    w: rect.width > 10 ? rect.width : vp.w,
+    h: rect.height > 10 ? rect.height : Math.max(120, vp.h - 62),
+    top: rect.top || 0,
+  };
+}
+
+function applyPixelSceneProjection(frame) {
+  if (!frame || displayMode !== '2d') return;
+  if (pixelWorldEl) {
+    pixelWorldEl.style.transform = `translate3d(${frame.tx.toFixed(2)}px, ${frame.ty.toFixed(2)}px, 0) scale(${frame.scale.toFixed(4)})`;
+  }
+  if (pixelRoomBandsEl) {
+    pixelRoomBandsEl.style.setProperty('--px-dado-y', `${frame.dadoY}px`);
+    pixelRoomBandsEl.style.setProperty('--px-desk-top-y', `${frame.deskTopY}px`);
+    pixelRoomBandsEl.style.setProperty('--px-desk-lip-y', `${frame.deskLipY}px`);
+  }
+  const cs = chassisEl.style;
+  cs.setProperty('--screen-x', `${frame.screenRect.x.toFixed(2)}px`);
+  cs.setProperty('--screen-y', `${frame.screenRect.y.toFixed(2)}px`);
+  cs.setProperty('--screen-w', `${frame.screenRect.w.toFixed(2)}px`);
+  cs.setProperty('--screen-h', `${frame.screenRect.h.toFixed(2)}px`);
+
+  cs.setProperty('--disk-hit-x', `${frame.diskRect.x.toFixed(2)}px`);
+  cs.setProperty('--disk-hit-y', `${frame.diskRect.y.toFixed(2)}px`);
+  cs.setProperty('--disk-hit-w', `${frame.diskRect.w.toFixed(2)}px`);
+  cs.setProperty('--disk-hit-h', `${frame.diskRect.h.toFixed(2)}px`);
+
+  cs.setProperty('--power-hit-x', `${frame.powerRect.x.toFixed(2)}px`);
+  cs.setProperty('--power-hit-y', `${frame.powerRect.y.toFixed(2)}px`);
+  cs.setProperty('--power-hit-w', `${frame.powerRect.w.toFixed(2)}px`);
+  cs.setProperty('--power-hit-h', `${frame.powerRect.h.toFixed(2)}px`);
+
+  if (frame.powerVis) {
+    cs.setProperty('--power-vis-w', `${frame.powerVis.w.toFixed(2)}px`);
+    cs.setProperty('--power-vis-h', `${frame.powerVis.h.toFixed(2)}px`);
+  }
+}
+
+function setPixelScenePose(poseName, immediate = false) {
+  pixelPoseTarget = poseName || 'standby';
+  if (displayMode !== '2d') return;
+
+  const { w, h, top } = readPixelStageBox();
+  const targetFrame = computePixelSceneFrame(w, h, pixelPoseTarget, top);
+
+  if (immediate || reducedMotion || !pixelCamCurrent) {
+    pixelCamTween = null;
+    pixelCamCurrent = targetFrame;
+    applyPixelSceneProjection(targetFrame);
+    renderDebugHud();
+    return;
+  }
+
+  pixelCamTween = {
+    from: { ...pixelCamCurrent },
+    to: targetFrame,
+    startMs: performance.now(),
+    durationMs: targetFrame.durationMs || 650,
+  };
+  pixel2dActivityMs = performance.now();
+  startOrResumePixel2dLoop();
+}
+
+function clearActiveTimers() {
+  activeTimers.forEach(clearTimeout);
+  activeTimers = [];
+}
+
+function scheduleTimer(fn, ms) {
+  const id = setTimeout(fn, ms);
+  activeTimers.push(id);
+  return id;
+}
+
+function announce(text) {
+  if (!srStatusEl) return;
+  srStatusEl.textContent = '';
+  requestAnimationFrame(() => {
+    srStatusEl.textContent = text;
+  });
+}
+
+function focusSafely(el) {
+  if (el && typeof el.focus === 'function') {
+    el.focus({ preventScroll: true });
+  }
+}
+
+function readViewportMetrics() {
+  const docEl = document.documentElement;
+  const layoutW = Math.max(1, Math.round(docEl?.clientWidth || window.innerWidth));
+  const layoutH = Math.max(1, Math.round(window.innerHeight || docEl?.clientHeight));
+  const vv = window.visualViewport;
+  const visualScale = vv && typeof vv.scale === 'number' ? vv.scale : 1;
+  const visualW = Math.max(1, Math.round(vv ? vv.width : layoutW));
+  const visualH = Math.max(1, Math.round(vv ? vv.height : layoutH));
+  const visualOffsetLeft = vv ? +(vv.offsetLeft || 0).toFixed(2) : 0;
+  const visualOffsetTop = vv ? +(vv.offsetTop || 0).toFixed(2) : 0;
+  const isScaled = Boolean(vv) && Math.abs(visualScale - 1) >= 0.02;
+  const w = isScaled ? layoutW : (vv ? visualW : layoutW);
+  const h = isScaled ? layoutH : (vv ? visualH : layoutH);
+  return {
+    w,
+    h,
+    layoutW,
+    layoutH,
+    visualW,
+    visualH,
+    visualScale: +visualScale.toFixed(3),
+    visualOffsetLeft,
+    visualOffsetTop,
+    isScaled,
+  };
+}
+
+function isCompactViewport() {
+  const { w, h } = readViewportMetrics();
+  return w <= 639 || h <= 560;
+}
+
+function resolveDisplayMode() {
+  if (simulatedNoWebgl || webglFailed) return '2d';
+  if (storedManualMode === '3d' || storedManualMode === '2d') return storedManualMode;
+  if (isCompactViewport() || coarsePointer || reducedMotion) return '2d';
+  return '3d';
+}
+
+function resolve3dQualityTier() {
+  if (displayMode !== '3d' || simulatedNoWebgl || webglFailed) return 'low';
+  if (isCompactViewport() || coarsePointer) return 'mobile';
+  if (manual3dQuality === 'medium') return 'medium';
+  return 'high';
+}
+
+function setScreenLightState(stateName) {
+  const color = STATE_GLOW_HEX[stateName] || STATE_GLOW_HEX.menu;
+  document.documentElement.style.setProperty('--pixel-desk-glow', color);
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setScreenState(stateName);
+  }
+}
+
+function setPixelFloppyFrameTarget(targetFrame) {
+  if (driveStepInterval) {
+    clearInterval(driveStepInterval);
+    driveStepInterval = null;
+  }
+  const immediate = reducedMotion || displayMode === '3d';
+  if (immediate || currentPixelFrame === targetFrame) {
+    currentPixelFrame = targetFrame;
+    hwDiskBtn.dataset.pixelFrame = String(targetFrame);
+    document.body.dataset.pixelFrame = String(targetFrame);
+    return;
+  }
+  driveStepInterval = setInterval(() => {
+    if (currentPixelFrame < targetFrame) currentPixelFrame += 1;
+    else if (currentPixelFrame > targetFrame) currentPixelFrame -= 1;
+    hwDiskBtn.dataset.pixelFrame = String(currentPixelFrame);
+    document.body.dataset.pixelFrame = String(currentPixelFrame);
+    if (currentPixelFrame === targetFrame) {
+      clearInterval(driveStepInterval);
+      driveStepInterval = null;
+    }
+  }, 210);
+}
+
+function syncFloppyDomAndScene() {
+  hwDiskBtn.dataset.driveState = drivePhase;
+  document.body.dataset.driveState = drivePhase;
+  const isExpanded = drivePhase === 'opening' || drivePhase === 'open';
+  hwDiskBtn.setAttribute('aria-expanded', String(isExpanded));
+
+  setPixelFloppyFrameTarget(isExpanded ? 5 : 0);
+
+  if (displayMode === '3d' && webglScene) {
+    const progress = isExpanded ? 1 : 0;
+    const led = isExpanded ? 'open' : drivePhase === 'intent' ? 'intent' : 'idle';
+    webglScene.setFloppyState({ progress, led });
+  }
+}
+
+function clearFloppyTimers() {
+  if (driveIntentTimer) { clearTimeout(driveIntentTimer); driveIntentTimer = null; }
+  if (driveOpenTimer) { clearTimeout(driveOpenTimer); driveOpenTimer = null; }
+  if (driveLeaveTimer) { clearTimeout(driveLeaveTimer); driveLeaveTimer = null; }
+}
+
+function closeFloppyTray(immediate = false) {
+  clearFloppyTimers();
+  driveLatched = false;
+  if (drivePhase !== 'closed' || immediate) {
+    drivePhase = 'closed';
+    if (immediate) {
+      if (driveStepInterval) { clearInterval(driveStepInterval); driveStepInterval = null; }
+      currentPixelFrame = 0;
+      hwDiskBtn.dataset.pixelFrame = '0';
+      document.body.dataset.pixelFrame = '0';
+    }
+    syncFloppyDomAndScene();
+  }
+}
+
+function openFloppyTrayFromHover() {
+  clearFloppyTimers();
+  drivePhase = 'intent';
+  syncFloppyDomAndScene();
+
+  driveIntentTimer = setTimeout(() => {
+    driveIntentTimer = null;
+    const immediate = reducedMotion;
+    drivePhase = immediate ? 'open' : 'opening';
+    syncFloppyDomAndScene();
+
+    if (immediate) {
+      announce('Unknown disk detected: SANDBOX.SYS. Activate to launch Sandbox.');
+    } else {
+      driveOpenTimer = setTimeout(() => {
+        driveOpenTimer = null;
+        if (drivePhase === 'opening') {
+          drivePhase = 'open';
+          syncFloppyDomAndScene();
+          announce('Unknown disk detected: SANDBOX.SYS. Activate to launch Sandbox.');
+        }
+      }, 1200);
+    }
+  }, 600);
+}
+
+function openFloppyTrayLatched() {
+  clearFloppyTimers();
+  driveLatched = true;
+  const immediate = reducedMotion;
+  drivePhase = immediate ? 'open' : 'opening';
+  syncFloppyDomAndScene();
+  announce('Hidden Sandbox disk opening. SANDBOX.SYS detected. Activate again to launch Sandbox.');
+
+  if (!immediate) {
+    driveOpenTimer = setTimeout(() => {
+      driveOpenTimer = null;
+      if (drivePhase === 'opening') {
+        drivePhase = 'open';
+        syncFloppyDomAndScene();
+      }
+    }, 1150);
+  }
+}
+
+function launchExternalRoute(url) {
+  setUrlHash('#menu', { replace: true });
+  window.location.assign(url);
+}
+
+// ---- Pixel 2D 13.5 FPS Environment Loop ----
+function stopPixel2dLoop(reasonState) {
+  if (pixel2dRafId) {
+    cancelAnimationFrame(pixel2dRafId);
+    pixel2dRafId = null;
+  }
+  pixel2dStateText = reasonState || 'paused (0 FPS)';
+  pixel2dUploadTimestamps = [];
+  renderDebugHud();
+}
+
+function lerpNum(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpRect(r0, r1, t) {
+  return {
+    x: lerpNum(r0.x, r1.x, t),
+    y: lerpNum(r0.y, r1.y, t),
+    w: lerpNum(r0.w, r1.w, t),
+    h: lerpNum(r0.h, r1.h, t),
+  };
+}
+
+function tickPixel2dLoop(now) {
+  pixel2dRafId = null;
+  if (displayMode !== '2d') {
+    stopPixel2dLoop('inactive');
+    return;
+  }
+  if (document.hidden) {
+    stopPixel2dLoop('hidden (0 FPS)');
+    return;
+  }
+  if (reducedMotion) {
+    if (pixelCamTween) {
+      pixelCamCurrent = pixelCamTween.to;
+      pixelCamTween = null;
+      applyPixelSceneProjection(pixelCamCurrent);
+    }
+    pixelEnv.renderStatic();
+    stopPixel2dLoop('reduced-motion (0 FPS)');
+    return;
+  }
+
+  if (pixelCamTween) {
+    const rawT = Math.min(1, (now - pixelCamTween.startMs) / pixelCamTween.durationMs);
+    const e = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+    const { from, to } = pixelCamTween;
+    pixelCamCurrent = {
+      ...to,
+      scale: lerpNum(from.scale, to.scale, e),
+      tx: lerpNum(from.tx, to.tx, e),
+      ty: lerpNum(from.ty, to.ty, e),
+      dadoY: Math.round(lerpNum(from.dadoY, to.dadoY, e)),
+      deskTopY: Math.round(lerpNum(from.deskTopY, to.deskTopY, e)),
+      deskLipY: Math.round(lerpNum(from.deskLipY, to.deskLipY, e)),
+      screenRect: lerpRect(from.screenRect, to.screenRect, e),
+      diskRect: lerpRect(from.diskRect, to.diskRect, e),
+      powerRect: lerpRect(from.powerRect, to.powerRect, e),
+      powerVis: {
+        w: lerpNum(from.powerVis.w, to.powerVis.w, e),
+        h: lerpNum(from.powerVis.h, to.powerVis.h, e),
+      },
+    };
+    applyPixelSceneProjection(pixelCamCurrent);
+    if (rawT >= 1) {
+      pixelCamCurrent = to;
+      pixelCamTween = null;
+      renderDebugHud();
+    }
+  }
+
+  if (!pixelCamTween && now - pixel2dActivityMs > 10000) {
+    stopPixel2dLoop('pixel2d-idle (0 FPS)');
+    return;
+  }
+
+  const dt = Math.min(0.1, (now - pixel2dLastMs) / 1000);
+  pixel2dLastMs = now;
+  const updated = pixelEnv.step(dt, true);
+  if (updated) {
+    pixel2dUploadTimestamps.push(now);
+    pixel2dUploadTimestamps = pixel2dUploadTimestamps.filter((ts) => now - ts <= 1000);
+    renderDebugHud();
+  }
+  pixel2dStateText = 'pixel2d-active (13.5 FPS)';
+  pixel2dRafId = requestAnimationFrame(tickPixel2dLoop);
+}
+
+function startOrResumePixel2dLoop() {
+  if (displayMode !== '2d') return;
+  if (document.hidden) {
+    stopPixel2dLoop('hidden (0 FPS)');
+    return;
+  }
+  if (reducedMotion) {
+    pixelEnv.renderStatic();
+    stopPixel2dLoop('reduced-motion (0 FPS)');
+    return;
+  }
+  if (!pixel2dRafId) {
+    pixel2dLastMs = performance.now();
+    pixel2dStateText = 'pixel2d-active (13.5 FPS)';
+    pixel2dRafId = requestAnimationFrame(tickPixel2dLoop);
+  }
+}
+
+function recordUserActivity() {
+  pixel2dActivityMs = performance.now();
+  if (displayMode === '2d' && !pixel2dRafId && !reducedMotion && !document.hidden) {
+    startOrResumePixel2dLoop();
+  }
+}
+
+// ---- HUD / Metrics ----
+function renderDebugHud(sceneMetrics = null) {
+  const m = displayMode === '3d' && webglScene
+    ? (sceneMetrics || webglScene.getMetrics())
+    : {
+        fps: pixel2dStateText.startsWith('pixel2d-active') ? (pixel2dUploadTimestamps.length || 14) : 0,
+        avgFrameMs: +pixelEnv.lastTickMs.toFixed(2),
+        maxFrameMs: +pixelEnv.lastTickMs.toFixed(2),
+        drawCalls: 0,
+        triangles: 0,
+        dpr: 1,
+        renderScale: 1,
+        pixelMode: 'pixel-2d',
+        cameraPose: `pixel-${pixelPoseTarget}`,
+        pixelTickMs: +pixelEnv.lastTickMs.toFixed(2),
+        pixelUploadsPerSec: pixel2dUploadTimestamps.length,
+        loopState: pixel2dStateText,
+      };
+
+  const effQuality = displayMode === '2d' ? 'low' : resolve3dQualityTier();
+  const vpDebug = readViewportMetrics();
+  window.__explore3dMetrics = {
+    displayMode,
+    effectiveQuality: effQuality,
+    storedPreference: storedManualMode,
+    manual3dQuality,
+    webglStatus: webglStatusText,
+    reducedMotion,
+    coarsePointer,
+    currentView,
+    drivePhase,
+    viewport: vpDebug,
+    ...m,
+  };
+
+  if (!DEBUG_MODE || perfHudEl.hidden) return;
+  perfHudEl.innerHTML = [
+    `<div><strong>MODE:</strong> ${displayMode.toUpperCase()} (${storedManualMode ? 'manual' : 'auto'}) | <strong>RM:</strong> ${reducedMotion ? 'ON' : 'OFF'}</div>`,
+    `<div><strong>FPS:</strong> ${m.fps} | <strong>LOOP:</strong> ${m.loopState}</div>`,
+    `<div><strong>FRAME:</strong> avg ${m.avgFrameMs}ms / max ${m.maxFrameMs}ms</div>`,
+    `<div><strong>GPU:</strong> ${m.drawCalls} calls | ${m.triangles} tris | DPR ${m.dpr}</div>`,
+    `<div><strong>PIXEL 320×180:</strong> ${m.pixelTickMs}ms | ${m.pixelUploadsPerSec} up/s | <strong>DISK:</strong> ${drivePhase}</div>`,
+    `<div><strong>WEBGL:</strong> ${webglStatusText}</div>`,
+  ].join('');
+}
+
+async function ensureWebGL() {
+  if (webglScene || simulatedNoWebgl || webglFailed) return Boolean(webglScene);
+
+  try {
+    const mod = await import('./crt-scene.js');
+    webglScene = await mod.createCrtScene({
+      canvas: canvasEl,
+      overlayContainer: chassisEl,
+      pixelEnv,
+      initialQuality: resolve3dQualityTier() === 'low' ? 'high' : resolve3dQualityTier(),
+      initialPixelMode: pixelMode,
+      reducedMotion,
+      coarsePointer,
+      getViewportSize: readViewportMetrics,
+      onFatalFallback(reason) {
+        webglFailed = true;
+        webglStatusText = 'failed: ' + reason;
+        applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true });
+      },
+    });
+    webglStatusText = 'active (three r170)';
+    webglScene.setCallbacks({
+      autoDowngrade(nextQ, avgMs) {
+        if (displayMode !== '3d') return;
+        if (nextQ === '2d-fallback') {
+          webglFailed = true;
+          webglStatusText = `slow-frame fallback (${avgMs.toFixed(1)}ms -> Pixel 2D)`;
+          applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true });
+          return;
+        }
+        if (manual3dQuality === 'auto') {
+          webglStatusText = `active (auto -> ${nextQ}, ${avgMs.toFixed(1)}ms)`;
+          webglScene.setQuality(nextQ);
+          renderDebugHud();
+        }
+      },
+      metricsCb: renderDebugHud,
+    });
+    return true;
+  } catch (err) {
+    webglFailed = true;
+    webglStatusText = 'failed: ' + (err?.message || 'load error');
+    webglScene = null;
+    return false;
+  }
+}
+
+async function applyDisplayMode(targetMode, { manual = false, announceChange = false, immediate = false } = {}) {
+  const prevFocus = document.activeElement;
+  if (manual) {
+    storedManualMode = targetMode;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, targetMode);
+    } catch {}
+  }
+
+  let nextMode = targetMode;
+  if (simulatedNoWebgl || webglFailed) {
+    nextMode = '2d';
+  }
+
+  const changed = displayMode !== nextMode;
+  displayMode = nextMode;
+
+  modeRadio3d.checked = displayMode === '3d';
+  modeRadio2d.checked = displayMode === '2d';
+
+  if (modeSwitchTimer) {
+    clearTimeout(modeSwitchTimer);
+    modeSwitchTimer = null;
+  }
+  if (changed && !immediate && !reducedMotion) {
+    document.body.classList.add('mode-switching');
+    modeSwitchTimer = setTimeout(() => {
+      document.body.classList.remove('mode-switching');
+      modeSwitchTimer = null;
+    }, 300);
+  } else {
+    document.body.classList.remove('mode-switching');
+  }
+
+  if (drivePhase !== 'closed') {
+    closeFloppyTray(true);
+  }
+
+  const poseName = currentView === 'boot'
+    ? 'boot'
+    : currentView === 'standby' || currentView === 'restarting'
+      ? 'standby'
+      : 'menu';
+
+  if (displayMode === '2d') {
+    if (webglScene) {
+      webglScene.setEmbedMode(false);
+      webglScene.setActive(false);
+      webglScene.setQuality('low');
+    }
+    document.body.classList.remove('mode-3d');
+    document.body.classList.add('mode-pixel-2d');
+    canvasEl.setAttribute('data-active', 'false');
+    pixelEnv.renderStatic();
+    setPixelScenePose(poseName, true);
+    startOrResumePixel2dLoop();
+  } else {
+    stopPixel2dLoop('inactive (3D mode)');
+    const ok = await ensureWebGL();
+    if (!ok || displayMode !== '3d') {
+      applyDisplayMode('2d', { manual: false, announceChange: false, immediate: true });
+      return;
+    }
+    document.body.classList.remove('mode-pixel-2d');
+    document.body.classList.add('mode-3d');
+    canvasEl.setAttribute('data-active', 'true');
+    webglScene.setActive(true);
+    webglScene.setReducedMotion(reducedMotion);
+    webglScene.setQuality(resolve3dQualityTier());
+    webglScene.setEmbedMode(false);
+    webglScene.syncBeforeShow(poseName);
+    let targetLight = 'menu';
+    if (currentView === 'standby') targetLight = 'standby';
+    else if (currentView === 'restarting') targetLight = 'paused';
+    else if (currentView === 'dossier' && lastTriggerAppId === 'devpath') targetLight = 'paused';
+    setScreenLightState(targetLight);
+    webglScene.renderSingleFrame();
+  }
+
+  if (prevFocus && document.body.contains(prevFocus) && document.activeElement !== prevFocus) {
+    focusSafely(prevFocus);
+  }
+
+  if (announceChange) {
+    announce(`Display mode switched to ${displayMode === '3d' ? '3D workstation' : '2D Pixel workstation'}.`);
+  }
+  renderDebugHud();
+}
+
+function applyMotionPreference() {
+  document.body.classList.toggle('reduce-motion', reducedMotion);
+  if (webglScene) webglScene.setReducedMotion(reducedMotion);
+  if (displayMode === '2d') {
+    if (reducedMotion) {
+      pixelEnv.renderStatic();
+      stopPixel2dLoop('reduced-motion (0 FPS)');
+    } else {
+      startOrResumePixel2dLoop();
+    }
+  }
+  renderDebugHud();
+}
+
+function applyNoWebglUI() {
+  if (!webglBtn) return;
+  webglBtn.setAttribute('aria-pressed', String(simulatedNoWebgl));
+  webglBtn.textContent = `SIMULATE NO-WEBGL: ${simulatedNoWebgl ? 'ON' : 'OFF'}`;
+}
+
+// ---- Shared Screen States (Layer 3) ----
+function renderStandby({ restoreFocus = false, updateHistory = true } = {}) {
+  clearActiveTimers();
+  currentView = 'standby';
+  isRestarting = false;
+  hwPowerBtn.disabled = false;
+  document.body.classList.remove('is-powered', 'is-restarting');
+  overlayEl.classList.remove('is-collapsing');
+  if (updateHistory) setUrlHash('');
+
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setCameraState('standby');
+  } else {
+    setPixelScenePose('standby');
+  }
+  setScreenLightState('standby');
+
+  screenContentEl.innerHTML = `
+    <div class="standby-view">
+      <p class="standby-label">STANDBY · WORKSTATION READY</p>
+      <button type="button" id="start-explore-btn" class="start-btn">START EXPLORE ▸</button>
+    </div>
+  `;
+  screenContentEl.scrollTop = 0;
+  const startBtn = document.getElementById('start-explore-btn');
+  startBtn.addEventListener('click', startWorkstation);
+  if (restoreFocus) {
+    focusSafely(startBtn);
+  }
+  renderDebugHud();
+}
+
+function startWorkstation() {
+  if (isRestarting) return;
+  closeFloppyTray(true);
+  document.body.classList.add('is-powered');
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setCameraState('boot');
+  } else {
+    setPixelScenePose('boot');
+  }
+  setScreenLightState('menu');
+  renderBoot();
+}
+
+function renderBoot() {
+  clearActiveTimers();
+  currentView = 'boot';
+  bootDone = false;
+  const lines = [
+    'ENUHRI SYSTEM v1.1',
+    'CHECKING CRT APERTURE SYNC .... OK',
+    'MOUNTING PORTFOLIO ROUTES ..... OK',
+    'LOADING 6 CATALOG SLOTS ....... READY',
+    'SANDBOX.SYS FLOPPY BAY ........ STANDBY',
+  ];
+
+  screenContentEl.innerHTML = `
+    <div id="boot-view" class="boot-view">
+      <pre id="boot-log" class="boot-log" aria-hidden="true"></pre>
+      <button type="button" id="boot-skip-btn" class="boot-skip-btn">SKIP ▸</button>
+    </div>
+  `;
+  screenContentEl.scrollTop = 0;
+  const logEl = document.getElementById('boot-log');
+  const skipBtn = document.getElementById('boot-skip-btn');
+
+  const finishBoot = () => {
+    bootDone = true;
+    skipBtn.textContent = 'CONTINUE ▸';
+    skipBtn.setAttribute('aria-label', 'Continue to portfolio application catalog');
+    announce('Workstation ready. Activate Continue to open catalog.');
+  };
+
+  if (reducedMotion) {
+    logEl.textContent = lines.join('\n');
+    finishBoot();
+  } else {
+    logEl.textContent = '';
+    announce('System booting. Activate Skip to continue.');
+    let d = 0;
+    lines.forEach((line, idx) => {
+      d += 180;
+      scheduleTimer(() => {
+        logEl.textContent += (idx ? '\n' : '') + line;
+      }, d);
+    });
+    scheduleTimer(finishBoot, d + 200);
+  }
+
+  skipBtn.addEventListener('click', () => {
+    if (!bootDone) {
+      clearActiveTimers();
+      logEl.textContent = lines.join('\n');
+      finishBoot();
+      focusSafely(skipBtn);
+    } else {
+      renderMenu({ shouldFocus: true, updateHistory: true });
+    }
+  });
+
+  document.getElementById('boot-view').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      triggerRestart();
+    }
+  });
+
+  focusSafely(skipBtn);
+  renderDebugHud();
+}
+
+function getGridRows(gridItems) {
+  const rows = [];
+  gridItems.forEach((el, idx) => {
+    const r = el.getBoundingClientRect();
+    const cy = r.top + r.height / 2;
+    const cx = r.left + r.width / 2;
+    let row = rows.find((rowObj) => Math.abs(rowObj.cy - cy) < Math.max(12, r.height * 0.45));
+    if (!row) {
+      row = { cy, cells: [] };
+      rows.push(row);
+    }
+    row.cells.push({ idx, cx, cy });
+  });
+  rows.sort((a, b) => a.cy - b.cy);
+  rows.forEach((row) => row.cells.sort((a, b) => a.cx - b.cx));
+  return rows;
+}
+
+function renderMenu({ shouldFocus = false, focusAppId = null, updateHistory = false, immediatePose = false } = {}) {
+  clearActiveTimers();
+  currentView = 'menu';
+  isRestarting = false;
+  hwPowerBtn.disabled = false;
+  document.body.classList.remove('is-restarting');
+  document.body.classList.add('is-powered');
+  if (updateHistory) setUrlHash('#menu');
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setCameraState('menu', immediatePose ? 0 : undefined);
+  } else {
+    setPixelScenePose('menu', immediatePose);
+  }
+  setScreenLightState('menu');
+
+  screenContentEl.innerHTML = `
+    <div id="app-menu" class="app-menu">
+      <h2 class="app-menu-header" tabindex="-1">APPLICATION CATALOG</h2>
+      <nav class="app-nav" aria-label="Portfolio applications">
+        <ul class="app-grid">
+          ${CATALOG_SLOTS.map((app) => {
+            const stateType = app.statusKey || app.status.toLowerCase();
+            return `
+            <li class="app-grid-item">
+              <button type="button" class="app-tile" data-app-id="${app.id}" data-status="${stateType}" aria-label="${app.name}, ${app.status}">
+                <span class="app-index" aria-hidden="true">${app.index}</span>
+                <span class="app-name">${app.name}</span>
+                <span class="app-status" aria-hidden="true">${app.status}</span>
+              </button>
+            </li>
+          `;
+          }).join('')}
+        </ul>
+      </nav>
+    </div>
+  `;
+  screenContentEl.scrollTop = 0;
+
+  const menuEl = document.getElementById('app-menu');
+  const items = Array.from(menuEl.querySelectorAll('.app-tile'));
+
+  items.forEach((btn) => {
+    const id = btn.dataset.appId;
+    const status = btn.dataset.status;
+
+    const hintLight = () => {
+      if (status === 'live') setScreenLightState('live');
+      else if (status === 'paused') setScreenLightState('paused');
+      else setScreenLightState('menu');
+    };
+    const resetLight = () => {
+      if (currentView === 'menu') setScreenLightState('menu');
+    };
+
+    btn.addEventListener('mouseenter', hintLight);
+    btn.addEventListener('focus', hintLight);
+    btn.addEventListener('mouseleave', resetLight);
+    btn.addEventListener('blur', resetLight);
+    btn.addEventListener('click', () => {
+      lastTriggerAppId = id;
+      if (id === 'professional') {
+        window.location.assign('/');
+      } else if (id === 'art-gallery') {
+        launchExternalRoute('/art-gallery/');
+      } else {
+        renderDossier(id, { updateHistory: true });
+      }
+    });
+  });
+
+  menuEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      triggerRestart();
+      return;
+    }
+    const idx = items.indexOf(document.activeElement);
+    if (idx === -1) return;
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      focusSafely(items[0]);
+      return;
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      focusSafely(items[items.length - 1]);
+      return;
+    }
+
+    let next = null;
+    if (event.key === 'ArrowRight') next = (idx + 1) % items.length;
+    else if (event.key === 'ArrowLeft') next = (idx - 1 + items.length) % items.length;
+    else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      const rows = getGridRows(items);
+      const isDown = event.key === 'ArrowDown';
+      const curRect = items[idx].getBoundingClientRect();
+      const cx = curRect.left + curRect.width / 2;
+      const rIdx = rows.findIndex((r) => r.cells.some((c) => c.idx === idx));
+      if (rIdx !== -1) {
+        const targetRow = isDown
+          ? rows[(rIdx + 1) % rows.length]
+          : rows[(rIdx - 1 + rows.length) % rows.length];
+        next = targetRow.cells.reduce((a, b) => (Math.abs(b.cx - cx) < Math.abs(a.cx - cx) ? b : a)).idx;
+      }
+    }
+
+    if (next !== null && items[next]) {
+      event.preventDefault();
+      focusSafely(items[next]);
+    }
+  });
+
+  if (focusAppId) {
+    focusSafely(items.find((el) => el.dataset.appId === focusAppId) || items[0]);
+  } else if (shouldFocus) {
+    focusSafely(items[0]);
+  }
+  renderDebugHud();
+}
+
+function renderDossier(appId, { updateHistory = true, immediatePose = false } = {}) {
+  clearActiveTimers();
+  const normalizedId = appId === 'app-06' ? 'devpath' : appId;
+  const entry = CATALOG_SLOTS.find((a) => a.id === normalizedId);
+  if (!entry || !INLINE_DOSSIER_IDS.has(entry.id)) {
+    setUrlHash('#menu', { replace: true });
+    renderMenu({ shouldFocus: false, updateHistory: false, immediatePose: true });
+    return;
+  }
+
+  lastTriggerAppId = entry.id;
+  currentView = 'dossier';
+  isRestarting = false;
+  hwPowerBtn.disabled = false;
+  document.body.classList.remove('is-restarting');
+  document.body.classList.add('is-powered');
+  if (updateHistory) setUrlHash(`#app=${entry.id}`);
+
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setCameraState('menu', immediatePose ? 0 : undefined);
+  } else {
+    setPixelScenePose('menu', immediatePose);
+  }
+
+  setScreenLightState(entry.id === 'devpath' ? 'paused' : 'menu');
+
+  const mediaHtml = entry.image
+    ? `
+      <div class="dossier-screenshot-frame">
+        <img class="dossier-screenshot" src="${entry.image}" alt="${entry.name} preview" />
+      </div>
+    `
+    : '';
+
+  const actionsList = Array.isArray(entry.actions) ? entry.actions : [];
+  const primaryActions = actionsList.filter((a) => a.primary);
+  const secondaryActions = actionsList.filter((a) => !a.primary);
+
+  const renderActionLink = (action, isPrimary) => {
+    const cls = isPrimary ? 'dossier-play-btn' : 'dossier-link-btn';
+    const relAttr = action.external ? ' target="_blank" rel="noopener noreferrer"' : '';
+    const srExt = action.external ? '<span class="sr-only"> (opens in a new tab)</span>' : '';
+    return `<a class="${cls}" href="${action.href}"${relAttr}>${action.label}${srExt}</a>`;
+  };
+
+  const primaryActionsHtml = primaryActions.length
+    ? `<div class="dossier-actions">${primaryActions.map((a) => renderActionLink(a, true)).join('')}</div>`
+    : '';
+
+  const secondaryActionsHtml = secondaryActions.length
+    ? `<div class="dossier-actions">${secondaryActions.map((a) => renderActionLink(a, false)).join('')}</div>`
+    : '';
+
+  const taglineHtml = entry.tagline
+    ? `<p class="dossier-tagline">"${entry.tagline}"</p>`
+    : '';
+
+  const featuresHtml = Array.isArray(entry.features) && entry.features.length
+    ? `
+      <h3 class="dossier-section-title">KEY FEATURES</h3>
+      <ul class="dossier-features">
+        ${entry.features.map((f) => `<li>${f}</li>`).join('')}
+      </ul>
+    `
+    : '';
+
+  const techHtml = Array.isArray(entry.technologies) && entry.technologies.length
+    ? `
+      <h3 class="dossier-section-title">TECH STACK</h3>
+      <p class="dossier-tech-line">${entry.technologies.join(' • ')}</p>
+    `
+    : '';
+
+  screenContentEl.innerHTML = `
+    <article id="dossier-view" class="dossier-view" aria-labelledby="dossier-title">
+      <div class="dossier-head">
+        <h2 id="dossier-title" class="dossier-title" tabindex="-1">${entry.name.toUpperCase()}</h2>
+        <button type="button" id="dossier-close-btn" class="dossier-close-btn" aria-label="Close ${entry.name} dossier and return to catalog">✕</button>
+      </div>
+      ${mediaHtml}
+      ${primaryActionsHtml}
+      <p class="dossier-meta">${entry.category}</p>
+      ${taglineHtml}
+      <p class="dossier-body">${entry.summary}</p>
+      ${featuresHtml}
+      ${techHtml}
+      <h3 class="dossier-section-title">STATUS</h3>
+      <p class="dossier-status">${entry.devStatus || entry.status}</p>
+      ${secondaryActionsHtml}
+      <div class="dossier-footer">
+        <button type="button" id="dossier-return-btn" class="dossier-return-btn">◂ RETURN TO CATALOG</button>
+      </div>
+    </article>
+  `;
+  screenContentEl.scrollTop = 0;
+
+  const backOut = () => {
+    renderMenu({ shouldFocus: true, focusAppId: entry.id, updateHistory: true });
+    announce('Returned to catalog menu.');
+  };
+
+  document.getElementById('dossier-close-btn').addEventListener('click', backOut);
+  document.getElementById('dossier-return-btn').addEventListener('click', backOut);
+  document.getElementById('dossier-view').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      backOut();
+    }
+  });
+
+  focusSafely(document.getElementById('dossier-title'));
+  announce(`${entry.name} dossier opened.`);
+  renderDebugHud();
+}
+
+function triggerRestart() {
+  if (isRestarting) return;
+  if (currentView === 'standby') {
+    announce('Workstation is already on Standby.');
+    focusSafely(document.getElementById('start-explore-btn'));
+    return;
+  }
+
+  clearActiveTimers();
+  closeFloppyTray(true);
+  isRestarting = true;
+  hwPowerBtn.disabled = true;
+  currentView = 'restarting';
+  document.body.classList.add('is-restarting');
+  announce('Restarting Explore workstation.');
+
+  const restartLines = [
+    'RESTARTING WORKSTATION...',
+    'SAVING TERMINAL STATE...',
+    'CRT APERTURE SYNC RESET...',
+    'SYSTEM READY.',
+  ];
+
+  screenContentEl.innerHTML = `
+    <div id="restart-view" class="restart-view">
+      <pre id="restart-log" class="restart-log"></pre>
+    </div>
+  `;
+  screenContentEl.scrollTop = 0;
+  const rLogEl = document.getElementById('restart-log');
+  setScreenLightState('paused');
+
+  if (reducedMotion) {
+    rLogEl.textContent = restartLines.join('\n');
+    if (displayMode === '3d' && webglScene) webglScene.setCameraState('standby', 0);
+    else setPixelScenePose('standby', true);
+    scheduleTimer(() => renderStandby({ restoreFocus: true, updateHistory: true }), 380);
+  } else {
+    rLogEl.textContent = restartLines[0];
+    scheduleTimer(() => {
+      if (displayMode === '3d' && webglScene) webglScene.setCameraState('standby', 850);
+      else setPixelScenePose('standby');
+    }, 60);
+    scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[1]; }, 340);
+    scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[2]; }, 680);
+    scheduleTimer(() => { rLogEl.textContent += '\n' + restartLines[3]; }, 1040);
+    scheduleTimer(() => {
+      setScreenLightState('off');
+      rLogEl.style.opacity = '0.35';
+    }, 1360);
+    scheduleTimer(() => {
+      overlayEl.classList.add('is-collapsing');
+    }, 1520);
+    scheduleTimer(() => {
+      overlayEl.classList.remove('is-collapsing');
+    }, 1740);
+    scheduleTimer(() => {
+      renderStandby({ restoreFocus: true, updateHistory: true });
+    }, 1980);
+  }
+  renderDebugHud();
+}
+
+function syncFromLocation({ immediate = true, isInitialLoad = false } = {}) {
+  const rawHash = window.location.hash;
+  if (!rawHash || rawHash === '#') {
+    if (currentView === 'standby' && !document.body.classList.contains('is-powered')) return;
+    renderStandby({ restoreFocus: false, updateHistory: false });
+    return;
+  }
+
+  clearActiveTimers();
+  if (rawHash === '#menu') {
+    if (!isInitialLoad && currentView === 'menu') return;
+    renderMenu({
+      shouldFocus: Boolean(!isInitialLoad && lastTriggerAppId),
+      focusAppId: !isInitialLoad ? lastTriggerAppId : null,
+      updateHistory: false,
+      immediatePose: immediate,
+    });
+    return;
+  }
+
+  if (rawHash.startsWith('#app=')) {
+    const rawAppId = decodeURIComponent(rawHash.slice(5));
+    const appId = rawAppId === 'app-06' ? 'devpath' : rawAppId;
+    if (rawAppId === 'app-06') {
+      setUrlHash('#app=devpath', { replace: true });
+    }
+    if (INLINE_DOSSIER_IDS.has(appId)) {
+      if (!isInitialLoad && currentView === 'dossier' && lastTriggerAppId === appId) return;
+      renderDossier(appId, { updateHistory: false, immediatePose: immediate });
+      return;
+    }
+  }
+
+  setUrlHash('#menu', { replace: true });
+  renderMenu({ shouldFocus: false, updateHistory: false, immediatePose: true });
+}
+
+// ---- Hardware Controls & Floppy Interaction ----
+hwPowerBtn.addEventListener('click', triggerRestart);
+
+hwDiskBtn.addEventListener('pointerdown', (e) => {
+  lastDiskPointerType = e.pointerType || 'mouse';
+});
+
+hwDiskBtn.addEventListener('mouseenter', () => {
+  if (lastDiskPointerType === 'touch' || isRestarting) return;
+  if (driveLeaveTimer) { clearTimeout(driveLeaveTimer); driveLeaveTimer = null; }
+  if (drivePhase === 'closed') {
+    openFloppyTrayFromHover();
+  }
+});
+
+hwDiskBtn.addEventListener('mouseleave', () => {
+  if (driveIntentTimer) { clearTimeout(driveIntentTimer); driveIntentTimer = null; }
+  if (driveOpenTimer) { clearTimeout(driveOpenTimer); driveOpenTimer = null; }
+  if (driveLatched || document.activeElement === hwDiskBtn) return;
+  driveLeaveTimer = setTimeout(() => {
+    driveLeaveTimer = null;
+    closeFloppyTray();
+  }, 600);
+});
+
+hwDiskBtn.addEventListener('focus', () => {
+  if (driveLeaveTimer) { clearTimeout(driveLeaveTimer); driveLeaveTimer = null; }
+  if (drivePhase === 'closed') {
+    drivePhase = 'intent';
+    syncFloppyDomAndScene();
+  }
+});
+
+hwDiskBtn.addEventListener('blur', () => {
+  scheduleTimer(() => {
+    if (document.activeElement !== hwDiskBtn) {
+      closeFloppyTray();
+    }
+  }, 150);
+});
+
+hwDiskBtn.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && drivePhase !== 'closed') {
+    e.preventDefault();
+    closeFloppyTray(true);
+    announce('Floppy tray closed.');
+  }
+});
+
+hwDiskBtn.addEventListener('click', (e) => {
+  if (isRestarting) return;
+  const fromKeyboard = e.detail === 0;
+  const fromTouch = lastDiskPointerType === 'touch' || lastDiskPointerType === 'pen';
+
+  if (drivePhase === 'open' || (drivePhase === 'opening' && !fromTouch && !fromKeyboard) || (drivePhase === 'opening' && driveLatched)) {
+    closeFloppyTray(true);
+    launchExternalRoute('/sandbox/');
+    return;
+  }
+
+  openFloppyTrayLatched();
+});
+
+// ---- Display Mode Selector & Debug Bindings ----
+modeRadio3d.addEventListener('change', () => {
+  if (modeRadio3d.checked) applyDisplayMode('3d', { manual: true, announceChange: true });
+});
+
+modeRadio2d.addEventListener('change', () => {
+  if (modeRadio2d.checked) applyDisplayMode('2d', { manual: true, announceChange: true });
+});
+
+qualitySelect.addEventListener('change', () => {
+  manual3dQuality = qualitySelect.value;
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setQuality(resolve3dQualityTier());
+    renderDebugHud();
+  }
+});
+
+pixelModeSelect.addEventListener('change', () => {
+  pixelMode = pixelModeSelect.value;
+  if (webglScene) webglScene.setPixelMode(pixelMode);
+  renderDebugHud();
+});
+
+webglBtn.addEventListener('click', () => {
+  simulatedNoWebgl = !simulatedNoWebgl;
+  applyNoWebglUI();
+  if (simulatedNoWebgl) {
+    webglStatusText = 'simulated-off';
+    applyDisplayMode('2d', { manual: false, announceChange: true });
+  } else {
+    webglFailed = false;
+    webglStatusText = webglScene ? 'active (three r170)' : 'inactive';
+    applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: true });
+  }
+});
+
+resetPrefBtn.addEventListener('click', () => {
+  storedManualMode = null;
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
+  const nextAuto = resolveDisplayMode();
+  applyDisplayMode(nextAuto, { manual: false, announceChange: true });
+  announce(`Preference cleared. Automatic display mode selected: ${nextAuto === '3d' ? '3D workstation' : '2D Pixel workstation'}.`);
+});
+
+if (motionQuery && typeof motionQuery.addEventListener === 'function') {
+  motionQuery.addEventListener('change', (e) => {
+    reducedMotion = e.matches;
+    applyMotionPreference();
+    if (!storedManualMode) {
+      applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
+    }
+  });
+}
+
+if (coarseQuery && typeof coarseQuery.addEventListener === 'function') {
+  coarseQuery.addEventListener('change', (e) => {
+    coarsePointer = e.matches;
+    if (webglScene) webglScene.setCoarsePointer(coarsePointer);
+    if (!storedManualMode) {
+      applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
+    } else if (displayMode === '3d' && webglScene) {
+      webglScene.setQuality(resolve3dQualityTier());
+    }
+  });
+}
+
+let lastAppliedVpW = 0;
+let lastAppliedVpH = 0;
+let lastAppliedScale = 1;
+let vpDebounceTimer = null;
+let settledProjRafId = null;
+
+function applySettledProjection(w, h) {
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setQuality(resolve3dQualityTier());
+    webglScene.resizeViewport(w, h);
+  } else if (displayMode === '2d') {
+    setPixelScenePose(pixelPoseTarget, true);
+  }
+}
+
+function syncAppViewportHeight(force = false) {
+  const vp = readViewportMetrics();
+  const { w, h, layoutH, visualScale, isScaled } = vp;
+  const appH = isScaled ? layoutH : h;
+  const dW = Math.abs(w - lastAppliedVpW);
+  const dH = Math.abs(appH - lastAppliedVpH);
+  const dScale = Math.abs(visualScale - lastAppliedScale);
+  if (!force && dW < 2 && dH < 2 && dScale < 0.02) return;
+  lastAppliedVpW = w;
+  lastAppliedVpH = appH;
+  lastAppliedScale = visualScale;
+  document.documentElement.style.setProperty('--app-height', `${appH}px`);
+  if (!isScaled && visualScale <= 1.01 && (window.scrollY !== 0 || window.scrollX !== 0)) {
+    window.scrollTo(0, 0);
+  }
+  if (!storedManualMode) {
+    const autoMode = resolveDisplayMode();
+    if (autoMode !== displayMode) {
+      applyDisplayMode(autoMode, { manual: false, announceChange: false, immediate: true });
+      return;
+    }
+  }
+  if (force) {
+    applySettledProjection(w, h);
+    return;
+  }
+  if (settledProjRafId) cancelAnimationFrame(settledProjRafId);
+  settledProjRafId = requestAnimationFrame(() => {
+    settledProjRafId = null;
+    const settled = readViewportMetrics();
+    applySettledProjection(settled.w, settled.h);
+  });
+}
+
+function onViewportChangedDebounced() {
+  if (vpDebounceTimer) clearTimeout(vpDebounceTimer);
+  vpDebounceTimer = setTimeout(() => {
+    vpDebounceTimer = null;
+    syncAppViewportHeight(false);
+  }, 110);
+}
+
+window.addEventListener('resize', onViewportChangedDebounced, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', onViewportChangedDebounced, { passive: true });
+  window.visualViewport.addEventListener('scroll', () => {
+    const vv = window.visualViewport;
+    if (vv && (vv.scale || 1) > 1.01) return;
+    if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+  }, { passive: true });
+}
+
+window.addEventListener('popstate', () => syncFromLocation({ immediate: true, isInitialLoad: false }));
+window.addEventListener('hashchange', () => syncFromLocation({ immediate: true, isInitialLoad: false }));
+
+document.addEventListener('visibilitychange', () => {
+  if (displayMode === '2d') {
+    if (document.hidden) stopPixel2dLoop('hidden (0 FPS)');
+    else startOrResumePixel2dLoop();
+  }
+});
+
+['pointerdown', 'pointermove', 'keydown', 'focusin'].forEach((evName) => {
+  window.addEventListener(evName, recordUserActivity, { passive: true });
+});
+
+// ---- Initialize Production Explore Workstation ----
+syncAppViewportHeight(true);
+applyMotionPreference();
+applyNoWebglUI();
+if (window.location.hash && window.location.hash !== '#') {
+  syncFromLocation({ immediate: true, isInitialLoad: true });
+} else {
+  renderStandby({ restoreFocus: false, updateHistory: false });
+}
+applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });

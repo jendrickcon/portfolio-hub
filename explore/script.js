@@ -2,8 +2,7 @@
    ENUHRI PORTFOLIO HUB — script.js
    Stage 1: landing screen.
    Stage 2: CRT zoom transition + boot sequence.
-   Stage 3 will replace goToAppMenu() with the real
-   six-application menu.
+   Stage 3: 6-slot application catalog + paused DevPath entry.
 =================================================== */
 
 // Automatically strip 'index.html' from browser address bar
@@ -65,71 +64,72 @@ motionBtn.addEventListener('click', () => {
 // exact original landing markup (including the PLAY button).
 const LANDING_CONTENT_HTML = screenContent.innerHTML;
 
-// Editable app data — update names/status/content here as projects evolve.
+// Editable app data — six primary catalog entries + separate DevPath paused prototype.
 const APPS = [
   {
-    id: 'portfolio',
-    name: 'Portfolio / Resume',
-    icon: '📄',
-    status: 'READY',
-    category: 'Personal Profile & Credentials',
-    tagline: 'BSIT Software Engineering & Technical Profile',
-    description: 'A digital personnel file covering technical background, BSIT education at Universidad de Manila, core engineering competencies, project history, and contact credentials.',
+    id: 'professional',
+    name: 'Professional Portfolio',
+    icon: '💼',
+    status: 'LIVE',
+    category: 'Primary Hiring-Facing Portfolio',
+    tagline: 'Evidence-Backed Case Studies, Public Résumé & System Reconstructions',
+    description: 'The canonical hiring-facing portfolio served at /, presenting UDM-RADAR, StudyQuest, Mini PCS, supporting media, project-linked capabilities, and a phone-free public résumé.',
     features: [
-      'Professional Summary & BSIT Background',
-      'Technical Skills Matrix (Frontend, Systems, Dev)',
-      'Interactive Project Showcases & Architecture',
-      'Downloadable Resume & Academic Credentials',
-      'Direct Inquiries & Professional Contact Channels',
+      'Interactive Light/Dark reconstructions for UDM-RADAR, StudyQuest, and Mini PCS',
+      'Project-linked Toolkit and interactive capability evidence cards',
+      'Same-page public résumé viewer with direct PDF download',
+      'Supporting project media lightbox and career timeline',
     ],
-    technologies: ['HTML5', 'CSS3', 'JavaScript'],
-    devStatus: 'ACTIVE / DEPLOYED',
+    technologies: ['HTML5', 'CSS3', 'Vanilla JavaScript', 'SVG', 'Responsive Layout'],
+    devStatus: 'LIVE — Primary Portfolio at /',
     image: null,
-    link: '/portfolio/',
+    link: '/',
   },
   {
     id: 'udm-radar',
-    name: 'UDM Radar',
+    name: 'UDM-RADAR',
     icon: '📡',
     status: 'READY',
-    category: 'Academic Analytics & Decision-Support System',
-    tagline: 'Risk Analytics & Decision-Support for Academic Records',
-    description: 'A role-based academic decision-support platform for early student risk detection, projected GWA analysis, grade governance, and academic interventions for the College of Computing Studies at Universidad de Manila.',
+    category: 'Academic Analytics & Decision-Support System (Capstone)',
+    tagline: 'Advisory Risk Analytics and GWA Projection on Synthetic Records',
+    description: 'A four-member BSIT capstone prototype for the College of Computing Studies at Universidad de Manila. Uses synthetic academic data for privacy; Decision Tree Regressor GWA projections remain advisory to support faculty and student review rather than making autonomous academic decisions.',
     features: [
       'Three role-governed portals: Student, Faculty, and Admin',
-      'Machine Learning GWA projection powered by a Decision Tree Regressor',
-      'Human-in-the-Loop intervention workflow (Support Notices & student acknowledgment)',
-      'Curriculum Checklist (.xlsx) batch ingestion and schema validation',
-      'Administrative grade-correction approval & batch submission workflows',
-      'Interactive Chart.js visualizations & longitudinal performance trends',
-      'Comprehensive audit trails, CSV risk rosters & branded Dompdf exports',
+      'Advisory GWA projections powered by a Decision Tree Regressor on synthetic records',
+      'Human-in-the-loop intervention workflow supporting faculty review',
+      'Interactive Chart.js longitudinal performance trends and curriculum checklist validation',
+      'Audit trails, risk rosters, and branded Dompdf exports (not deployed on live student records)',
     ],
     technologies: ['PHP 8.2', 'MySQL / MariaDB', 'Python', 'Flask', 'scikit-learn', 'Chart.js', 'Dompdf'],
-    devStatus: 'FUNCTIONAL PROTOTYPE / ACTIVE DEVELOPMENT',
+    devStatus: 'FUNCTIONAL CAPSTONE PROTOTYPE — SYNTHETIC DATASET / HUMAN REVIEW ONLY',
     image: '../assets/projects/udm-radar.png',
-    link: null,
+    actions: [
+      { label: 'VIEW INTERACTIVE CASE STUDY ▸', href: '/#udm-radar', primary: true, external: false },
+      { label: 'VIEW SOURCE REPOSITORY ↗', href: 'https://github.com/jendrickcon/udm-radar', primary: false, external: true },
+    ],
   },
   {
     id: 'studyquest',
     name: 'StudyQuest',
     icon: '📚',
     status: 'READY',
-    category: 'AI-Powered Gamified Learning Platform',
-    tagline: 'Turn Your Syllabus Into a Game',
-    description: 'An AI-assisted learning platform that transforms uploaded academic materials (syllabi, modules, reviewers) into structured courses with interactive chapter reviews, secure server-graded mixed assessments, progression gates, and game-inspired motivation.',
+    category: 'AI-Assisted Gamified Learning Platform',
+    tagline: 'Turn Syllabi Into Structured Courses and Assessments',
+    description: 'An AI-assisted team learning platform that transforms uploaded syllabi, modules, and reviewers into structured chapter reviews, mixed assessments, and progression tracks using Gemini API integration with Pydantic-validated structured output.',
     features: [
-      'AI-powered course generation from uploaded documents via Gemini 3.6 Flash',
-      'Structured chapter reviews with analogies, misconceptions & exam traps',
-      'Server-graded mixed assessments: Multiple Choice, True/False, Identification & Enumeration',
-      'Gamification engine: XP rewards, levels, streaks, and anti-farming safeguards',
-      'Dual progression paths: guided lesson mastery and quiz-based test-out routes',
-      'Free and Plus plan tiers with course generation quotas and completion credits',
-      'Mobile-first responsive reader with slide-up assessment feedback drawers',
+      'Structured course generation from uploaded documents via Gemini API with Pydantic-validated output',
+      'Chapter reviews highlighting core concepts, misconceptions, and exam traps',
+      'Server-graded mixed assessments: Multiple Choice, True/False, Identification, and Enumeration',
+      'Progression engine with XP rewards, streaks, test-out routes, and anti-farming safeguards',
+      'Mobile-first responsive reader and full interactive case study on the main portfolio',
     ],
-    technologies: ['Django 5.2', 'Python', 'Google Gemini 3.6 Flash', 'Pydantic', 'SQLite', 'Vanilla JS'],
-    devStatus: 'CORE PLATFORM COMPLETE / POLISH PHASE',
+    technologies: ['Django 5.2', 'Python', 'Gemini API', 'Pydantic', 'SQLite', 'Vanilla JS'],
+    devStatus: 'FUNCTIONAL TEAM PROJECT — LEARNING OUTCOMES NOT VERIFIED',
     image: '../assets/projects/studyquest.png',
-    link: null,
+    actions: [
+      { label: 'VIEW INTERACTIVE CASE STUDY ▸', href: '/#studyquest', primary: true, external: false },
+      { label: 'VIEW SOURCE REPOSITORY ↗', href: 'https://github.com/zap1104/studyquest', primary: false, external: true },
+    ],
   },
   {
     id: 'art-gallery',
@@ -138,16 +138,16 @@ const APPS = [
     status: 'READY',
     category: 'Interactive Virtual Museum',
     tagline: 'Classical Architecture & Community Artwork Exhibition',
-    description: 'An interactive virtual museum where visitors explore neoclassical halls, view community artworks with museum plaques, and submit their own art created in the integrated studio.',
+    description: 'An interactive virtual museum where visitors explore neoclassical halls, inspect procedural and community artworks with plaques, and submit creations from the integrated studio.',
     features: [
       'Neoclassical Entrance Hall & Gallery Hall exploration',
       'Artist Studio with canvas drawing, brush size, and color palette controls',
       'Horizontal exploration with mouse drag, touch swipe, and arrow key navigation',
       'Interactive artwork inspection modal with plaques and metadata',
-      'Community artwork submission and local storage persistence',
+      'Firebase Authentication & Cloud Firestore exhibition support',
     ],
-    technologies: ['HTML5 Canvas', 'CSS3', 'JavaScript'],
-    devStatus: 'FUNCTIONAL / DEPLOYED',
+    technologies: ['HTML5 Canvas', 'CSS3', 'JavaScript', 'Firebase Auth', 'Cloud Firestore'],
+    devStatus: 'FUNCTIONAL / LIVE ON /art-gallery/',
     image: null,
     link: '/art-gallery/',
   },
@@ -170,39 +170,71 @@ const APPS = [
       'Dynamic rank progression from "SCRIPT KIDDIE" to "INCIDENT COMMANDER" with badge system',
     ],
     technologies: ['HTML5 & Modern DOM', 'Vanilla ES Modules', 'SVG Vector Graphics', 'Web Audio API', 'Offline LocalStorage'],
-    devStatus: 'LIVE NATIVE WEB BUILD / FULLY OPERATIONAL',
+    devStatus: 'LIVE NATIVE WEB REIMAGINING — /cyberdefender/',
     image: '../assets/projects/cyberdefender.png',
-    link: '/cyberdefender/',
+    actions: [
+      { label: '▶ PLAY WEB REIMAGINING', href: '/cyberdefender/', primary: true, external: false },
+    ],
   },
   {
-    id: 'app-06',
-    name: 'App 06',
-    icon: '❓',
-    status: 'COMING SOON',
-    category: 'Future Terminal Slot',
-    tagline: 'System Slot Reserved',
-    description: 'This terminal slot is reserved for a future application or utility currently under concept validation.',
-    features: [],
-    technologies: [],
-    devStatus: 'PENDING',
+    id: 'sandbox',
+    name: 'Sandbox',
+    icon: '🧪',
+    status: 'READY',
+    category: 'Falling-Sand & Cellular Automata Simulation',
+    tagline: 'Interactive Element Physics, Alchemy Combinations & Presets',
+    description: 'An interactive falling-sand and cellular-automata simulation featuring physical, organic, digital, and cosmic elements, card-drop combination discoveries, autonomous lifeforms, and starter world presets.',
+    features: [
+      'Real-time cellular-automata particle simulation on HTML5 Canvas',
+      'Drag-and-drop element card interactions with tiered discovery log',
+      'Autonomous creatures, cosmic phenomena, and digital Void/Code behaviors',
+      'Preset worlds and direct return navigation back to the Explore Hub',
+    ],
+    technologies: ['HTML5 Canvas', 'CSS3', 'JavaScript (ES6+)'],
+    devStatus: 'LIVE EXPERIMENT — /sandbox/',
     image: null,
-    link: null,
+    link: '/sandbox/',
   },
 ];
 
+const DEVPATH_APP = {
+  id: 'devpath',
+  name: 'DevPath',
+  icon: '🧭',
+  status: 'PAUSED PROTOTYPE',
+  category: 'Architecture & Decision-Graph Prototype (Paused)',
+  tagline: 'Graph-First Project Architecture Explorer',
+  description: 'An experimental decision-graph prototype that maps project goals and constraints to candidate technical stacks and architecture trade-offs. Development is currently paused: the Game Architecture branch is interactive, while Software & Systems and Website & Web App domains remain incomplete.',
+  features: [
+    'Interactive Game Architecture decision graph with constraint filtering',
+    'Dual Blueprint / Root visual themes and live architecture breadcrumb trail',
+    'Validated JSON graph schema and standalone Node.js engine test checks',
+    'Development intentionally paused while broader non-game domains remain incomplete',
+  ],
+  technologies: ['HTML5', 'CSS3', 'Vanilla ES Modules', 'SVG Graph', 'JSON Schema'],
+  devStatus: 'PAUSED PROTOTYPE — GAME ARCHITECTURE AVAILABLE; BROADER DOMAINS INCOMPLETE',
+  image: null,
+  actions: [
+    { label: 'OPEN PROTOTYPE (/devpath/) ▸', href: '/devpath/', primary: false, external: false },
+  ],
+};
+
+const ALL_APPS = [...APPS, DEVPATH_APP];
+
 const BOOT_LINES = [
-  'ENUHRI SYSTEM v1.0',
+  'ENUHRI SYSTEM v1.1',
   '',
   'Initializing system...',
-  'Detecting applications...',
-  'Loading portfolio........ OK',
-  'Loading UDM Radar........ OK',
-  'Loading StudyQuest....... OK',
-  'Loading Art Gallery...... OK',
-  'Loading CyberDefender.... OK',
-  'Checking unknown app..... PENDING',
+  'Mounting canonical routes...',
+  'Loading Professional Portfolio . OK',
+  'Loading UDM-RADAR .............. OK',
+  'Loading StudyQuest ............. OK',
+  'Loading Enuhri Art Gallery ..... OK',
+  'Loading CyberDefender .......... OK',
+  'Loading Sandbox ................ OK',
+  'Indexing DevPath prototype ..... PAUSED',
   '',
-  '6 APPLICATIONS DETECTED',
+  '6 CATALOG APPS READY (+ DEVPATH PAUSED)',
   '',
   'SYSTEM READY.',
   '',
@@ -325,7 +357,7 @@ function finishBoot(skipBtn) {
   if (skipBtn) skipBtn.textContent = 'CONTINUE ▸';
 }
 
-const INLINE_APP_IDS = new Set(['udm-radar', 'studyquest', 'cyberdefender', 'app-06']);
+const INLINE_APP_IDS = new Set(['udm-radar', 'studyquest', 'cyberdefender', 'devpath']);
 let fadeTimeoutId = null;
 
 function setUrlHash(targetHash, { replace = false } = {}) {
@@ -363,12 +395,12 @@ function renderAppMenu() {
   document.body.classList.add('app-menu-active');
   screenContent.innerHTML = `
     <div id="app-menu" class="app-menu">
-      <div class="app-menu-header">ENUHRI SYSTEM v1.0</div>
+      <div class="app-menu-header">ENUHRI SYSTEM v1.1</div>
       <div class="app-grid" role="menu" aria-label="Applications">
         ${APPS.map((app) => `
           <button type="button" class="app-tile" role="menuitem"
                   data-app-id="${app.id}"
-                  data-status="${app.status === 'COMING SOON' ? 'coming-soon' : 'ready'}"
+                  data-status="${app.status.toLowerCase()}"
                   aria-label="${app.name}, ${app.status}">
             <span class="app-icon" aria-hidden="true">${app.icon}</span>
             <span class="app-name">${app.name}</span>
@@ -376,24 +408,40 @@ function renderAppMenu() {
           </button>
         `).join('')}
       </div>
+      <div class="app-secondary-bar" role="group" aria-label="Paused Prototype">
+        <button type="button" class="app-secondary-entry"
+                data-app-id="${DEVPATH_APP.id}"
+                data-status="paused"
+                aria-label="${DEVPATH_APP.name}, ${DEVPATH_APP.status}">
+          <span class="app-secondary-left">
+            <span class="app-secondary-icon" aria-hidden="true">${DEVPATH_APP.icon}</span>
+            <span class="app-secondary-name">${DEVPATH_APP.name}</span>
+          </span>
+          <span class="app-secondary-right">
+            <span class="app-secondary-status">${DEVPATH_APP.status}</span>
+            <span class="app-secondary-cta" aria-hidden="true">INSPECT ▸</span>
+          </span>
+        </button>
+      </div>
       <div class="app-menu-footer">SELECT APPLICATION</div>
     </div>
   `;
 
   const menuEl = document.getElementById('app-menu');
-  const tiles = Array.from(menuEl.querySelectorAll('.app-tile'));
+  const menuItems = Array.from(menuEl.querySelectorAll('.app-tile, .app-secondary-entry'));
 
-  tiles.forEach((tile) => {
-    tile.addEventListener('click', () => selectApp(tile.dataset.appId));
+  menuItems.forEach((item) => {
+    item.addEventListener('click', () => selectApp(item.dataset.appId));
   });
 
-  menuEl.addEventListener('keydown', (event) => handleMenuKeydown(event, tiles));
+  menuEl.addEventListener('keydown', (event) => handleMenuKeydown(event, menuItems));
 
-  tiles[0].focus();
+  menuItems[0].focus();
 }
 
-function handleMenuKeydown(event, tiles) {
+function handleMenuKeydown(event, menuItems) {
   const columns = 3;
+  const gridCount = APPS.length;
 
   if (event.key === 'Escape') {
     event.preventDefault();
@@ -401,24 +449,44 @@ function handleMenuKeydown(event, tiles) {
     return;
   }
 
-  const currentIndex = tiles.indexOf(document.activeElement);
+  const currentIndex = menuItems.indexOf(document.activeElement);
   if (currentIndex === -1) return;
 
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
-    selectApp(tiles[currentIndex].dataset.appId);
+    selectApp(menuItems[currentIndex].dataset.appId);
     return;
   }
 
   let nextIndex = null;
-  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tiles.length;
-  else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tiles.length) % tiles.length;
-  else if (event.key === 'ArrowDown') nextIndex = (currentIndex + columns) % tiles.length;
-  else if (event.key === 'ArrowUp') nextIndex = (currentIndex - columns + tiles.length) % tiles.length;
-  else return;
+  if (event.key === 'ArrowRight') {
+    nextIndex = (currentIndex + 1) % menuItems.length;
+  } else if (event.key === 'ArrowLeft') {
+    nextIndex = (currentIndex - 1 + menuItems.length) % menuItems.length;
+  } else if (event.key === 'ArrowDown') {
+    if (currentIndex < gridCount - columns) {
+      nextIndex = currentIndex + columns;
+    } else if (currentIndex < gridCount && menuItems.length > gridCount) {
+      nextIndex = gridCount;
+    } else {
+      nextIndex = 0;
+    }
+  } else if (event.key === 'ArrowUp') {
+    if (currentIndex >= gridCount) {
+      nextIndex = Math.max(0, gridCount - columns);
+    } else if (currentIndex >= columns) {
+      nextIndex = currentIndex - columns;
+    } else if (menuItems.length > gridCount) {
+      nextIndex = gridCount;
+    } else {
+      nextIndex = (currentIndex - columns + menuItems.length) % menuItems.length;
+    }
+  } else {
+    return;
+  }
 
   event.preventDefault();
-  tiles[nextIndex].focus();
+  menuItems[nextIndex].focus();
 }
 
 function fadeSwap(renderFn, { immediate = false } = {}) {
@@ -436,18 +504,25 @@ function fadeSwap(renderFn, { immediate = false } = {}) {
 }
 
 function selectApp(appId, { updateHistory = true, immediate = false } = {}) {
-  if (appId === 'portfolio') {
-    window.location.assign('/portfolio/');
+  const normalizedId = appId === 'app-06' ? 'devpath' : appId;
+
+  if (normalizedId === 'professional') {
+    window.location.assign('/');
     return;
   }
 
-  if (appId === 'art-gallery') {
+  if (normalizedId === 'art-gallery') {
     window.location.assign('/art-gallery/');
     return;
   }
 
-  const app = APPS.find((a) => a.id === appId);
-  if (!app || !INLINE_APP_IDS.has(appId)) {
+  if (normalizedId === 'sandbox') {
+    window.location.assign('/sandbox/');
+    return;
+  }
+
+  const app = ALL_APPS.find((a) => a.id === normalizedId);
+  if (!app || !INLINE_APP_IDS.has(normalizedId)) {
     setUrlHash('#menu', { replace: true });
     goToAppMenu({ updateHistory: false, immediate: true });
     return;
@@ -470,10 +545,33 @@ function renderProjectView(app) {
     `
     : '';
 
-  const playDemoHtml = app.id === 'cyberdefender'
+  const actionsList = Array.isArray(app.actions) && app.actions.length
+    ? app.actions
+    : (app.link
+        ? [{ label: 'LAUNCH / VISIT PROJECT ↗', href: app.link, primary: true, external: app.link.startsWith('http') }]
+        : []);
+
+  const primaryActions = actionsList.filter((action) => action.primary);
+  const secondaryActions = actionsList.filter((action) => !action.primary);
+
+  const renderActionLink = (action, isPrimary) => {
+    const cls = isPrimary ? 'project-play-btn' : 'project-link-btn';
+    const relAttr = action.external ? ' target="_blank" rel="noopener noreferrer"' : '';
+    return `<a class="${cls}" href="${action.href}"${relAttr}>${action.label}</a>`;
+  };
+
+  const topActionsHtml = primaryActions.length
     ? `
-      <div class="project-play-wrap">
-        <a class="project-play-btn" href="/cyberdefender/">▶ PLAY REMADE WEB DEMO</a>
+      <div class="project-actions project-actions--primary">
+        ${primaryActions.map((action) => renderActionLink(action, true)).join('')}
+      </div>
+    `
+    : '';
+
+  const bottomActionsHtml = secondaryActions.length
+    ? `
+      <div class="project-actions project-actions--secondary">
+        ${secondaryActions.map((action) => renderActionLink(action, false)).join('')}
       </div>
     `
     : '';
@@ -498,10 +596,6 @@ function renderProjectView(app) {
     `
     : '';
 
-  const linkHtml = app.link
-    ? `<a class="project-link-btn" href="${app.link}" ${app.link.startsWith('http') ? 'target="_blank" rel="noopener"' : ''}>${app.id === 'cyberdefender' ? '▶ PLAY REMADE WEB DEMO ↗' : 'LAUNCH / VISIT PROJECT ↗'}</a>`
-    : '';
-
   screenContent.innerHTML = `
     <div id="project-view" class="project-view">
       <div class="project-header">
@@ -511,7 +605,7 @@ function renderProjectView(app) {
 
       <div class="project-body">
         ${mediaHtml}
-        ${playDemoHtml}
+        ${topActionsHtml}
 
         <p class="project-category">${app.category}</p>
         ${taglineHtml}
@@ -523,7 +617,7 @@ function renderProjectView(app) {
         <p class="project-section-title">STATUS</p>
         <p class="project-status-line">${app.devStatus}</p>
 
-        ${linkHtml}
+        ${bottomActionsHtml}
       </div>
 
       <div class="project-footer">
@@ -605,7 +699,11 @@ function syncFromLocation({ immediate = true } = {}) {
   }
 
   if (rawHash.startsWith('#app=')) {
-    const appId = decodeURIComponent(rawHash.slice(5));
+    const rawAppId = decodeURIComponent(rawHash.slice(5));
+    const appId = rawAppId === 'app-06' ? 'devpath' : rawAppId;
+    if (rawAppId === 'app-06') {
+      setUrlHash('#app=devpath', { replace: true });
+    }
     if (INLINE_APP_IDS.has(appId)) {
       selectApp(appId, { updateHistory: false, immediate });
       return;

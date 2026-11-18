@@ -438,6 +438,17 @@ hr {
     background: rgba(255,255,255,0.3);
 }
 
+.contact-form-status {
+    margin: 0.25rem 0 0;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    color: aliceblue;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
 footer {
   padding: 1rem 2rem;
   text-align: center;

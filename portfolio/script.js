@@ -70,24 +70,39 @@ syncPanelHeights();
 
 const video = document.querySelector(".m4");
 
-video.addEventListener('mousedown', () => {
+if (video) {
+  video.addEventListener('mousedown', () => {
     video.play();
-});
+  });
 
-video.addEventListener('mouseup', () => {
+  video.addEventListener('mouseup', () => {
     video.pause();
-});
+  });
 
-video.addEventListener('mouseleave', () => {
+  video.addEventListener('mouseleave', () => {
     video.pause();
-});
+  });
 
-// touch support so the "hold to view" interaction also works on mobile
-video.addEventListener('touchstart', (event) => {
+  // touch support so the "hold to view" interaction also works on mobile
+  video.addEventListener('touchstart', (event) => {
     event.preventDefault();
     video.play();
-});
+  });
 
-video.addEventListener('touchend', () => {
+  video.addEventListener('touchend', () => {
     video.pause();
-});
+  });
+}
+
+const contactForm = document.getElementById("contact-form");
+const contactFormStatus = document.getElementById("contact-form-status");
+
+if (contactForm && contactFormStatus) {
+  contactForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    contactFormStatus.textContent = "This legacy HCI coursework form is a static demo and does not send messages.";
+    contactFormStatus.hidden = false;
+    contactForm.reset();
+    requestAnimationFrame(syncPanelHeights);
+  });
+}

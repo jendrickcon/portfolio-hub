@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enuhri Art Gallery</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>🎨</text></svg>" />
   <style>
     /* ===================================================
        0. RESET & BASE
@@ -1464,7 +1465,6 @@
   <!-- ROOM 1: ENTRANCE HALL                          -->
   <!-- ============================================= -->
   <section id="entrance-hall" class="room active-room">
-    <a class="main-hub-link" href="./enuhri-hub">Main Hub</a>
     <a class="main-hub-link" href="..">Main Hub</a>
     <div class="entrance-content">
       <h1 class="museum-title">Enuhri Art Gallery</h1>
@@ -1616,7 +1616,7 @@
       <button id="modal-close-btn" class="modal-close" type="button">&times;</button>
       <div class="modal-columns">
         <div id="modal-image-wrap">
-          <img id="modal-image" src="" alt="" />
+          <img id="modal-image" alt="" />
         </div>
         <div class="modal-details">
           <div class="modal-title-row">
@@ -1634,7 +1634,7 @@
               <input id="feedback-input" maxlength="25" placeholder="Your note" autocomplete="off">
               <button id="feedback-submit-btn" type="button">Save</button>
             </div>
-            <span id="feedback-counter">0/150</span>
+            <span id="feedback-counter">0/25</span>
             <p id="feedback-status" role="status"></p>
             <div id="feedback-list" aria-live="polite"></div>
           </section>
@@ -1788,22 +1788,52 @@ const authReady = new Promise((resolve, reject) => {
 
     visitorName = name;
 
-    console.log('Firebase visitor UID:', visitorId);
-    console.log('Museum visitor name:', visitorName);
-
     resolve(user);
+  });
+
+  signInAnonymously(auth).catch((error) => {
+    console.error('Firebase authentication failed:', error);
+    reject(error);
   });
 });
 
-signInAnonymously(auth).catch((error) => {
-  console.error('Firebase authentication failed:', error);
-  reject(error);
-});
+function sanitizeImageSrc(src) {
+  if (typeof src !== 'string') return '';
+  const trimmed = src.trim();
+  if (!trimmed) return '';
+  if (/^data:image\/(?:png|jpeg|jpg|webp|gif|svg\+xml);/i.test(trimmed)) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return trimmed;
+  return '';
+}
+
+function renderFeedbackNotes(notes) {
+  feedbackList.replaceChildren();
+  if (!notes.length) {
+    const emptyNote = document.createElement('p');
+    emptyNote.className = 'feedback-note';
+    emptyNote.textContent = 'No notes yet. Be the first to leave one.';
+    feedbackList.appendChild(emptyNote);
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  notes.forEach((note) => {
+    const item = document.createElement('div');
+    item.className = 'feedback-note';
+    item.appendChild(document.createTextNode(String(note.text ?? '')));
+    const author = document.createElement('small');
+    author.textContent = ` — ${note.displayName || 'Visitor'}`;
+    item.appendChild(author);
+    frag.appendChild(item);
+  });
+  feedbackList.appendChild(frag);
+}
 
 const ArtworkStore = {
   async toggleHeart(artworkId) {
-    await authReady; // Wait for initial load
-    const activeUid = auth.currentUser.uid; // Always get the true active session
+    const user = await authReady; // Wait for initial load
+    const activeUid = auth.currentUser?.uid || user?.uid;
+    if (!activeUid) throw new Error('Authentication required.');
 
     const likeRef = doc(
       db,
@@ -1826,8 +1856,9 @@ const ArtworkStore = {
   },
 
   async submitFeedback(artworkId, text) {
-    await authReady; // Wait for initial load
-    const activeUid = auth.currentUser.uid; // Always get the true active session
+    const user = await authReady; // Wait for initial load
+    const activeUid = auth.currentUser?.uid || user?.uid;
+    if (!activeUid) throw new Error('Authentication required.');
 
     const cleanText = [...text.trim()]
       .slice(0, 25)
@@ -1877,9 +1908,7 @@ const ArtworkStore = {
       feedbackInput.value = mine?.text || '';
       feedbackCounter.textContent = `${[...feedbackInput.value].length}/25`;
       feedbackCounter.classList.toggle('near-limit', [...feedbackInput.value].length >= 20);
-      feedbackList.innerHTML = notes.length
-        ? notes.map((note) => `<div class="feedback-note">${note.text.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))}<small>— ${note.displayName}</small></div>`).join('')
-        : '<p class="feedback-note">No notes yet. Be the first to leave one.</p>';
+      renderFeedbackNotes(notes);
     }
 
     function renderArtworkReaction(artwork) {
@@ -2019,23 +2048,7 @@ function subscribeToArtworkData(artwork) {
         [...feedbackInput.value].length >= 20
       );
 
-      feedbackList.innerHTML = notes.length
-        ? notes.map((note) => `
-            <div class="feedback-note">
-              ${note.text.replace(
-                /[&<>"']/g,
-                (char) => ({
-                  '&': '&amp;',
-                  '<': '&lt;',
-                  '>': '&gt;',
-                  '"': '&quot;',
-                  "'": '&#39;'
-                }[char])
-              )}
-              <small>— ${note.displayName || 'Visitor'}</small>
-            </div>
-          `).join('')
-        : '<p class="feedback-note">No notes yet. Be the first to leave one.</p>';
+      renderFeedbackNotes(notes);
     },
     (error) => {
       console.error('Could not load comments:', error);
@@ -2048,7 +2061,12 @@ function subscribeToArtworkData(artwork) {
     // passing that artwork's own data.
     function openArtworkModal(artwork) {
       activeArtwork = artwork;
-      modalImage.src = artwork.image || '';
+      const safeImage = sanitizeImageSrc(artwork.image);
+      if (safeImage) {
+        modalImage.src = safeImage;
+      } else {
+        modalImage.removeAttribute('src');
+      }
       modalImage.alt = artwork.title || '';
       modalTitle.textContent = artwork.title || '';
       modalArtist.textContent = artwork.artist ? `by ${artwork.artist}` : '';
@@ -2063,6 +2081,7 @@ function subscribeToArtworkData(artwork) {
 
     function closeArtworkModal() {
       modal.classList.add('hidden-room');
+      modalImage.removeAttribute('src');
     }
 
     modalCloseBtn.addEventListener('click', closeArtworkModal);
@@ -2528,8 +2547,9 @@ function subscribeToArtworkData(artwork) {
       frame.setAttribute('aria-label', `View artwork: ${art.title}`);
 
       const img = document.createElement('img');
-      img.src = art.image;
-      img.alt = art.title;
+      const safeSrc = sanitizeImageSrc(art.image);
+      if (safeSrc) img.src = safeSrc;
+      img.alt = art.title || '';
 
       frame.appendChild(img);
       frame.addEventListener('click', () => openArtworkModal(art));
@@ -2686,7 +2706,11 @@ function subscribeToArtworkData(artwork) {
           plaque.className = 'artwork-plaque';
           plaque.style.left = `${pos.left}px`;
           plaque.style.top = `${pos.top + 242}px`;
-          plaque.innerHTML = `<strong>${art.title}</strong><span>${art.artist}</span>`;
+          const plaqueTitle = document.createElement('strong');
+          plaqueTitle.textContent = art.title || 'Untitled';
+          const plaqueArtist = document.createElement('span');
+          plaqueArtist.textContent = art.artist || 'Anonymous';
+          plaque.append(plaqueTitle, plaqueArtist);
           zone.appendChild(plaque);
           occupiedRects.push({
             left: pos.left - ARTWORK_GAP,

@@ -19,16 +19,27 @@ const powerButtonHotspot = document.getElementById('power-button-hotspot');
 
 let reducedMotion = false;
 let scanlinesEnabled = true;
-let soundEnabled = false;
 
 function isReducedMotion() {
   return reducedMotion;
 }
 
 // ---- Display settings bar (Stage 5) ----
+const powerBtn = document.getElementById('toggle-power-btn');
 const scanlinesBtn = document.getElementById('toggle-scanlines-btn');
 const motionBtn = document.getElementById('toggle-motion-btn');
-const soundBtn = document.getElementById('toggle-sound-btn');
+
+function setPowerState(isOn) {
+  if (!powerBtn) return;
+  powerBtn.setAttribute('aria-pressed', String(isOn));
+  powerBtn.textContent = `POWER: ${isOn ? 'ON' : 'OFF'}`;
+}
+
+if (powerBtn) {
+  powerBtn.addEventListener('click', () => {
+    resetToLanding();
+  });
+}
 
 scanlinesBtn.addEventListener('click', () => {
   scanlinesEnabled = !scanlinesEnabled;
@@ -42,15 +53,6 @@ motionBtn.addEventListener('click', () => {
   document.body.classList.toggle('reduce-motion', reducedMotion);
   motionBtn.setAttribute('aria-pressed', String(reducedMotion));
   motionBtn.textContent = `REDUCE MOTION: ${reducedMotion ? 'ON' : 'OFF'}`;
-});
-
-soundBtn.addEventListener('click', () => {
-  soundEnabled = !soundEnabled;
-  soundBtn.setAttribute('aria-pressed', String(soundEnabled));
-  soundBtn.textContent = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
-  // No audio files are wired up yet. Once added, any future playSound(name)
-  // helper should check `if (soundEnabled)` before playing — this flag is
-  // the hook for that, kept muted and non-autoplaying until then.
 });
 
 // Captured once, before any interaction, so Escape can restore the
@@ -203,6 +205,7 @@ const BOOT_LINES = [
 
 let bootTimeoutIds = [];
 let bootComplete = false;
+let zoomTimeoutId = null;
 
 function triggerFlash() {
   if (isReducedMotion()) return;
@@ -213,9 +216,11 @@ function triggerFlash() {
 }
 
 function startZoomAndBoot() {
+  clearTimeout(zoomTimeoutId);
   document.body.classList.remove('app-menu-active');
   document.body.classList.remove('project-view-active');
   document.body.classList.add('crt-zoomed');
+  setPowerState(true);
   triggerFlash();
 
   const landingBody = screenContent.querySelector('.landing-screen-body');
@@ -225,7 +230,7 @@ function startZoomAndBoot() {
   }
 
   const zoomDuration = isReducedMotion() ? 0 : 900;
-  setTimeout(renderBootScreen, zoomDuration);
+  zoomTimeoutId = setTimeout(renderBootScreen, zoomDuration);
 }
 
 function renderBootScreen() {
@@ -496,11 +501,14 @@ function returnToAppMenu() {
 }
 
 function resetToLanding() {
+  clearTimeout(zoomTimeoutId);
+  zoomTimeoutId = null;
   bootTimeoutIds.forEach(clearTimeout);
   bootTimeoutIds = [];
   document.body.classList.remove('app-menu-active');
   document.body.classList.remove('project-view-active');
   document.body.classList.remove('crt-zoomed');
+  setPowerState(false);
 
   if (isReducedMotion()) {
     screenContent.innerHTML = LANDING_CONTENT_HTML;

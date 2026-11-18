@@ -11,6 +11,35 @@
   <link rel="stylesheet" href="css/graph.css" />
   <link rel="stylesheet" href="css/ui.css" />
   <link rel="stylesheet" href="css/roadmap.css" />
+  <style>
+    .nav-hub-link {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--text-primary, #e2e8f0);
+      border: 1px solid var(--border-subtle, rgba(148, 163, 184, 0.35));
+    }
+    .nav-hub-link:focus-visible {
+      outline: 2px solid var(--accent-primary, #38bdf8);
+      outline-offset: 2px;
+    }
+    @media (max-width: 640px) {
+      .topbar {
+        height: auto;
+        min-height: 52px;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 6px 8px;
+      }
+      .topbar-controls {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -71,7 +100,7 @@
           <span class="stage-indicator-dot" aria-hidden="true"></span>
           <span id="bp-stage-badge-text"><span class="badge-stage">STAGE 01 / 07</span><span class="badge-sep"> — </span><span class="badge-label">PROJECT NAME</span></span>
         </div>
-        <a href="/explore/#menu" class="nav-hub-link" title="Return to Portfolio Hub">◂ HUB</a>
+        <a href="/explore/#menu" class="nav-hub-link" aria-label="Return to Explore Hub" title="Return to Explore Hub">◂ HUB</a>
       </div>
     </header>
 

@@ -84,17 +84,22 @@
 
     .main-hub-link {
       position: absolute;
-      top: 24px;
+      top: 20px;
       left: 50%;
       z-index: 3;
       transform: translateX(-50%);
-      padding: 9px 22px;
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 22px;
       color: var(--gold-dark);
-      background: rgba(255, 253, 246, 0.72);
+      background: rgba(255, 253, 246, 0.85);
       border: 1px solid var(--gold-light);
       border-radius: 2px;
       box-shadow: 0 4px 12px rgba(90, 70, 30, 0.14);
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       letter-spacing: 0.8px;
       text-decoration: none;
       text-transform: uppercase;
@@ -127,8 +132,13 @@
     .main-hub-link:hover,
     .main-hub-link:focus-visible {
       transform: translateX(-50%) translateY(-2px);
-      background: rgba(255, 253, 246, 0.94);
+      background: rgba(255, 253, 246, 0.96);
       box-shadow: 0 6px 16px rgba(90, 70, 30, 0.2);
+    }
+
+    .main-hub-link:focus-visible {
+      outline: 3px solid #78551b;
+      outline-offset: 3px;
     }
 
     .entrance-content {
@@ -1486,7 +1496,7 @@
   <!-- ROOM 1: ENTRANCE HALL                          -->
   <!-- ============================================= -->
   <section id="entrance-hall" class="room active-room">
-    <a class="main-hub-link" href="/explore/#menu">Main Hub</a>
+    <a class="main-hub-link" href="/explore/#menu" aria-label="Return to Explore Hub">Main Hub</a>
     <div class="entrance-content">
       <h1 class="museum-title">Enuhri Art Gallery</h1>
 

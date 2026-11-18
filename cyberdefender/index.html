@@ -9,6 +9,16 @@
   <link rel="stylesheet" href="css/ui.css?v=1.1" />
   <link rel="stylesheet" href="css/overworld.css?v=1.0" />
   <link rel="stylesheet" href="css/combat.css?v=1.1" />
+  <style>
+    #btn-menu-hub {
+      min-height: 44px;
+      text-decoration: none;
+    }
+    #btn-menu-hub:focus-visible {
+      outline: 2px solid #ffffff;
+      outline-offset: 3px;
+    }
+  </style>
 </head>
 <body>
 
@@ -59,9 +69,9 @@
           <button type="button" id="btn-menu-settings" class="cyber-btn">
             <span>SYSTEM SETTINGS</span>
           </button>
-          <button type="button" id="btn-menu-hub" class="cyber-btn cyber-btn--gold" style="margin-top: 4px;">
+          <a href="/explore/#menu" id="btn-menu-hub" class="cyber-btn cyber-btn--gold" aria-label="Return to Explore Hub" style="margin-top: 4px;">
             <span>◂ RETURN TO MAIN HUB</span>
-          </button>
+          </a>
         </nav>
       </section>
 

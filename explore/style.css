@@ -18,41 +18,41 @@
   --cyan: #00e5ff;
   --amber: #ffbf00;
   --text-light: #e8e4d8;
-  --text-muted: #8b8577;
+  --text-muted: #b6b0a2;
 
   /* CRT Menu Zoom Settings — focused on the PC with centered framing */
-  --crt-zoom-scale: 1.58;
+  --crt-zoom-scale: 1.72;
   --crt-zoom-origin: 50% 42%;
-  --crt-zoom-y: 6%;
+  --crt-zoom-y: 5%;
 
   /* CRT Deep Zoom Settings (Project View) — maximized and centered on the monitor */
-  --crt-zoom-scale-project: 2.12;
+  --crt-zoom-scale-project: 2.15;
   --crt-zoom-origin-project: 50% 42%;
-  --crt-zoom-y-project: 12.5%;
+  --crt-zoom-y-project: 12%;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1180px) {
   :root {
-    --crt-zoom-scale: 1.45;
+    --crt-zoom-scale: 1.65;
     --crt-zoom-origin: 50% 42%;
     --crt-zoom-y: 5%;
 
-    --crt-zoom-scale-project: 1.95;
+    --crt-zoom-scale-project: 2.02;
     --crt-zoom-origin-project: 50% 42%;
     --crt-zoom-y-project: 11.5%;
   }
 }
 
-@media (max-width: 600px) {
-  :root {
-    --crt-zoom-scale: 1.35;
-    --crt-zoom-origin: 50% 42%;
-    --crt-zoom-y: 4%;
-
-    --crt-zoom-scale-project: 1.78;
-    --crt-zoom-origin-project: 50% 42%;
-    --crt-zoom-y-project: 10%;
-  }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 html, body {
@@ -175,7 +175,7 @@ body.crt-zoomed .side-panel--left {
 
 .crt-composition {
   position: relative;
-  width: clamp(320px, min(44vw, 54vh), 520px);
+  width: clamp(380px, min(46vw, 58vh), 580px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -297,7 +297,7 @@ body.crt-zoomed .power-button-hotspot {
 }
 
 .boot-label {
-  font-size: clamp(0.5rem, 1.6vw, 0.75rem);
+  font-size: clamp(0.65rem, 1.5vw, 0.85rem);
   letter-spacing: 2px;
   color: var(--green);
   text-shadow: 0 0 6px rgba(57, 255, 20, 0.6);
@@ -306,17 +306,21 @@ body.crt-zoomed .power-button-hotspot {
 .play-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: clamp(6px, 1.4vw, 12px) clamp(14px, 3vw, 24px);
-  font-size: clamp(0.65rem, 1.8vw, 1rem);
+  min-width: 112px;
+  min-height: 44px;
+  padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.6vw, 24px);
+  font-size: clamp(0.75rem, 1.6vw, 1rem);
   letter-spacing: 2px;
   color: var(--green);
   border: 1px solid var(--green);
   border-radius: 3px;
-  background: rgba(57, 255, 20, 0.06);
+  background: rgba(57, 255, 20, 0.08);
   text-shadow: 0 0 6px rgba(57, 255, 20, 0.6);
   box-shadow: 0 0 16px rgba(57, 255, 20, 0.35);
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  touch-action: manipulation;
 }
 
 .play-btn:hover,
@@ -425,19 +429,25 @@ body.crt-zoomed .accessories {
 .boot-skip-btn {
   align-self: flex-end;
   margin-top: 8px;
-  font-size: clamp(0.4rem, 1.3vw, 0.58rem);
+  min-width: 72px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(7.2px, 0.7vw, 8.8px);
   letter-spacing: 1px;
   color: var(--cyan);
   border: 1px solid var(--cyan);
   padding: 4px 10px;
   border-radius: 2px;
-  background: rgba(0, 229, 255, 0.08);
+  background: rgba(0, 229, 255, 0.1);
   transition: background 0.2s ease;
+  touch-action: manipulation;
 }
 
 .boot-skip-btn:hover,
 .boot-skip-btn:focus-visible {
-  background: rgba(0, 229, 255, 0.18);
+  background: rgba(0, 229, 255, 0.2);
 }
 
 .boot-skip-btn:focus-visible {
@@ -455,20 +465,28 @@ body.crt-zoomed .accessories {
   flex-direction: column;
   padding: 2% 3.5%;
   color: var(--green);
-  text-shadow: 0 0 4px rgba(57, 255, 20, 0.5);
+  text-shadow: 0 0 4px rgba(57, 255, 20, 0.35);
 }
 
 .app-menu-header {
-  font-size: clamp(0.32rem, 0.95vw, 0.48rem);
+  font-size: clamp(7.4px, 0.72vw, 9px);
   line-height: 1.1;
   letter-spacing: 1.5px;
   text-align: center;
-  margin-bottom: 1.4%;
+  margin-bottom: 1.2%;
   flex-shrink: 0;
+}
+
+.app-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .app-grid {
   flex: 1;
+  list-style: none;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
@@ -476,49 +494,86 @@ body.crt-zoomed .accessories {
   min-height: 0;
 }
 
+.app-grid-item {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
 .app-tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  border: 1px solid rgba(57, 255, 20, 0.4);
-  background: rgba(57, 255, 20, 0.03);
+  gap: 2px;
+  border: 1px solid rgba(57, 255, 20, 0.52);
+  background: rgba(57, 255, 20, 0.05);
   color: var(--green);
   font-family: inherit;
+  text-decoration: none;
   border-radius: 2px;
-  padding: 1.2% 2%;
+  padding: 2px 4px;
   text-align: center;
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
-  height: 100%;
   min-height: 0;
   overflow: hidden;
+  touch-action: manipulation;
+}
+
+.app-tile-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-index {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: clamp(6.8px, 0.58vw, 7.4px);
+  line-height: 1;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
 }
 
 .app-tile .app-icon {
-  font-size: clamp(0.56rem, 1.55vw, 0.92rem);
+  font-size: clamp(9px, 1vw, 13px);
   line-height: 1;
 }
 
 .app-tile .app-name {
-  font-size: clamp(0.24rem, 0.76vw, 0.37rem);
-  letter-spacing: 0.3px;
-  line-height: 1.08;
+  font-size: clamp(8px, 0.74vw, 9px);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+  color: var(--text-light);
 }
 
 .app-tile .app-status {
-  font-size: clamp(0.2rem, 0.62vw, 0.3rem);
-  line-height: 1;
-  color: var(--text-muted);
+  display: inline-block;
+  font-size: clamp(6.8px, 0.58vw, 7.6px);
+  line-height: 1.05;
+  letter-spacing: 0.3px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  border: 1px solid rgba(57, 255, 20, 0.45);
+  color: var(--green);
 }
 
 .app-tile[data-status="live"] {
-  border-color: rgba(0, 229, 255, 0.55);
-  background: rgba(0, 229, 255, 0.05);
+  border-color: rgba(0, 229, 255, 0.65);
+  background: rgba(0, 229, 255, 0.06);
 }
 
 .app-tile[data-status="live"] .app-status {
   color: var(--cyan);
+  border-color: rgba(0, 229, 255, 0.65);
+  background: rgba(0, 229, 255, 0.1);
 }
 
 .app-tile[data-status="ready"] .app-status {
@@ -527,45 +582,48 @@ body.crt-zoomed .accessories {
 
 .app-tile[data-status="coming-soon"] .app-status {
   color: var(--amber);
+  border-color: rgba(255, 191, 0, 0.55);
 }
 
 .app-tile:hover,
 .app-tile:focus-visible {
-  background: rgba(57, 255, 20, 0.14);
+  background: rgba(57, 255, 20, 0.16);
   box-shadow: 0 0 14px rgba(57, 255, 20, 0.35);
   transform: translateY(-1px);
 }
 
 .app-tile[data-status="live"]:hover,
 .app-tile[data-status="live"]:focus-visible {
-  background: rgba(0, 229, 255, 0.14);
+  background: rgba(0, 229, 255, 0.16);
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
 }
 
 .app-tile:focus-visible {
   outline: 2px solid var(--cyan);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .app-secondary-bar {
-  margin-top: 1.4%;
+  margin-top: 1.2%;
   flex-shrink: 0;
 }
 
 .app-secondary-entry {
   width: 100%;
+  min-height: 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 1% 2.5%;
+  padding: 2px 6px;
   line-height: 1.1;
-  border: 1px dashed rgba(255, 191, 0, 0.42);
+  border: 1px dashed rgba(255, 191, 0, 0.58);
   border-radius: 2px;
-  background: rgba(255, 191, 0, 0.04);
+  background: rgba(255, 191, 0, 0.06);
   color: var(--text-light);
   font-family: inherit;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  touch-action: manipulation;
 }
 
 .app-secondary-left,
@@ -577,25 +635,29 @@ body.crt-zoomed .accessories {
 }
 
 .app-secondary-icon {
-  font-size: clamp(0.36rem, 1vw, 0.52rem);
+  font-size: clamp(7.5px, 0.72vw, 9.5px);
   line-height: 1;
 }
 
 .app-secondary-name {
-  font-size: clamp(0.24rem, 0.76vw, 0.36rem);
-  letter-spacing: 0.5px;
+  font-size: clamp(8px, 0.74vw, 8.8px);
+  font-weight: 700;
+  letter-spacing: 0.4px;
   color: var(--text-light);
 }
 
 .app-secondary-status {
-  font-size: clamp(0.2rem, 0.64vw, 0.3rem);
-  letter-spacing: 0.4px;
+  font-size: clamp(6.8px, 0.58vw, 7.6px);
+  letter-spacing: 0.3px;
   color: var(--amber);
+  border: 1px solid rgba(255, 191, 0, 0.55);
+  padding: 1px 4px;
+  border-radius: 2px;
 }
 
 .app-secondary-cta {
-  font-size: clamp(0.2rem, 0.64vw, 0.3rem);
-  letter-spacing: 0.4px;
+  font-size: clamp(6.8px, 0.58vw, 7.6px);
+  letter-spacing: 0.3px;
   color: var(--text-muted);
 }
 
@@ -603,21 +665,21 @@ body.crt-zoomed .accessories {
 .app-secondary-entry:focus-visible {
   border-style: solid;
   border-color: var(--amber);
-  background: rgba(255, 191, 0, 0.12);
+  background: rgba(255, 191, 0, 0.15);
   box-shadow: 0 0 10px rgba(255, 191, 0, 0.25);
 }
 
 .app-secondary-entry:focus-visible {
   outline: 2px solid var(--cyan);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .app-menu-footer {
   text-align: center;
-  font-size: clamp(0.23rem, 0.72vw, 0.35rem);
+  font-size: clamp(6.6px, 0.6vw, 7.6px);
   line-height: 1.1;
-  letter-spacing: 1.2px;
-  margin-top: 1.2%;
+  letter-spacing: 1px;
+  margin-top: 1%;
   color: var(--text-muted);
   flex-shrink: 0;
 }
@@ -644,17 +706,24 @@ body.crt-zoomed .accessories {
 }
 
 .project-header-title {
-  font-size: clamp(0.42rem, 1.5vw, 0.65rem);
-  letter-spacing: 1.5px;
+  font-size: clamp(7.6px, 0.8vw, 9.5px);
+  letter-spacing: 1.2px;
   color: var(--green);
-  text-shadow: 0 0 4px rgba(57, 255, 20, 0.5);
+  text-shadow: 0 0 4px rgba(57, 255, 20, 0.4);
+  margin: 0;
 }
 
 .project-close-btn {
   color: var(--text-muted);
-  font-size: clamp(0.5rem, 1.6vw, 0.75rem);
+  font-size: clamp(9px, 0.9vw, 11px);
   line-height: 1;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 2px 6px;
+  touch-action: manipulation;
 }
 
 .project-close-btn:hover,
@@ -775,14 +844,18 @@ body.crt-zoomed .accessories {
 }
 
 .project-link-btn {
-  display: inline-block;
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 5px 10px;
   color: var(--cyan);
   border: 1px solid var(--cyan);
   border-radius: 2px;
   text-decoration: none;
-  font-size: clamp(0.32rem, 1vw, 0.46rem);
-  letter-spacing: 1px;
+  font-size: clamp(6.8px, 0.68vw, 8.2px);
+  letter-spacing: 0.8px;
+  touch-action: manipulation;
 }
 
 .project-link-btn:hover,
@@ -801,20 +874,22 @@ body.crt-zoomed .accessories {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 8px 12px;
+  min-height: 24px;
+  padding: 6px 10px;
   color: #02070a;
   background: var(--cyan);
   border: 1px solid var(--cyan);
   border-radius: 2px;
   text-decoration: none;
   font-family: inherit;
-  font-size: clamp(0.34rem, 1.05vw, 0.5rem);
+  font-size: clamp(6.8px, 0.68vw, 8.4px);
   font-weight: bold;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
   transition: all 0.2s ease;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .project-play-btn:hover,
@@ -841,12 +916,14 @@ body.crt-zoomed .accessories {
 .return-hub-btn {
   color: var(--green);
   border: 1px solid var(--green);
-  padding: 6px 16px;
+  min-height: 24px;
+  padding: 5px 14px;
   border-radius: 2px;
-  letter-spacing: 1.5px;
-  font-size: clamp(0.34rem, 1.1vw, 0.5rem);
-  background: rgba(57, 255, 20, 0.06);
+  letter-spacing: 1.2px;
+  font-size: clamp(6.8px, 0.7vw, 8.4px);
+  background: rgba(57, 255, 20, 0.08);
   transition: background 0.2s ease;
+  touch-action: manipulation;
 }
 
 .return-hub-btn:hover,
@@ -869,19 +946,34 @@ body.crt-zoomed .accessories {
   z-index: 200;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
 .settings-btn {
   font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-muted);
-  border: 1px solid rgba(232, 228, 216, 0.25);
-  padding: 5px 9px;
-  border-radius: 2px;
-  background: rgba(10, 10, 12, 0.7);
+  border: 1px solid rgba(232, 228, 216, 0.45);
+  padding: 8px 13px;
+  border-radius: 3px;
+  background: rgba(10, 10, 12, 0.88);
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  touch-action: manipulation;
 }
 
 .settings-btn[aria-pressed="true"] {
@@ -949,71 +1041,467 @@ body.scanlines-off .screen-scanlines {
   display: none;
 }
 
-/* Reduced motion overrides — controlled via body.reduce-motion */
+/* Reduced motion overrides — system preference & manual toggle */
+@media (prefers-reduced-motion: reduce) {
+  .crt-composition,
+  .side-panel--left,
+  .accessories,
+  .screen-content,
+  .play-btn,
+  .boot-skip-btn,
+  .app-tile,
+  .app-secondary-entry,
+  .project-play-btn,
+  .return-hub-btn,
+  .settings-btn,
+  .power-button-hotspot {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .boot-cursor,
+  .crt-flash {
+    animation: none !important;
+  }
+}
+
 body.reduce-motion .crt-composition,
 body.reduce-motion .side-panel--left,
 body.reduce-motion .accessories,
 body.reduce-motion .screen-content,
+body.reduce-motion .play-btn,
+body.reduce-motion .boot-skip-btn,
 body.reduce-motion .app-tile,
 body.reduce-motion .app-secondary-entry,
-body.reduce-motion .project-play-btn {
+body.reduce-motion .project-play-btn,
+body.reduce-motion .return-hub-btn,
+body.reduce-motion .settings-btn,
+body.reduce-motion .power-button-hotspot {
   transition: none !important;
-}
-
-body.reduce-motion .boot-cursor {
   animation: none !important;
 }
 
-/* ===================================================
-   9. RESPONSIVE ADJUSTMENTS
-=================================================== */
-@media (max-width: 900px) {
-  .side-panel--left {
-    position: absolute;
-    top: clamp(44px, 8vh, 64px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 440px;
-    align-items: center;
-    text-align: center;
-  }
+body.reduce-motion .boot-cursor,
+body.reduce-motion .crt-flash {
+  animation: none !important;
+}
 
-  body.crt-zoomed .side-panel--left {
-    transform: translateX(-50%) translateY(-20px);
-  }
-
-  .hub-title {
-    font-size: 1.8rem;
-  }
-
-  .hub-description {
-    font-size: 0.88rem;
-  }
-
-  .crt-composition {
-    width: clamp(280px, min(80vw, 50vh), 420px);
-    margin-top: clamp(40px, 8vh, 70px);
-  }
-
-  body.crt-zoomed .crt-composition {
-    margin-top: 0;
+@media (pointer: coarse) {
+  .app-tile:hover,
+  .app-tile[data-status="live"]:hover,
+  .project-play-btn:hover,
+  .play-btn:hover {
+    transform: none;
   }
 }
 
-@media (max-width: 480px) {
-  .hub-title {
-    font-size: 1.5rem;
+/* ===================================================
+   9. RESPONSIVE CRT FRAME, MOBILE & HIGH-ZOOM REFLOW
+   Applies cleanly to tablets, portrait/landscape phones,
+   and 200%-400% desktop browser zoom without global scale.
+=================================================== */
+@media (max-width: 900px), (max-height: 560px) {
+  html, body {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #landing-screen {
+    height: auto;
+    min-height: 100dvh;
+    width: 100%;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
   }
 
   .display-settings {
-    top: 8px;
-    left: 8px;
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    padding: 8px 10px;
+    gap: 6px;
+    background: rgba(10, 10, 12, 0.96);
+    border-bottom: 1px solid rgba(232, 228, 216, 0.22);
+  }
+
+  .settings-group {
     gap: 6px;
   }
 
   .settings-btn {
-    font-size: 0.5rem;
-    padding: 4px 7px;
+    font-size: 12px;
+    min-height: 44px;
+    padding: 8px 11px;
+  }
+
+  .hub-layout {
+    height: auto;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 14px 10px 24px;
+    gap: 14px;
+    overflow: visible;
+  }
+
+  .side-panel--left {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 640px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Keep the page-level h1 in the accessibility tree while yielding visual space on zoom */
+  body.crt-zoomed .side-panel--left {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    transform: none;
+    opacity: 1;
+  }
+
+  .hub-title {
+    font-size: clamp(1.35rem, 5.2vw, 1.9rem);
+  }
+
+  .hub-description {
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 56ch;
+    color: var(--text-muted);
+  }
+
+  .crt-stage {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .crt-composition,
+  body.crt-zoomed .crt-composition,
+  body.crt-zoomed.project-view-active .crt-composition {
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto;
+    transform: none !important;
+  }
+
+  .desk-sprite,
+  .monitor-casing,
+  .accessories {
+    display: none;
+  }
+
+  /* Authentic compact CSS CRT bezel keeping retro identity at legible 1:1 scale */
+  .crt-monitor {
+    aspect-ratio: auto;
+    width: 100%;
+    background: linear-gradient(160deg, #cfc6b3 0%, #a59b87 100%);
+    border: 2px solid #746d61;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow:
+      0 14px 32px rgba(0, 0, 0, 0.55),
+      inset 0 2px 3px rgba(255, 255, 255, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .screen-overlay {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: auto;
+    min-height: clamp(220px, 40dvh, 360px);
+    background: rgba(7, 18, 24, 0.98);
+    border: 4px solid var(--bezel);
+    border-radius: 10px;
+    overflow: visible;
+  }
+
+  .screen-content {
+    height: auto;
+    min-height: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+  }
+
+  body.crt-zoomed .power-button-hotspot {
+    position: static;
+    align-self: flex-end;
+    width: auto;
+    height: auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #595348;
+    border-radius: 4px;
+    background: #23221f;
+    color: var(--green);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+  }
+
+  body.crt-zoomed .power-button-hotspot::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  body.crt-zoomed .power-button-hotspot::after {
+    content: 'POWER';
+  }
+
+  .landing-screen-body {
+    padding: 24px 16px;
+    gap: 14px;
+  }
+
+  .boot-label {
+    font-size: 14px;
+  }
+
+  .play-btn {
+    font-size: 16px;
+    min-height: 48px;
+    min-width: 150px;
+    padding: 12px 24px;
+  }
+
+  .boot-sequence {
+    min-height: 220px;
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .boot-skip-btn {
+    font-size: 13px;
+    min-height: 44px;
+    min-width: 120px;
+    padding: 10px 16px;
+  }
+
+  .app-menu {
+    height: auto;
+    padding: 14px 12px;
+    gap: 10px;
+  }
+
+  .app-menu-header {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  /* Tablet / Wide Landscape (640px-900px): 2x3 compact grid */
+  .app-grid {
+    flex: none;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
+    gap: 10px;
+  }
+
+  .app-tile {
+    min-height: 76px;
+    padding: 10px 12px;
+    gap: 4px;
+  }
+
+  .app-index {
+    font-size: 11px;
+    top: 6px;
+    left: 8px;
+  }
+
+  .app-tile .app-icon {
+    font-size: 20px;
+  }
+
+  .app-tile .app-name {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .app-tile .app-status {
+    font-size: 11.5px;
+    padding: 2px 6px;
+  }
+
+  .app-secondary-bar {
+    margin-top: 2px;
+  }
+
+  .app-secondary-entry {
+    min-height: 48px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .app-secondary-icon {
+    font-size: 15px;
+  }
+
+  .app-secondary-name {
+    font-size: 13px;
+  }
+
+  .app-secondary-status,
+  .app-secondary-cta {
+    font-size: 11.5px;
+    padding: 2px 6px;
+  }
+
+  .app-menu-footer {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .project-view {
+    height: auto;
+  }
+
+  .project-header {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .project-header-title {
+    font-size: 15px;
+  }
+
+  .project-close-btn {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 18px;
+  }
+
+  .project-body {
+    overflow-y: visible;
+    padding: 14px 12px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .project-category,
+  .project-tagline,
+  .project-section-title {
+    font-size: 12.5px;
+  }
+
+  .project-play-btn,
+  .project-link-btn {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .project-footer {
+    padding: 12px;
+  }
+
+  .return-hub-btn {
+    min-height: 44px;
+    min-width: 180px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Phones & 300%-400% Desktop Reflow (<= 639px): 1x6 terminal rows */
+@media (max-width: 639px) {
+  .crt-monitor {
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .app-menu {
+    padding: 12px 10px;
+  }
+
+  .app-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .app-tile {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    min-height: 48px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .app-tile-main {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .app-index {
+    position: static;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .app-tile .app-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .app-tile .app-name {
+    font-size: 13.5px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .app-tile .app-status {
+    font-size: 11px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+
+  .app-secondary-entry {
+    min-height: 48px;
+    padding: 10px 12px;
+  }
+
+  .app-secondary-cta {
+    display: none;
   }
 }

@@ -6,28 +6,33 @@
   <title>Enuhri Portfolio Hub</title>
   <link rel="canonical" href="https://www.jendrick.dev/explore/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>💻</text></svg>" />
-  <link rel="stylesheet" href="style.css?v=2.0" />
+  <link rel="stylesheet" href="style.css?v=2.1" />
 </head>
 <body>
 
-  <!-- Always-visible accessibility controls, independent of CRT phase -->
-  <div id="display-settings" class="display-settings" role="group" aria-label="Display settings">
-    <a href="/" id="return-professional-link" class="settings-btn settings-btn--professional" title="Return to the main Professional Portfolio">◂ Professional Portfolio</a>
-    <button type="button" id="toggle-power-btn" class="settings-btn settings-btn--power" aria-pressed="false" title="Power / Return to landing page">POWER: OFF</button>
-    <button type="button" id="toggle-scanlines-btn" class="settings-btn" aria-pressed="true">SCANLINES: ON</button>
-    <button type="button" id="toggle-motion-btn" class="settings-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
-  </div>
+  <!-- Always-visible return link & display settings, independent of CRT phase -->
+  <header class="hub-header">
+    <nav id="display-settings" class="display-settings" aria-label="Display and return navigation">
+      <a href="/" id="return-professional-link" class="settings-btn settings-btn--professional" title="Return to the main Professional Portfolio">◂ Professional Portfolio</a>
+      <div class="settings-group" role="group" aria-label="Display settings">
+        <button type="button" id="toggle-power-btn" class="settings-btn settings-btn--power" aria-pressed="false" title="Power / Return to landing screen">POWER: OFF</button>
+        <button type="button" id="toggle-scanlines-btn" class="settings-btn" aria-pressed="true">SCANLINES: ON</button>
+        <button type="button" id="toggle-motion-btn" class="settings-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
+      </div>
+    </nav>
+  </header>
 
 
   <!-- ============================================= -->
   <!-- PHASE 1: LANDING SCREEN                        -->
   <!-- ============================================= -->
   <main id="landing-screen" class="phase active-phase">
+    <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
 
     <div class="hub-layout">
 
       <!-- Left panel: title + description -->
-      <section class="side-panel side-panel--left">
+      <section class="side-panel side-panel--left" aria-label="Explore Hub introduction">
         <h1 class="hub-title">ENUHRI<br />PORTFOLIO HUB</h1>
         <p class="hub-description">
           A collection of projects, ideas, and creations.
@@ -36,7 +41,7 @@
       </section>
 
       <!-- Center: the CRT computer composition -->
-      <section class="crt-stage">
+      <section class="crt-stage" aria-label="Interactive CRT terminal">
 
         <div class="crt-composition">
 
@@ -67,13 +72,13 @@
               id="power-button-hotspot"
               class="power-button-hotspot"
               type="button"
-              aria-label="Power: Click to turn on retro PC"
-              title="Power: Click to turn on retro PC">
+              aria-label="Turn off retro computer power and return to landing screen"
+              title="Turn off power and return to landing screen">
             </button>
           </div>
 
           <!-- Keyboard + mouse, decorative -->
-          <div class="accessories">
+          <div class="accessories" aria-hidden="true">
             <img class="keyboard-sprite" src="../assets/sprites/keyboard.png" alt="" aria-hidden="true" />
           </div>
 
@@ -85,6 +90,6 @@
 
   </main>
 
-  <script src="script.js?v=2.0"></script>
+  <script src="script.js?v=2.1"></script>
 </body>
 </html>

@@ -15,12 +15,23 @@ const playBtn = document.getElementById('play-btn');
 const screenContent = document.getElementById('screen-content');
 const screenOverlay = document.querySelector('.screen-overlay');
 const powerButtonHotspot = document.getElementById('power-button-hotspot');
+const srStatus = document.getElementById('sr-status');
 
-let reducedMotion = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+let reducedMotion = Boolean(motionQuery && motionQuery.matches);
+let manualMotionOverride = false;
 let scanlinesEnabled = true;
 
 function isReducedMotion() {
   return reducedMotion;
+}
+
+function announceStatus(message) {
+  if (!srStatus) return;
+  srStatus.textContent = '';
+  window.requestAnimationFrame(() => {
+    srStatus.textContent = message;
+  });
 }
 
 // ---- Display settings bar (Stage 5) ----
@@ -28,10 +39,21 @@ const powerBtn = document.getElementById('toggle-power-btn');
 const scanlinesBtn = document.getElementById('toggle-scanlines-btn');
 const motionBtn = document.getElementById('toggle-motion-btn');
 
-if (reducedMotion) {
-  document.body.classList.add('reduce-motion');
-  motionBtn.setAttribute('aria-pressed', 'true');
-  motionBtn.textContent = 'REDUCE MOTION: ON';
+function applyMotionState(isReduced) {
+  reducedMotion = Boolean(isReduced);
+  document.body.classList.toggle('reduce-motion', reducedMotion);
+  motionBtn.setAttribute('aria-pressed', String(reducedMotion));
+  motionBtn.textContent = `REDUCE MOTION: ${reducedMotion ? 'ON' : 'OFF'}`;
+}
+
+applyMotionState(reducedMotion);
+
+if (motionQuery && typeof motionQuery.addEventListener === 'function') {
+  motionQuery.addEventListener('change', (event) => {
+    if (!manualMotionOverride) {
+      applyMotionState(event.matches);
+    }
+  });
 }
 
 function setPowerState(isOn) {
@@ -54,10 +76,8 @@ scanlinesBtn.addEventListener('click', () => {
 });
 
 motionBtn.addEventListener('click', () => {
-  reducedMotion = !reducedMotion;
-  document.body.classList.toggle('reduce-motion', reducedMotion);
-  motionBtn.setAttribute('aria-pressed', String(reducedMotion));
-  motionBtn.textContent = `REDUCE MOTION: ${reducedMotion ? 'ON' : 'OFF'}`;
+  manualMotionOverride = true;
+  applyMotionState(!reducedMotion);
 });
 
 // Captured once, before any interaction, so Escape can restore the
@@ -67,6 +87,7 @@ const LANDING_CONTENT_HTML = screenContent.innerHTML;
 // Editable app data — six primary catalog entries + separate DevPath paused prototype.
 const APPS = [
   {
+    index: '01',
     id: 'professional',
     name: 'Professional Portfolio',
     icon: '💼',
@@ -86,6 +107,7 @@ const APPS = [
     link: '/',
   },
   {
+    index: '02',
     id: 'udm-radar',
     name: 'UDM-RADAR',
     icon: '📡',
@@ -109,6 +131,7 @@ const APPS = [
     ],
   },
   {
+    index: '03',
     id: 'studyquest',
     name: 'StudyQuest',
     icon: '📚',
@@ -132,6 +155,7 @@ const APPS = [
     ],
   },
   {
+    index: '04',
     id: 'art-gallery',
     name: 'Enuhri Art Gallery',
     icon: '🎨',
@@ -152,6 +176,7 @@ const APPS = [
     link: '/art-gallery/',
   },
   {
+    index: '05',
     id: 'cyberdefender',
     name: 'CyberDefender',
     icon: '🛡',
@@ -177,6 +202,7 @@ const APPS = [
     ],
   },
   {
+    index: '06',
     id: 'sandbox',
     name: 'Sandbox',
     icon: '🧪',
@@ -244,6 +270,14 @@ const BOOT_LINES = [
 let bootTimeoutIds = [];
 let bootComplete = false;
 let zoomTimeoutId = null;
+let lastTriggerAppId = null;
+let currentViewKey = 'landing';
+
+function focusSafely(el) {
+  if (el && typeof el.focus === 'function') {
+    el.focus({ preventScroll: true });
+  }
+}
 
 function triggerFlash() {
   if (isReducedMotion()) return;
@@ -268,16 +302,19 @@ function startZoomAndBoot() {
   }
 
   const zoomDuration = isReducedMotion() ? 0 : 900;
-  zoomTimeoutId = setTimeout(renderBootScreen, zoomDuration);
+  if (zoomDuration === 0) {
+    renderBootScreen();
+  } else {
+    zoomTimeoutId = setTimeout(renderBootScreen, zoomDuration);
+  }
 }
 
 function renderBootScreen() {
   bootComplete = false;
 
   screenContent.innerHTML = `
-    <div id="boot-sequence" class="boot-sequence" role="button" tabindex="0"
-         aria-label="Boot sequence. Click, tap, or press Enter to continue.">
-      <div class="boot-lines-wrap" aria-live="polite">
+    <div id="boot-sequence" class="boot-sequence">
+      <div class="boot-lines-wrap" aria-hidden="true">
         <span id="boot-text"></span><span class="boot-cursor">▍</span>
       </div>
       <button id="boot-skip-btn" class="boot-skip-btn" type="button">SKIP ▸</button>
@@ -292,6 +329,7 @@ function renderBootScreen() {
     bootTextEl.textContent = BOOT_LINES.join('\n');
     finishBoot(skipBtn);
   } else {
+    announceStatus('System booting. Activate Skip to open applications.');
     typeBootLines(bootTextEl, skipBtn);
   }
 
@@ -308,22 +346,18 @@ function renderBootScreen() {
     if (event.key === 'Escape') {
       event.preventDefault();
       resetToLanding();
-      return;
-    }
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleBootAdvance(bootTextEl, skipBtn);
     }
   });
 
-  bootSequenceEl.focus();
+  focusSafely(skipBtn);
 }
 
 function handleBootAdvance(bootTextEl, skipBtn) {
   if (!bootComplete) {
     skipTyping(bootTextEl, skipBtn);
+    focusSafely(skipBtn);
   } else {
-    goToAppMenu();
+    goToAppMenu({ updateHistory: true, immediate: true, shouldFocus: true });
   }
 }
 
@@ -354,7 +388,11 @@ function skipTyping(bootTextEl, skipBtn) {
 
 function finishBoot(skipBtn) {
   bootComplete = true;
-  if (skipBtn) skipBtn.textContent = 'CONTINUE ▸';
+  if (skipBtn) {
+    skipBtn.textContent = 'CONTINUE ▸';
+    skipBtn.setAttribute('aria-label', 'Continue to application menu');
+  }
+  announceStatus('System ready. Activate Continue to open applications.');
 }
 
 const INLINE_APP_IDS = new Set(['udm-radar', 'studyquest', 'cyberdefender', 'devpath']);
@@ -377,53 +415,65 @@ function setUrlHash(targetHash, { replace = false } = {}) {
   }
 }
 
-function goToAppMenu({ updateHistory = true, immediate = false } = {}) {
+function goToAppMenu({ updateHistory = true, immediate = false, shouldFocus = false, focusAppId = null } = {}) {
   if (updateHistory) setUrlHash('#menu');
   document.body.classList.add('crt-zoomed');
   setPowerState(true);
   if (immediate || isReducedMotion()) {
     clearTimeout(fadeTimeoutId);
     screenContent.classList.remove('screen-fade-out');
-    renderAppMenu();
+    renderAppMenu({ shouldFocus, focusAppId });
   } else {
-    renderAppMenu();
+    renderAppMenu({ shouldFocus, focusAppId });
   }
 }
 
-function renderAppMenu() {
+function renderAppMenu({ shouldFocus = false, focusAppId = null } = {}) {
+  currentViewKey = 'menu';
   document.body.classList.remove('project-view-active');
   document.body.classList.add('app-menu-active');
   screenContent.innerHTML = `
     <div id="app-menu" class="app-menu">
-      <div class="app-menu-header">ENUHRI SYSTEM v1.1</div>
-      <div class="app-grid" role="menu" aria-label="Applications">
-        ${APPS.map((app) => `
-          <button type="button" class="app-tile" role="menuitem"
-                  data-app-id="${app.id}"
-                  data-status="${app.status.toLowerCase()}"
-                  aria-label="${app.name}, ${app.status}">
-            <span class="app-icon" aria-hidden="true">${app.icon}</span>
-            <span class="app-name">${app.name}</span>
-            <span class="app-status">${app.status}</span>
-          </button>
-        `).join('')}
-      </div>
-      <div class="app-secondary-bar" role="group" aria-label="Paused Prototype">
+      <h2 id="app-menu-heading" class="app-menu-header" tabindex="-1">ENUHRI SYSTEM v1.1</h2>
+      <nav class="app-nav" aria-label="Explore applications">
+        <ul class="app-grid">
+          ${APPS.map((app) => {
+            const isDirectLink = Boolean(app.link);
+            const openTag = isDirectLink
+              ? `<a href="${app.link}" class="app-tile" data-app-id="${app.id}" data-status="${app.status.toLowerCase()}" aria-label="${app.name}, ${app.status}">`
+              : `<button type="button" class="app-tile" data-app-id="${app.id}" data-status="${app.status.toLowerCase()}" aria-label="${app.name}, ${app.status}">`;
+            const closeTag = isDirectLink ? '</a>' : '</button>';
+            return `
+              <li class="app-grid-item">
+                ${openTag}
+                  <span class="app-index" aria-hidden="true">${app.index}</span>
+                  <span class="app-tile-main">
+                    <span class="app-icon" aria-hidden="true">${app.icon}</span>
+                    <span class="app-name">${app.name}</span>
+                  </span>
+                  <span class="app-status" aria-hidden="true">${app.status}</span>
+                ${closeTag}
+              </li>
+            `;
+          }).join('')}
+        </ul>
+      </nav>
+      <section class="app-secondary-bar" aria-label="Paused Prototype">
         <button type="button" class="app-secondary-entry"
                 data-app-id="${DEVPATH_APP.id}"
                 data-status="paused"
-                aria-label="${DEVPATH_APP.name}, ${DEVPATH_APP.status}">
+                aria-label="${DEVPATH_APP.name}, Paused prototype, inspect details">
           <span class="app-secondary-left">
             <span class="app-secondary-icon" aria-hidden="true">${DEVPATH_APP.icon}</span>
             <span class="app-secondary-name">${DEVPATH_APP.name}</span>
           </span>
           <span class="app-secondary-right">
-            <span class="app-secondary-status">${DEVPATH_APP.status}</span>
+            <span class="app-secondary-status" aria-hidden="true">${DEVPATH_APP.status}</span>
             <span class="app-secondary-cta" aria-hidden="true">INSPECT ▸</span>
           </span>
         </button>
-      </div>
-      <div class="app-menu-footer">SELECT APPLICATION</div>
+      </section>
+      <div class="app-menu-footer" aria-hidden="true">SELECT APPLICATION</div>
     </div>
   `;
 
@@ -431,18 +481,47 @@ function renderAppMenu() {
   const menuItems = Array.from(menuEl.querySelectorAll('.app-tile, .app-secondary-entry'));
 
   menuItems.forEach((item) => {
-    item.addEventListener('click', () => selectApp(item.dataset.appId));
+    if (item.tagName === 'BUTTON') {
+      item.addEventListener('click', () => {
+        lastTriggerAppId = item.dataset.appId;
+        selectApp(item.dataset.appId);
+      });
+    } else {
+      item.addEventListener('click', () => {
+        lastTriggerAppId = item.dataset.appId;
+      });
+    }
   });
 
   menuEl.addEventListener('keydown', (event) => handleMenuKeydown(event, menuItems));
 
-  menuItems[0].focus();
+  if (focusAppId) {
+    const target = menuItems.find((el) => el.dataset.appId === focusAppId);
+    focusSafely(target || menuItems[0]);
+  } else if (shouldFocus) {
+    focusSafely(menuItems[0]);
+  }
+}
+
+function getGridRows(gridItems) {
+  const rows = [];
+  gridItems.forEach((el, idx) => {
+    const rect = el.getBoundingClientRect();
+    const cy = rect.top + rect.height / 2;
+    const cx = rect.left + rect.width / 2;
+    let row = rows.find((r) => Math.abs(r.cy - cy) < Math.max(12, rect.height * 0.45));
+    if (!row) {
+      row = { cy, cells: [] };
+      rows.push(row);
+    }
+    row.cells.push({ idx, cx, cy });
+  });
+  rows.sort((a, b) => a.cy - b.cy);
+  rows.forEach((r) => r.cells.sort((a, b) => a.cx - b.cx));
+  return rows;
 }
 
 function handleMenuKeydown(event, menuItems) {
-  const columns = 3;
-  const gridCount = APPS.length;
-
   if (event.key === 'Escape') {
     event.preventDefault();
     resetToLanding();
@@ -452,9 +531,19 @@ function handleMenuKeydown(event, menuItems) {
   const currentIndex = menuItems.indexOf(document.activeElement);
   if (currentIndex === -1) return;
 
-  if (event.key === 'Enter' || event.key === ' ') {
+  const gridCount = APPS.length;
+  const gridItems = menuItems.slice(0, gridCount);
+  const secondaryIndex = menuItems.length > gridCount ? gridCount : -1;
+
+  if (event.key === 'Home') {
     event.preventDefault();
-    selectApp(menuItems[currentIndex].dataset.appId);
+    focusSafely(menuItems[0]);
+    return;
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault();
+    focusSafely(menuItems[menuItems.length - 1]);
     return;
   }
 
@@ -463,30 +552,59 @@ function handleMenuKeydown(event, menuItems) {
     nextIndex = (currentIndex + 1) % menuItems.length;
   } else if (event.key === 'ArrowLeft') {
     nextIndex = (currentIndex - 1 + menuItems.length) % menuItems.length;
-  } else if (event.key === 'ArrowDown') {
-    if (currentIndex < gridCount - columns) {
-      nextIndex = currentIndex + columns;
-    } else if (currentIndex < gridCount && menuItems.length > gridCount) {
-      nextIndex = gridCount;
-    } else {
-      nextIndex = 0;
-    }
-  } else if (event.key === 'ArrowUp') {
-    if (currentIndex >= gridCount) {
-      nextIndex = Math.max(0, gridCount - columns);
-    } else if (currentIndex >= columns) {
-      nextIndex = currentIndex - columns;
-    } else if (menuItems.length > gridCount) {
-      nextIndex = gridCount;
-    } else {
-      nextIndex = (currentIndex - columns + menuItems.length) % menuItems.length;
+  } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    const rows = getGridRows(gridItems);
+    const isDown = event.key === 'ArrowDown';
+
+    if (currentIndex === secondaryIndex) {
+      if (isDown) {
+        nextIndex = 0;
+      } else {
+        const lastRow = rows[rows.length - 1];
+        nextIndex = lastRow ? lastRow.cells[0].idx : gridCount - 1;
+      }
+    } else if (rows.length > 0) {
+      let rowIndex = -1;
+      let colIndex = -1;
+      let currentCx = 0;
+      rows.forEach((row, rIdx) => {
+        row.cells.forEach((cell, cIdx) => {
+          if (cell.idx === currentIndex) {
+            rowIndex = rIdx;
+            colIndex = cIdx;
+            currentCx = cell.cx;
+          }
+        });
+      });
+
+      if (rowIndex !== -1) {
+        if (isDown) {
+          if (rowIndex < rows.length - 1) {
+            const targetRow = rows[rowIndex + 1];
+            const best = targetRow.cells.reduce((a, b) => (Math.abs(b.cx - currentCx) < Math.abs(a.cx - currentCx) ? b : a));
+            nextIndex = best.idx;
+          } else {
+            nextIndex = secondaryIndex !== -1 ? secondaryIndex : 0;
+          }
+        } else {
+          if (rowIndex > 0) {
+            const targetRow = rows[rowIndex - 1];
+            const best = targetRow.cells.reduce((a, b) => (Math.abs(b.cx - currentCx) < Math.abs(a.cx - currentCx) ? b : a));
+            nextIndex = best.idx;
+          } else {
+            nextIndex = secondaryIndex !== -1 ? secondaryIndex : gridCount - 1;
+          }
+        }
+      }
     }
   } else {
     return;
   }
 
-  event.preventDefault();
-  menuItems[nextIndex].focus();
+  if (nextIndex !== null && menuItems[nextIndex]) {
+    event.preventDefault();
+    focusSafely(menuItems[nextIndex]);
+  }
 }
 
 function fadeSwap(renderFn, { immediate = false } = {}) {
@@ -524,10 +642,12 @@ function selectApp(appId, { updateHistory = true, immediate = false } = {}) {
   const app = ALL_APPS.find((a) => a.id === normalizedId);
   if (!app || !INLINE_APP_IDS.has(normalizedId)) {
     setUrlHash('#menu', { replace: true });
-    goToAppMenu({ updateHistory: false, immediate: true });
+    goToAppMenu({ updateHistory: false, immediate: true, shouldFocus: false });
     return;
   }
 
+  lastTriggerAppId = app.id;
+  currentViewKey = `app:${app.id}`;
   document.body.classList.remove('app-menu-active');
   document.body.classList.add('crt-zoomed');
   setPowerState(true);
@@ -557,7 +677,8 @@ function renderProjectView(app) {
   const renderActionLink = (action, isPrimary) => {
     const cls = isPrimary ? 'project-play-btn' : 'project-link-btn';
     const relAttr = action.external ? ' target="_blank" rel="noopener noreferrer"' : '';
-    return `<a class="${cls}" href="${action.href}"${relAttr}>${action.label}</a>`;
+    const srExt = action.external ? '<span class="sr-only"> (opens in a new tab)</span>' : '';
+    return `<a class="${cls}" href="${action.href}"${relAttr}>${action.label}${srExt}</a>`;
   };
 
   const topActionsHtml = primaryActions.length
@@ -582,7 +703,7 @@ function renderProjectView(app) {
 
   const featuresHtml = app.features.length
     ? `
-      <p class="project-section-title">KEY FEATURES</p>
+      <h3 class="project-section-title">KEY FEATURES</h3>
       <ul class="project-features">
         ${app.features.map((f) => `<li>${f}</li>`).join('')}
       </ul>
@@ -591,16 +712,16 @@ function renderProjectView(app) {
 
   const techHtml = app.technologies.length
     ? `
-      <p class="project-section-title">TECH STACK</p>
+      <h3 class="project-section-title">TECH STACK</h3>
       <p class="project-tech-line">${app.technologies.join(' • ')}</p>
     `
     : '';
 
   screenContent.innerHTML = `
-    <div id="project-view" class="project-view">
+    <article id="project-view" class="project-view" aria-labelledby="project-view-title">
       <div class="project-header">
-        <span class="project-header-title">${app.name.toUpperCase()}</span>
-        <button type="button" id="project-close-btn" class="project-close-btn" aria-label="Close and return to hub">✕</button>
+        <h2 id="project-view-title" class="project-header-title" tabindex="-1">${app.name.toUpperCase()}</h2>
+        <button type="button" id="project-close-btn" class="project-close-btn" aria-label="Close ${app.name} dossier and return to hub">✕</button>
       </div>
 
       <div class="project-body">
@@ -614,19 +735,20 @@ function renderProjectView(app) {
         ${featuresHtml}
         ${techHtml}
 
-        <p class="project-section-title">STATUS</p>
+        <h3 class="project-section-title">STATUS</h3>
         <p class="project-status-line">${app.devStatus}</p>
 
         ${bottomActionsHtml}
       </div>
 
       <div class="project-footer">
-        <button type="button" id="return-hub-btn" class="return-hub-btn">◂ RETURN TO HUB</button>
+        <button type="button" id="return-hub-btn" class="return-hub-btn" aria-label="Return to application hub">◂ RETURN TO HUB</button>
       </div>
-    </div>
+    </article>
   `;
 
   const projectViewEl = document.getElementById('project-view');
+  const titleEl = document.getElementById('project-view-title');
   const closeBtn = document.getElementById('project-close-btn');
   const returnBtn = document.getElementById('return-hub-btn');
 
@@ -640,15 +762,21 @@ function renderProjectView(app) {
     }
   });
 
-  returnBtn.focus();
+  focusSafely(titleEl);
+  announceStatus(`${app.name} dossier opened.`);
 }
 
 function returnToAppMenu() {
+  const restoreTargetId = lastTriggerAppId;
   setUrlHash('#menu');
-  fadeSwap(renderAppMenu);
+  fadeSwap(() => {
+    renderAppMenu({ shouldFocus: Boolean(restoreTargetId), focusAppId: restoreTargetId });
+    announceStatus('Returned to application hub.');
+  });
 }
 
 function resetToLanding({ updateHistory = true, immediate = false } = {}) {
+  currentViewKey = 'landing';
   clearTimeout(zoomTimeoutId);
   zoomTimeoutId = null;
   clearTimeout(fadeTimeoutId);
@@ -664,23 +792,29 @@ function resetToLanding({ updateHistory = true, immediate = false } = {}) {
   if (immediate || isReducedMotion()) {
     screenContent.classList.remove('screen-fade-out');
     screenContent.innerHTML = LANDING_CONTENT_HTML;
-    document.getElementById('play-btn').addEventListener('click', startZoomAndBoot);
-    document.getElementById('play-btn').focus();
+    const newPlayBtn = document.getElementById('play-btn');
+    newPlayBtn.addEventListener('click', startZoomAndBoot);
+    focusSafely(newPlayBtn);
+    announceStatus('Retro computer powered off.');
   } else {
     screenContent.classList.add('screen-fade-out');
     fadeTimeoutId = setTimeout(() => {
       screenContent.innerHTML = LANDING_CONTENT_HTML;
       screenContent.classList.remove('screen-fade-out');
-      document.getElementById('play-btn').addEventListener('click', startZoomAndBoot);
-      document.getElementById('play-btn').focus();
+      const newPlayBtn = document.getElementById('play-btn');
+      newPlayBtn.addEventListener('click', startZoomAndBoot);
+      focusSafely(newPlayBtn);
+      announceStatus('Retro computer powered off.');
     }, 200);
   }
 }
 
-function syncFromLocation({ immediate = true } = {}) {
+function syncFromLocation({ immediate = true, isInitialLoad = false } = {}) {
+  const wasInProjectView = document.body.classList.contains('project-view-active');
   const rawHash = window.location.hash;
   if (!rawHash || rawHash === '#') {
-    if (document.body.classList.contains('crt-zoomed')) {
+    if (currentViewKey === 'landing' && !document.body.classList.contains('crt-zoomed')) return;
+    if (document.body.classList.contains('crt-zoomed') || currentViewKey !== 'landing') {
       resetToLanding({ updateHistory: false, immediate: true });
     }
     return;
@@ -694,7 +828,14 @@ function syncFromLocation({ immediate = true } = {}) {
   bootTimeoutIds = [];
 
   if (rawHash === '#menu') {
-    goToAppMenu({ updateHistory: false, immediate });
+    if (!isInitialLoad && currentViewKey === 'menu') return;
+    const restoreId = (!isInitialLoad && wasInProjectView) ? lastTriggerAppId : null;
+    goToAppMenu({
+      updateHistory: false,
+      immediate,
+      shouldFocus: Boolean(restoreId),
+      focusAppId: restoreId,
+    });
     return;
   }
 
@@ -705,13 +846,14 @@ function syncFromLocation({ immediate = true } = {}) {
       setUrlHash('#app=devpath', { replace: true });
     }
     if (INLINE_APP_IDS.has(appId)) {
+      if (!isInitialLoad && currentViewKey === `app:${appId}`) return;
       selectApp(appId, { updateHistory: false, immediate });
       return;
     }
   }
 
   setUrlHash('#menu', { replace: true });
-  goToAppMenu({ updateHistory: false, immediate: true });
+  goToAppMenu({ updateHistory: false, immediate: true, shouldFocus: false });
 }
 
 playBtn.addEventListener('click', startZoomAndBoot);
@@ -721,9 +863,9 @@ powerButtonHotspot.addEventListener('click', (event) => {
   resetToLanding();
 });
 
-window.addEventListener('popstate', () => syncFromLocation({ immediate: true }));
-window.addEventListener('hashchange', () => syncFromLocation({ immediate: true }));
+window.addEventListener('popstate', () => syncFromLocation({ immediate: true, isInitialLoad: false }));
+window.addEventListener('hashchange', () => syncFromLocation({ immediate: true, isInitialLoad: false }));
 
 if (window.location.hash && window.location.hash !== '#') {
-  syncFromLocation({ immediate: true });
+  syncFromLocation({ immediate: true, isInitialLoad: true });
 }

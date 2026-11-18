@@ -101,6 +101,23 @@ button {
   padding: 5px 9px;
   font-size: 0.58rem;
 }
+.sandbox-hub-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--cyan);
+  border-color: rgba(0, 229, 255, 0.45);
+}
+.sandbox-hub-link:hover,
+.sandbox-hub-link:focus-visible {
+  color: #0a0c10;
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+.sandbox-hub-link:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
 
 /* ===== Canvas ===== */
 .canvas-wrap {
@@ -624,13 +641,21 @@ button {
 
 /* ===== Small screens (Mobile friendly) ===== */
 @media (max-width: 480px) {
-  .sandbox-title { font-size: 0.82rem; letter-spacing: 2px; }
+  .sandbox-header { padding: 8px 10px; gap: 6px; }
+  .sandbox-title { font-size: 0.8rem; letter-spacing: 1.5px; }
   .tool-btn { font-size: 0.58rem; padding: 8px 6px; min-width: 50px; }
   .tool-row { gap: 5px; padding: 6px 6px; }
-  .header-btn.small { padding: 4px 7px; font-size: 0.55rem; }
+  .header-right { gap: 4px; }
+  .header-btn.small { padding: 4px 6px; font-size: 0.52rem; }
   .inspect-tooltip { font-size: 0.66rem; max-width: 220px; }
   .discovery-toast { padding: 10px 16px; min-width: 160px; }
   .discoveries-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+}
+
+@media (max-width: 360px) {
+  .sandbox-header { padding: 7px 8px; }
+  .sandbox-title { font-size: 0.72rem; letter-spacing: 1px; }
+  .header-btn.small { padding: 4px 5px; font-size: 0.48rem; letter-spacing: 0.4px; }
 }
 
 /* ===== Large screens (Desktop) ===== */

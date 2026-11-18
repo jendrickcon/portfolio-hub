@@ -16,6 +16,21 @@
       "source": "/professional/index.html",
       "destination": "/",
       "statusCode": 308
+    },
+    {
+      "source": "/portfolio",
+      "destination": "/",
+      "statusCode": 308
+    },
+    {
+      "source": "/portfolio/",
+      "destination": "/",
+      "statusCode": 308
+    },
+    {
+      "source": "/portfolio/index.html",
+      "destination": "/",
+      "statusCode": 308
     }
   ],
   "rewrites": [

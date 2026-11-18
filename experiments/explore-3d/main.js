@@ -52,6 +52,7 @@ const hwDiskBtn = document.getElementById('hw-disk-btn');
 const hwPowerBtn = document.getElementById('hw-power-btn');
 
 if (DEBUG_MODE) {
+  document.body.classList.add('has-debug');
   debugControlsEl.hidden = false;
   perfHudEl.hidden = false;
 }
@@ -181,8 +182,16 @@ function focusSafely(el) {
   }
 }
 
+function readViewportMetrics() {
+  const vv = window.visualViewport;
+  const w = Math.max(1, Math.round(vv ? vv.width : window.innerWidth));
+  const h = Math.max(1, Math.round(vv ? vv.height : window.innerHeight));
+  return { w, h };
+}
+
 function isCompactViewport() {
-  return window.innerWidth <= 639 || window.innerHeight <= 560;
+  const { w, h } = readViewportMetrics();
+  return w <= 639 || h <= 560;
 }
 
 function resolveDisplayMode() {
@@ -194,6 +203,7 @@ function resolveDisplayMode() {
 
 function resolve3dQualityTier() {
   if (displayMode !== '3d' || simulatedNoWebgl || webglFailed) return 'low';
+  if (isCompactViewport() || coarsePointer) return 'mobile';
   if (manual3dQuality === 'medium') return 'medium';
   return 'high';
 }
@@ -431,6 +441,8 @@ async function ensureWebGL() {
       initialQuality: resolve3dQualityTier() === 'low' ? 'high' : resolve3dQualityTier(),
       initialPixelMode: pixelMode,
       reducedMotion,
+      coarsePointer,
+      getViewportSize: readViewportMetrics,
       onFatalFallback(reason) {
         webglFailed = true;
         webglStatusText = 'failed: ' + reason;
@@ -440,7 +452,14 @@ async function ensureWebGL() {
     webglStatusText = 'active (three r170)';
     webglScene.setCallbacks({
       autoDowngrade(nextQ, avgMs) {
-        if (manual3dQuality === 'auto' && displayMode === '3d') {
+        if (displayMode !== '3d') return;
+        if (nextQ === '2d-fallback') {
+          webglFailed = true;
+          webglStatusText = `slow-frame fallback (${avgMs.toFixed(1)}ms -> Pixel 2D)`;
+          applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true });
+          return;
+        }
+        if (manual3dQuality === 'auto') {
           webglStatusText = `active (auto -> ${nextQ}, ${avgMs.toFixed(1)}ms)`;
           webglScene.setQuality(nextQ);
           renderDebugHud();
@@ -580,6 +599,7 @@ function renderStandby(restoreFocus = false) {
       <button type="button" id="start-explore-btn" class="start-btn">START EXPLORE ▸</button>
     </div>
   `;
+  screenContentEl.scrollTop = 0;
   const startBtn = document.getElementById('start-explore-btn');
   startBtn.addEventListener('click', startWorkstation);
   if (restoreFocus) {
@@ -617,6 +637,7 @@ function renderBoot() {
       <button type="button" id="boot-skip-btn" class="boot-skip-btn">SKIP ▸</button>
     </div>
   `;
+  screenContentEl.scrollTop = 0;
   const logEl = document.getElementById('boot-log');
   const skipBtn = document.getElementById('boot-skip-btn');
 
@@ -713,6 +734,7 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
       </nav>
     </div>
   `;
+  screenContentEl.scrollTop = 0;
 
   const menuEl = document.getElementById('app-menu');
   const items = Array.from(menuEl.querySelectorAll('.app-tile'));
@@ -823,6 +845,7 @@ function renderDossier(appId) {
       </div>
     </article>
   `;
+  screenContentEl.scrollTop = 0;
 
   const backOut = () => {
     const restoreToDisk = lastTriggerSource === 'disk';
@@ -880,6 +903,7 @@ function triggerRestart() {
       <pre id="restart-log" class="restart-log"></pre>
     </div>
   `;
+  screenContentEl.scrollTop = 0;
   const rLogEl = document.getElementById('restart-log');
   setScreenLightState('paused');
 
@@ -1036,20 +1060,58 @@ if (motionQuery && typeof motionQuery.addEventListener === 'function') {
 if (coarseQuery && typeof coarseQuery.addEventListener === 'function') {
   coarseQuery.addEventListener('change', (e) => {
     coarsePointer = e.matches;
+    if (webglScene) webglScene.setCoarsePointer(coarsePointer);
     if (!storedManualMode) {
       applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
+    } else if (displayMode === '3d' && webglScene) {
+      webglScene.setQuality(resolve3dQualityTier());
     }
   });
 }
 
-window.addEventListener('resize', () => {
+let lastAppliedVpW = 0;
+let lastAppliedVpH = 0;
+let vpDebounceTimer = null;
+
+function syncAppViewportHeight(force = false) {
+  const { w, h } = readViewportMetrics();
+  const dW = Math.abs(w - lastAppliedVpW);
+  const dH = Math.abs(h - lastAppliedVpH);
+  if (!force && dW < 3 && dH < 3) return;
+  lastAppliedVpW = w;
+  lastAppliedVpH = h;
+  document.documentElement.style.setProperty('--app-height', `${h}px`);
+  if (window.scrollY !== 0 || window.scrollX !== 0) {
+    window.scrollTo(0, 0);
+  }
   if (!storedManualMode) {
     const autoMode = resolveDisplayMode();
     if (autoMode !== displayMode) {
       applyDisplayMode(autoMode, { manual: false, announceChange: false, immediate: true });
+      return;
     }
   }
-}, { passive: true });
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setQuality(resolve3dQualityTier());
+    webglScene.resizeViewport(w, h);
+  }
+}
+
+function onViewportChangedDebounced() {
+  if (vpDebounceTimer) clearTimeout(vpDebounceTimer);
+  vpDebounceTimer = setTimeout(() => {
+    vpDebounceTimer = null;
+    syncAppViewportHeight(false);
+  }, 110);
+}
+
+window.addEventListener('resize', onViewportChangedDebounced, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', onViewportChangedDebounced, { passive: true });
+  window.visualViewport.addEventListener('scroll', () => {
+    if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+  }, { passive: true });
+}
 
 document.addEventListener('visibilitychange', () => {
   if (displayMode === '2d') {
@@ -1063,6 +1125,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ---- Initialize Prototype ----
+syncAppViewportHeight(true);
 applyMotionPreference();
 applyNoWebglUI();
 renderStandby(false);

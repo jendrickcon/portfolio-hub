@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Explore Workstation Prototype — Enuhri</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
@@ -13,164 +13,239 @@
   <canvas id="crt-scene-canvas" class="crt-canvas" aria-hidden="true" tabindex="-1"></canvas>
   <canvas id="pixel2d-env-canvas" width="320" height="180" class="pixel2d-env-canvas" aria-hidden="true" tabindex="-1"></canvas>
 
-  <!-- Layer 3: Visitor Display-Mode Header & Optional Debug Controls -->
-  <header class="proto-header">
-    <nav class="proto-nav" aria-label="Prototype controls and return navigation">
-      <a href="/explore/" class="ctrl-btn ctrl-btn--return" aria-label="Return to current production Explore Hub">◂ Current Explore</a>
+  <!-- Fixed Full-Viewport App Shell -->
+  <div id="prototype-app" class="prototype-app">
 
-      <fieldset class="display-mode-fieldset" id="display-mode-group">
-        <legend class="display-mode-legend">DISPLAY MODE</legend>
-        <label class="mode-option" for="mode-radio-3d">
-          <input type="radio" name="display-mode" id="mode-radio-3d" value="3d" class="mode-radio sr-only" />
-          <span class="mode-pill">3D WORKSTATION</span>
-        </label>
-        <label class="mode-option" for="mode-radio-2d">
-          <input type="radio" name="display-mode" id="mode-radio-2d" value="2d" class="mode-radio sr-only" />
-          <span class="mode-pill">PIXEL 2D</span>
-        </label>
-      </fieldset>
+    <!-- Layer 3: One-Row Mobile Header & Display-Mode Selector -->
+    <header class="proto-header" id="proto-header">
+      <nav class="proto-nav" aria-label="Prototype controls and return navigation">
+        <a href="/explore/" class="ctrl-btn ctrl-btn--return" aria-label="Current Explore">
+          <span class="lbl-full">◂ Current Explore</span>
+          <span class="lbl-compact" aria-hidden="true">◂ Explore</span>
+        </a>
 
-      <div id="debug-controls" class="ctrl-group ctrl-group--debug" role="group" aria-label="Debug inspection controls" hidden>
-        <label for="quality-select" class="sr-only">3D graphics quality tier</label>
-        <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="3D graphics quality tier">
-          <option value="auto">3D TIER: AUTO</option>
-          <option value="high">3D TIER: HIGH</option>
-          <option value="medium">3D TIER: MEDIUM</option>
-        </select>
-        <label for="pixel-mode-select" class="sr-only">Pixel 3D comparison mode</label>
-        <select id="pixel-mode-select" class="ctrl-btn ctrl-select" aria-label="Pixel 3D comparison mode">
-          <option value="smooth">3D: SMOOTH RETRO</option>
-          <option value="quantized">3D: QUANTIZED + FACETED</option>
-          <option value="lowres75">3D: PIXEL 0.75× SCALE</option>
-          <option value="lowres50">3D: PIXEL 0.50× SCALE</option>
-        </select>
-        <button type="button" id="toggle-webgl-btn" class="ctrl-btn" aria-pressed="false">SIMULATE NO-WEBGL: OFF</button>
-        <button type="button" id="reset-pref-btn" class="ctrl-btn">RESET PREF</button>
-      </div>
-    </nav>
-  </header>
+        <fieldset class="display-mode-fieldset" id="display-mode-group">
+          <legend class="display-mode-legend">DISPLAY MODE</legend>
+          <label class="mode-option" for="mode-radio-3d">
+            <input type="radio" name="display-mode" id="mode-radio-3d" value="3d" class="mode-radio sr-only" aria-label="3D Workstation" />
+            <span class="mode-pill">
+              <span class="lbl-full">3D WORKSTATION</span>
+              <span class="lbl-compact" aria-hidden="true">3D</span>
+            </span>
+          </label>
+          <label class="mode-option" for="mode-radio-2d">
+            <input type="radio" name="display-mode" id="mode-radio-2d" value="2d" class="mode-radio sr-only" aria-label="Pixel 2D Workstation" />
+            <span class="mode-pill">
+              <span class="lbl-full">PIXEL 2D</span>
+              <span class="lbl-compact" aria-hidden="true">PIXEL 2D</span>
+              <span class="lbl-tiny" aria-hidden="true">2D</span>
+            </span>
+          </label>
+        </fieldset>
 
-  <main class="proto-main">
-    <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+        <div id="debug-controls" class="ctrl-group ctrl-group--debug" role="group" aria-label="Debug inspection controls" hidden>
+          <label for="quality-select" class="sr-only">3D graphics quality tier</label>
+          <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="3D graphics quality tier">
+            <option value="auto">3D TIER: AUTO</option>
+            <option value="high">3D TIER: HIGH</option>
+            <option value="medium">3D TIER: MEDIUM</option>
+          </select>
+          <label for="pixel-mode-select" class="sr-only">Pixel 3D comparison mode</label>
+          <select id="pixel-mode-select" class="ctrl-btn ctrl-select" aria-label="Pixel 3D comparison mode">
+            <option value="smooth">3D: SMOOTH RETRO</option>
+            <option value="quantized">3D: QUANTIZED + FACETED</option>
+            <option value="lowres75">3D: PIXEL 0.75× SCALE</option>
+            <option value="lowres50">3D: PIXEL 0.50× SCALE</option>
+          </select>
+          <button type="button" id="toggle-webgl-btn" class="ctrl-btn" aria-pressed="false">SIMULATE NO-WEBGL: OFF</button>
+          <button type="button" id="reset-pref-btn" class="ctrl-btn">RESET PREF</button>
+        </div>
+      </nav>
+    </header>
 
-    <section class="proto-intro" aria-label="Prototype introduction">
-      <span class="proto-badge">ISOLATED PROTOTYPE · /experiments/explore-3d/</span>
-      <h1 class="proto-title">ENUHRI WORKSTATION</h1>
-      <p class="proto-desc">
-        Hybrid procedural 3D hardware and first-class Pixel 2D workstation sharing one semantic CRT screen and deterministic 320×180 studio environment.
-      </p>
-    </section>
+    <main class="proto-main">
+      <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
 
-    <section id="crt-chassis" class="crt-chassis" aria-label="CRT workstation display">
-      <!-- Pixel 2D top vent slots & stepped monitor frame chrome -->
-      <div class="pixel2d-top-chrome" aria-hidden="true">
-        <span class="pixel2d-seam pixel2d-seam--left"></span>
-        <span class="pixel2d-vents">
-          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-        </span>
-        <span class="pixel2d-seam pixel2d-seam--right"></span>
-      </div>
+      <section class="proto-intro" aria-label="Prototype introduction">
+        <span class="proto-badge">ISOLATED PROTOTYPE · /experiments/explore-3d/</span>
+        <h1 class="proto-title">ENUHRI WORKSTATION</h1>
+        <p class="proto-desc">
+          Hybrid procedural 3D hardware and enriched 64-bit-era Pixel 2D workstation sharing one semantic CRT screen and deterministic 320×180 studio environment.
+        </p>
+      </section>
 
-      <div class="screen-overlay">
-        <div class="screen-glass-corners" aria-hidden="true"></div>
-        <div class="screen-scanlines" aria-hidden="true"></div>
-        <div id="screen-content" class="screen-content"></div>
-      </div>
+      <section id="crt-chassis" class="crt-chassis" aria-label="CRT workstation display">
+        <!-- Pixel 2D Monitor Upper Casing Chrome (screws, badge plate, molded seams, 10 recessed vents) -->
+        <div class="pixel2d-top-chrome" aria-hidden="true">
+          <span class="px-screw"></span>
+          <span class="px-badge-plate">ENUHRI // PC-88</span>
+          <span class="pixel2d-seam"></span>
+          <span class="pixel2d-vents">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </span>
+          <span class="pixel2d-seam"></span>
+          <span class="px-screw"></span>
+        </div>
 
-      <div class="hw-controls" role="group" aria-label="Monitor bezel hardware controls">
-        <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox disk" aria-expanded="false" data-drive-state="closed" data-pixel-frame="0">
-          <span class="hw-disk-glow" aria-hidden="true"></span>
-          <span class="hw-disk-badge" aria-hidden="true">DISK · SANDBOX.SYS</span>
-          <svg class="pixel2d-floppy-svg" viewBox="0 0 96 26" shape-rendering="crispEdges" aria-hidden="true">
-            <!-- Outer bay & dark slot frame -->
-            <rect x="0" y="2" width="84" height="22" fill="#3a3f47" />
-            <rect x="2" y="4" width="80" height="18" fill="#151618" />
-            <rect x="8" y="8" width="68" height="7" fill="#090b0d" />
-            <!-- Eject notch & slot lip -->
-            <rect x="34" y="15" width="16" height="3" fill="#23272e" />
-            <!-- Activity LED pixel next to slot -->
-            <rect class="px-drive-led" x="87" y="10" width="7" height="5" fill="#16383e" />
-            <!-- Stepped sliding diskette sprite -->
-            <g class="px-disk-sprite">
-              <rect x="12" y="9" width="60" height="7" fill="#1d242c" />
-              <rect x="12" y="9" width="60" height="2" fill="#33404e" />
-              <rect x="28" y="10" width="26" height="5" fill="#8b959e" />
-              <rect x="44" y="11" width="6" height="3" fill="#545e68" />
-              <rect x="18" y="13" width="38" height="2" fill="#00a8be" />
-              <rect x="18" y="15" width="22" height="1" fill="#c49010" />
-            </g>
-          </svg>
-        </button>
+        <div class="screen-overlay">
+          <div class="screen-glass-corners" aria-hidden="true"></div>
+          <div class="screen-scanlines" aria-hidden="true"></div>
+          <div id="screen-content" class="screen-content"></div>
+        </div>
 
-        <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation">
-          <span class="hw-power-led-dot" aria-hidden="true"></span>
-          <span class="hw-power-indicator" aria-hidden="true"></span>
-          <span class="hw-power-glyph" aria-hidden="true">PWR</span>
-        </button>
-      </div>
-    </section>
+        <div class="hw-controls" role="group" aria-label="Monitor bezel hardware controls">
+          <span class="px-chin-deco px-chin-deco--left" aria-hidden="true">
+            <span class="px-screw"></span>
+            <span class="px-chin-groove"></span>
+          </span>
 
-    <!-- Pixel 2D monitor stand, full 4x12 two-tone retro keyboard & blocky desk reflection -->
-    <figure id="pixel2d-lower-rig" class="pixel2d-lower-rig" aria-hidden="true">
-      <svg class="pixel2d-rig-svg" viewBox="0 0 360 88" shape-rendering="crispEdges">
-        <!-- Desk surface + stepped front edge -->
-        <rect x="0" y="16" width="360" height="72" fill="#14181f" />
-        <rect x="0" y="16" width="360" height="2" fill="#232a35" />
-        <rect x="0" y="80" width="360" height="8" fill="#0d1016" />
+          <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox disk" aria-expanded="false" data-drive-state="closed" data-pixel-frame="0">
+            <span class="hw-disk-glow" aria-hidden="true"></span>
+            <span class="hw-disk-badge" aria-hidden="true">DISK · SANDBOX.SYS</span>
+            <svg class="pixel2d-floppy-svg" viewBox="0 0 104 28" shape-rendering="crispEdges" aria-hidden="true">
+              <!-- Outer molded bay bezel ramp + dark screw wings -->
+              <rect x="0" y="2" width="90" height="24" fill="#857c6d" />
+              <rect x="1" y="3" width="88" height="22" fill="#343840" />
+              <rect x="2" y="4" width="86" height="20" fill="#26282b" />
+              <!-- Bay wing micro screws -->
+              <rect x="4" y="12" width="2" height="2" fill="#464b54" />
+              <rect x="84" y="12" width="2" height="2" fill="#464b54" />
+              <!-- Deep recessed floppy drive well -->
+              <rect x="9" y="8" width="72" height="8" fill="#0c0e11" />
+              <rect x="9" y="8" width="72" height="1" fill="#181a1d" />
+              <!-- Finger-eject thumb notch + silver bevel accent -->
+              <rect x="35" y="16" width="20" height="4" fill="#181a1d" />
+              <rect x="37" y="16" width="16" height="1" fill="#464b54" />
+              <!-- Drive activity LED bezel & glowing core -->
+              <rect x="92" y="9" width="10" height="9" fill="#181a1d" />
+              <rect class="px-drive-led" x="94" y="11" width="6" height="5" fill="#133642" />
+              <!-- Stepped 6-frame sliding 3.5" diskette sprite -->
+              <g class="px-disk-sprite">
+                <rect x="14" y="9" width="62" height="8" fill="#1d2d45" />
+                <rect x="14" y="9" width="62" height="2" fill="#343840" />
+                <rect x="30" y="10" width="26" height="6" fill="#9ea8b4" />
+                <rect x="46" y="11" width="6" height="4" fill="#464b54" />
+                <rect x="20" y="13" width="42" height="2" fill="#00a8be" />
+                <rect x="20" y="15" width="24" height="1" fill="#c49010" />
+              </g>
+            </svg>
+          </button>
 
-        <!-- Blocky phosphor reflection across stand & desk -->
-        <rect class="px-desk-glow" x="48" y="18" width="264" height="6" opacity="0.34" />
-        <rect class="px-desk-glow" x="38" y="24" width="284" height="54" opacity="0.12" />
+          <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation">
+            <span class="hw-power-led-dot" aria-hidden="true"></span>
+            <span class="hw-power-indicator" aria-hidden="true"></span>
+            <span class="hw-power-glyph" aria-hidden="true">PWR</span>
+          </button>
+        </div>
+      </section>
 
-        <!-- Stepped Pixel Swivel Neck & Stand Base -->
-        <rect x="148" y="0" width="64" height="8" fill="#26282b" />
-        <rect x="144" y="0" width="4" height="8" fill="#17191c" />
-        <rect x="212" y="0" width="4" height="8" fill="#17191c" />
-        <rect x="100" y="8" width="160" height="8" fill="#b8af9f" />
-        <rect x="100" y="8" width="160" height="2" fill="#dcd4c4" />
-        <rect x="104" y="16" width="152" height="4" fill="#6f685c" />
+      <!-- Pixel 2D Enriched Swivel Stand, Cable, Lock-LED Two-Tone Keyboard & Desk Reflection -->
+      <figure id="pixel2d-lower-rig" class="pixel2d-lower-rig" aria-hidden="true">
+        <svg class="pixel2d-rig-svg" viewBox="0 0 360 96" shape-rendering="crispEdges">
+          <!-- Desk surface ramp, subtle desk mat groove & front chamfer edge -->
+          <rect x="0" y="18" width="360" height="78" fill="#181a1d" />
+          <rect x="0" y="18" width="360" height="2" fill="#26282b" />
+          <rect x="16" y="21" width="328" height="1" fill="#181a1d" />
+          <rect x="0" y="84" width="360" height="4" fill="#181a1d" />
+          <rect x="0" y="88" width="360" height="8" fill="#0c0e11" />
 
-        <!-- Two-Tone Pixel Retro Keyboard Chassis (4 rows x 12 cols) -->
-        <rect x="44" y="25" width="272" height="48" fill="#bfb6a6" />
-        <rect x="44" y="25" width="272" height="2" fill="#e2daca" />
-        <rect x="44" y="71" width="272" height="4" fill="#6d6659" />
-        <rect x="314" y="27" width="2" height="44" fill="#827a6c" />
+          <!-- Blocky stepped CRT screen reflection on desk top & around keyboard -->
+          <rect class="px-desk-glow" x="48" y="20" width="264" height="6" opacity="0.34" />
+          <rect class="px-desk-glow" x="34" y="26" width="292" height="54" opacity="0.11" />
+          <rect class="px-desk-glow" x="56" y="75" width="248" height="4" opacity="0.16" />
 
-        <!-- Keyboard Well -->
-        <rect x="50" y="30" width="260" height="38" fill="#3a352e" />
+          <!-- Keyboard coiled serial cable snaking up into pedestal joint -->
+          <rect x="252" y="10" width="4" height="18" fill="#181a1d" />
+          <rect x="252" y="12" width="1" height="14" fill="#343840" />
+          <rect x="252" y="26" width="16" height="3" fill="#181a1d" />
 
-        <!-- Row 1 (Num / Fn row) -->
-        <rect x="52" y="32" width="18" height="7" fill="#7c7466" /><rect x="73" y="32" width="18" height="7" fill="#cfc7b6" />
-        <rect x="94" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="115" y="32" width="18" height="7" fill="#cfc7b6" />
-        <rect x="136" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="157" y="32" width="18" height="7" fill="#cfc7b6" />
-        <rect x="178" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="199" y="32" width="18" height="7" fill="#cfc7b6" />
-        <rect x="220" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="241" y="32" width="18" height="7" fill="#cfc7b6" />
-        <rect x="262" y="32" width="18" height="7" fill="#cfc7b6" /><rect x="283" y="32" width="25" height="7" fill="#7c7466" />
+          <!-- Pedestal contact shadow & articulated swivel joint -->
+          <rect x="96" y="18" width="168" height="5" fill="#0c0e11" />
+          <rect x="142" y="0" width="76" height="9" fill="#26282b" />
+          <rect x="138" y="0" width="4" height="9" fill="#181a1d" />
+          <rect x="218" y="0" width="4" height="9" fill="#181a1d" />
+          <rect x="146" y="3" width="68" height="1" fill="#343840" />
+          <rect x="146" y="6" width="68" height="1" fill="#181a1d" />
+          <!-- Stepped putty-beige stand base (6-shade ramp) -->
+          <rect x="100" y="8" width="160" height="9" fill="#c8bfb0" />
+          <rect x="100" y="8" width="160" height="2" fill="#e2dac9" />
+          <rect x="102" y="10" width="156" height="1" fill="#d8cfc0" />
+          <rect x="104" y="15" width="152" height="3" fill="#857c6d" />
+          <rect x="108" y="18" width="144" height="2" fill="#595246" />
 
-        <!-- Row 2 (QWERTY) -->
-        <rect x="52" y="41" width="22" height="7" fill="#7c7466" /><rect x="77" y="41" width="18" height="7" fill="#cfc7b6" />
-        <rect x="98" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="119" y="41" width="18" height="7" fill="#cfc7b6" />
-        <rect x="140" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="161" y="41" width="18" height="7" fill="#cfc7b6" />
-        <rect x="182" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="203" y="41" width="18" height="7" fill="#cfc7b6" />
-        <rect x="224" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="245" y="41" width="18" height="7" fill="#cfc7b6" />
-        <rect x="266" y="41" width="18" height="7" fill="#cfc7b6" /><rect x="287" y="41" width="21" height="7" fill="#7c7466" />
+          <!-- Keyboard contact shadow on desk -->
+          <rect x="44" y="74" width="276" height="5" fill="#0c0e11" />
 
-        <!-- Row 3 (ASDF + Return) -->
-        <rect x="52" y="50" width="25" height="7" fill="#7c7466" /><rect x="80" y="50" width="18" height="7" fill="#cfc7b6" />
-        <rect x="101" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="122" y="50" width="18" height="7" fill="#cfc7b6" />
-        <rect x="143" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="164" y="50" width="18" height="7" fill="#cfc7b6" />
-        <rect x="185" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="206" y="50" width="18" height="7" fill="#cfc7b6" />
-        <rect x="227" y="50" width="18" height="7" fill="#cfc7b6" /><rect x="248" y="50" width="18" height="7" fill="#cfc7b6" />
-        <rect x="269" y="50" width="39" height="7" fill="#7c7466" />
+          <!-- Sculpted Keyboard Casing (beige multi-shade ramp + lock LEDs) -->
+          <rect x="42" y="25" width="276" height="50" fill="#c8bfb0" />
+          <rect x="42" y="25" width="276" height="2" fill="#e2dac9" />
+          <rect x="42" y="27" width="2" height="46" fill="#d8cfc0" />
+          <rect x="316" y="27" width="2" height="46" fill="#857c6d" />
+          <rect x="42" y="73" width="276" height="3" fill="#595246" />
+          <!-- Molded upper groove + 3 status LEDs (NUM/CAP/SCR) -->
+          <rect x="48" y="28" width="214" height="1" fill="#ada393" />
+          <rect x="276" y="27" width="32" height="3" fill="#26282b" />
+          <rect x="280" y="28" width="4" height="1" fill="#39ff14" />
+          <rect x="289" y="28" width="4" height="1" fill="#133642" />
+          <rect x="298" y="28" width="4" height="1" fill="#133642" />
 
-        <!-- Row 4 (Mod + Spacebar + Mod) -->
-        <rect x="52" y="59" width="22" height="7" fill="#7c7466" /><rect x="77" y="59" width="22" height="7" fill="#7c7466" />
-        <rect x="102" y="59" width="118" height="7" fill="#cfc7b6" />
-        <rect x="223" y="59" width="22" height="7" fill="#7c7466" /><rect x="248" y="59" width="18" height="7" fill="#cfc7b6" />
-        <rect x="269" y="59" width="18" height="7" fill="#cfc7b6" /><rect x="290" y="59" width="18" height="7" fill="#7c7466" />
-      </svg>
-    </figure>
-  </main>
+          <!-- Dark Keyboard Well -->
+          <rect x="48" y="31" width="264" height="40" fill="#262420" />
+
+          <!-- Row 1 (Num / Esc accent + alpha + backspace) -->
+          <rect x="50" y="33" width="18" height="8" fill="#595246" /><rect x="50" y="33" width="18" height="6" fill="#857c6d" /><rect x="51" y="33" width="16" height="1" fill="#ada393" />
+          <rect x="71" y="33" width="18" height="8" fill="#857c6d" /><rect x="71" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="72" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="92" y="33" width="18" height="8" fill="#857c6d" /><rect x="92" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="93" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="113" y="33" width="18" height="8" fill="#857c6d" /><rect x="113" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="114" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="134" y="33" width="18" height="8" fill="#857c6d" /><rect x="134" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="135" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="155" y="33" width="18" height="8" fill="#857c6d" /><rect x="155" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="156" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="176" y="33" width="18" height="8" fill="#857c6d" /><rect x="176" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="177" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="197" y="33" width="18" height="8" fill="#857c6d" /><rect x="197" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="198" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="218" y="33" width="18" height="8" fill="#857c6d" /><rect x="218" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="219" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="239" y="33" width="18" height="8" fill="#857c6d" /><rect x="239" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="240" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="260" y="33" width="18" height="8" fill="#857c6d" /><rect x="260" y="33" width="18" height="6" fill="#d8cfc0" /><rect x="261" y="33" width="16" height="1" fill="#ebe3d4" />
+          <rect x="281" y="33" width="29" height="8" fill="#595246" /><rect x="281" y="33" width="29" height="6" fill="#857c6d" /><rect x="282" y="33" width="27" height="1" fill="#ada393" />
+
+          <!-- Row 2 (QWERTY) -->
+          <rect x="50" y="42" width="23" height="8" fill="#595246" /><rect x="50" y="42" width="23" height="6" fill="#857c6d" /><rect x="51" y="42" width="21" height="1" fill="#ada393" />
+          <rect x="76" y="42" width="18" height="8" fill="#857c6d" /><rect x="76" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="77" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="97" y="42" width="18" height="8" fill="#857c6d" /><rect x="97" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="98" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="118" y="42" width="18" height="8" fill="#857c6d" /><rect x="118" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="119" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="139" y="42" width="18" height="8" fill="#857c6d" /><rect x="139" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="140" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="160" y="42" width="18" height="8" fill="#857c6d" /><rect x="160" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="161" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="181" y="42" width="18" height="8" fill="#857c6d" /><rect x="181" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="182" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="202" y="42" width="18" height="8" fill="#857c6d" /><rect x="202" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="203" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="223" y="42" width="18" height="8" fill="#857c6d" /><rect x="223" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="224" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="244" y="42" width="18" height="8" fill="#857c6d" /><rect x="244" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="245" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="265" y="42" width="18" height="8" fill="#857c6d" /><rect x="265" y="42" width="18" height="6" fill="#d8cfc0" /><rect x="266" y="42" width="16" height="1" fill="#ebe3d4" />
+          <rect x="286" y="42" width="24" height="8" fill="#595246" /><rect x="286" y="42" width="24" height="6" fill="#857c6d" /><rect x="287" y="42" width="22" height="1" fill="#ada393" />
+
+          <!-- Row 3 (ASDF + Dark Return key accent) -->
+          <rect x="50" y="51" width="26" height="8" fill="#595246" /><rect x="50" y="51" width="26" height="6" fill="#857c6d" /><rect x="51" y="51" width="24" height="1" fill="#ada393" />
+          <rect x="79" y="51" width="18" height="8" fill="#857c6d" /><rect x="79" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="80" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="100" y="51" width="18" height="8" fill="#857c6d" /><rect x="100" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="101" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="121" y="51" width="18" height="8" fill="#857c6d" /><rect x="121" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="122" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="142" y="51" width="18" height="8" fill="#857c6d" /><rect x="142" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="143" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="163" y="51" width="18" height="8" fill="#857c6d" /><rect x="163" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="164" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="184" y="51" width="18" height="8" fill="#857c6d" /><rect x="184" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="185" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="205" y="51" width="18" height="8" fill="#857c6d" /><rect x="205" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="206" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="226" y="51" width="18" height="8" fill="#857c6d" /><rect x="226" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="227" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="247" y="51" width="18" height="8" fill="#857c6d" /><rect x="247" y="51" width="18" height="6" fill="#d8cfc0" /><rect x="248" y="51" width="16" height="1" fill="#ebe3d4" />
+          <rect x="268" y="51" width="42" height="8" fill="#262420" /><rect x="268" y="51" width="42" height="6" fill="#595246" /><rect x="269" y="51" width="40" height="1" fill="#857c6d" />
+
+          <!-- Row 4 (Modifiers + Beveled Spacebar) -->
+          <rect x="50" y="60" width="23" height="8" fill="#595246" /><rect x="50" y="60" width="23" height="6" fill="#857c6d" /><rect x="51" y="60" width="21" height="1" fill="#ada393" />
+          <rect x="76" y="60" width="23" height="8" fill="#595246" /><rect x="76" y="60" width="23" height="6" fill="#857c6d" /><rect x="77" y="60" width="21" height="1" fill="#ada393" />
+          <rect x="102" y="60" width="118" height="8" fill="#857c6d" /><rect x="102" y="60" width="118" height="6" fill="#d8cfc0" /><rect x="103" y="60" width="116" height="1" fill="#ebe3d4" />
+          <rect x="223" y="60" width="22" height="8" fill="#595246" /><rect x="223" y="60" width="22" height="6" fill="#857c6d" /><rect x="224" y="60" width="20" height="1" fill="#ada393" />
+          <rect x="248" y="60" width="18" height="8" fill="#857c6d" /><rect x="248" y="60" width="18" height="6" fill="#d8cfc0" /><rect x="249" y="60" width="16" height="1" fill="#ebe3d4" />
+          <rect x="269" y="60" width="18" height="8" fill="#857c6d" /><rect x="269" y="60" width="18" height="6" fill="#d8cfc0" /><rect x="270" y="60" width="16" height="1" fill="#ebe3d4" />
+          <rect x="290" y="60" width="20" height="8" fill="#595246" /><rect x="290" y="60" width="20" height="6" fill="#857c6d" /><rect x="291" y="60" width="18" height="1" fill="#ada393" />
+        </svg>
+      </figure>
+    </main>
+
+  </div>
 
   <!-- Development Performance HUD (hidden unless ?debug=1) -->
   <aside id="perf-hud" class="perf-hud" hidden aria-label="Performance metrics"></aside>

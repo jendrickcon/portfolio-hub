@@ -43,16 +43,16 @@ export class PixelEnvironment {
   #generateSceneData() {
     const rand = mulberry32(PIXEL_SEED);
 
-    // Distant & midground skyline silhouettes positioned inside the studio window (x: 24..296, y: 16..130)
+    // Three skyline depth layers positioned inside the studio window (x: 24..296, y: 16..130)
     const skyLeft = 24;
     const skyRight = 296;
     const skyBottom = 130;
 
-    // Distant layer
+    // Layer 0: Distant towers with beacons
     let x = skyLeft;
     while (x < skyRight) {
-      const w = 10 + Math.floor(rand() * 14);
-      const h = 26 + Math.floor(rand() * 44);
+      const w = 9 + Math.floor(rand() * 13);
+      const h = 34 + Math.floor(rand() * 44);
       const clampedW = Math.min(w, skyRight - x);
       this.buildings.push({
         layer: 0,
@@ -60,18 +60,21 @@ export class PixelEnvironment {
         y: skyBottom - h,
         w: clampedW,
         h,
-        hasAntenna: rand() > 0.65 && clampedW >= 12,
-        antennaH: 5 + Math.floor(rand() * 8),
-        color: '#151f30',
+        hasAntenna: rand() > 0.62 && clampedW >= 11,
+        antennaH: 5 + Math.floor(rand() * 9),
+        hasAcUnit: false,
+        hasTank: false,
+        color: '#1d2d45',
+        trim: '#2a4162',
       });
       x += clampedW + 1;
     }
 
-    // Foreground skyline layer with sparse toggleable windows
-    x = skyLeft + 4;
-    while (x < skyRight - 6) {
-      const w = 12 + Math.floor(rand() * 18);
-      const h = 18 + Math.floor(rand() * 52);
+    // Layer 1: Midground towers with rooftop utility boxes, water tanks & warm/cool windows
+    x = skyLeft + 2;
+    while (x < skyRight - 4) {
+      const w = 13 + Math.floor(rand() * 16);
+      const h = 24 + Math.floor(rand() * 46);
       const clampedW = Math.min(w, skyRight - x);
       const by = skyBottom - h;
       this.buildings.push({
@@ -80,8 +83,53 @@ export class PixelEnvironment {
         y: by,
         w: clampedW,
         h,
+        hasAntenna: rand() > 0.78 && clampedW >= 14,
+        antennaH: 4 + Math.floor(rand() * 5),
+        hasAcUnit: rand() > 0.45 && clampedW >= 14,
+        hasTank: rand() > 0.75 && clampedW >= 16,
+        color: '#17253b',
+        trim: '#213452',
+      });
+
+      const cols = Math.floor((clampedW - 4) / 4);
+      const rows = Math.floor((h - 6) / 6);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (rand() < 0.28) {
+            const paletteRoll = rand();
+            const color = paletteRoll < 0.5 ? '#c49010' : paletteRoll < 0.85 ? '#1f5e70' : '#2a384c';
+            this.windows.push({
+              x: x + 2 + c * 4,
+              y: by + 4 + r * 6,
+              lit: rand() < 0.55,
+              canToggle: rand() < 0.3,
+              color,
+            });
+          }
+        }
+      }
+      x += clampedW + 3 + Math.floor(rand() * 6);
+    }
+
+    // Layer 2: Foreground dark building silhouettes + fire-escape rungs & sparse windows
+    x = skyLeft + 5;
+    while (x < skyRight - 8) {
+      const w = 14 + Math.floor(rand() * 18);
+      const h = 16 + Math.floor(rand() * 38);
+      const clampedW = Math.min(w, skyRight - x);
+      const by = skyBottom - h;
+      this.buildings.push({
+        layer: 2,
+        x,
+        y: by,
+        w: clampedW,
+        h,
         hasAntenna: false,
-        color: '#0f1724',
+        hasAcUnit: false,
+        hasTank: false,
+        hasFireEscape: rand() > 0.5 && h >= 26,
+        color: '#111b2c',
+        trim: '#18273e',
       });
 
       const cols = Math.floor((clampedW - 4) / 4);
@@ -90,27 +138,28 @@ export class PixelEnvironment {
         for (let c = 0; c < cols; c++) {
           if (rand() < 0.34) {
             const paletteRoll = rand();
-            const color = paletteRoll < 0.55 ? '#463619' : paletteRoll < 0.85 ? '#1c3944' : '#2c3440';
+            const color = paletteRoll < 0.56 ? '#c49010' : paletteRoll < 0.88 ? '#1f5e70' : '#2a384c';
             this.windows.push({
               x: x + 3 + c * 4,
               y: by + 4 + r * 6,
-              lit: rand() < 0.62,
-              canToggle: rand() < 0.35,
+              lit: rand() < 0.6,
+              canToggle: rand() < 0.36,
               color,
             });
           }
         }
       }
-      x += clampedW + 3 + Math.floor(rand() * 5);
+      x += clampedW + 6 + Math.floor(rand() * 9);
     }
 
-    // 42 restrained integer-stepped diagonal rain drops confined to window opening
+    // 42 restrained integer-stepped diagonal rain drops + splash phase
     for (let i = 0; i < 42; i++) {
       this.rainDrops.push({
         x: 26 + Math.floor(rand() * 268),
         y: 16 + Math.floor(rand() * 112),
         len: 3 + Math.floor(rand() * 3),
         speed: 1 + Math.floor(rand() * 2),
+        splashPhase: i % 3,
       });
     }
   }
@@ -169,32 +218,58 @@ export class PixelEnvironment {
     const t0 = performance.now();
     const ctx = this.ctx;
 
-    // 1. Deep-ink editorial wall surrounding the recessed window
-    ctx.fillStyle = '#07090d';
+    // 1. Deep-ink editorial wall surrounding the recessed window + dado trim
+    ctx.fillStyle = '#070a10';
     ctx.fillRect(0, 0, PIXEL_WIDTH, PIXEL_HEIGHT);
 
-    // Subtle wall paneling horizontal seam lines (ultra-low luminance)
-    ctx.fillStyle = '#0b0e14';
-    ctx.fillRect(0, 140, PIXEL_WIDTH, 1);
+    // Subtle wall paneling seam lines, skirting & routing-field index hairlines
+    ctx.fillStyle = '#0c0e11';
+    ctx.fillRect(0, 141, PIXEL_WIDTH, 1);
     ctx.fillRect(0, 144, PIXEL_WIDTH, 36);
+    ctx.fillStyle = '#151e2c';
+    ctx.fillRect(0, 142, PIXEL_WIDTH, 2);
+    ctx.fillRect(2, 18, 12, 1);
+    ctx.fillRect(2, 21, 7, 1);
+    ctx.fillRect(306, 18, 12, 1);
+    ctx.fillRect(310, 21, 8, 1);
 
-    // 2. Window opening & stepped midnight sky (kept <= 22% luminance)
-    ctx.fillStyle = '#060a10';
-    ctx.fillRect(24, 16, 272, 114);
-    ctx.fillStyle = '#080e16';
-    ctx.fillRect(24, 52, 272, 38);
-    ctx.fillStyle = '#0a121c';
-    ctx.fillRect(24, 90, 272, 40);
+    // 2. Window opening & 4-band midnight sky with distant horizon haze
+    ctx.fillStyle = '#070a10';
+    ctx.fillRect(24, 16, 272, 36);
+    ctx.fillStyle = '#0c131f';
+    ctx.fillRect(24, 52, 272, 34);
+    ctx.fillStyle = '#111b2c';
+    ctx.fillRect(24, 86, 272, 28);
+    ctx.fillStyle = '#17253b';
+    ctx.fillRect(24, 114, 272, 16);
 
-    // 3. Skyline buildings + beacons
+    // 3. Skyline depth layers + rooftop antennas/AC/tanks/fire escapes
     for (const b of this.buildings) {
       ctx.fillStyle = b.color;
       ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = b.trim;
+      ctx.fillRect(b.x, b.y, b.w, 1);
+      if (b.hasAcUnit) {
+        ctx.fillStyle = '#2a384c';
+        ctx.fillRect(b.x + 2, b.y - 3, 5, 3);
+      }
+      if (b.hasTank) {
+        ctx.fillStyle = '#2a384c';
+        ctx.fillRect(b.x + b.w - 7, b.y - 5, 5, 4);
+        ctx.fillRect(b.x + b.w - 6, b.y - 1, 1, 1);
+        ctx.fillRect(b.x + b.w - 4, b.y - 1, 1, 1);
+      }
+      if (b.hasFireEscape) {
+        ctx.fillStyle = '#213452';
+        for (let fy = b.y + 6; fy < 126; fy += 7) {
+          ctx.fillRect(b.x + 1, fy, 4, 1);
+        }
+      }
       if (b.hasAntenna) {
         const ax = b.x + Math.floor(b.w / 2);
-        ctx.fillStyle = '#141d2a';
+        ctx.fillStyle = '#151e2c';
         ctx.fillRect(ax, b.y - b.antennaH, 1, b.antennaH);
-        ctx.fillStyle = this.ledOn ? '#6d2525' : '#2d1215';
+        ctx.fillStyle = this.ledOn ? '#a83232' : '#331418';
         ctx.fillRect(ax, b.y - b.antennaH - 1, 1, 1);
       }
     }
@@ -206,8 +281,8 @@ export class PixelEnvironment {
       ctx.fillRect(w.x, w.y, 2, 2);
     }
 
-    // 5. Restrained diagonal rain streaks
-    ctx.fillStyle = '#1f3040';
+    // 5. Restrained diagonal rain streaks + 2-3 frame edge impacts at mullions/sill
+    ctx.fillStyle = '#2a384c';
     for (const d of this.rainDrops) {
       for (let s = 0; s < d.len; s++) {
         const px = Math.floor(d.x - s);
@@ -217,9 +292,19 @@ export class PixelEnvironment {
         }
       }
     }
+    ctx.fillStyle = '#3c5068';
+    for (let i = 0; i < 6; i++) {
+      const spPhase = (this.tickCount + i) % 3;
+      if (spPhase === 0) {
+        const sx = 28 + ((i * 47 + this.tickCount * 5) % 262);
+        const sy = i % 2 === 0 ? 70 : 128;
+        ctx.fillRect(sx, sy, 1, 1);
+        ctx.fillRect(sx + 2, sy, 1, 1);
+      }
+    }
 
-    // 6. Window frame & mullions (crisp integer border framing the center monitor silhouette)
-    ctx.fillStyle = '#1c232e';
+    // 6. Stepped window frame, inner shadow bevel & mullions
+    ctx.fillStyle = '#181a1d';
     ctx.fillRect(20, 12, 280, 4);
     ctx.fillRect(20, 130, 280, 4);
     ctx.fillRect(20, 16, 4, 114);
@@ -227,50 +312,76 @@ export class PixelEnvironment {
     ctx.fillRect(110, 16, 2, 114);
     ctx.fillRect(208, 16, 2, 114);
     ctx.fillRect(24, 72, 272, 2);
-
-    // Window sill highlight
-    ctx.fillStyle = '#232c3b';
+    ctx.fillStyle = '#181a1d';
+    ctx.fillRect(24, 16, 272, 1);
+    ctx.fillRect(24, 16, 1, 114);
+    ctx.fillStyle = '#26282b';
     ctx.fillRect(18, 133, 284, 2);
 
-    // 7. Left-wall small technical wall panel silhouette + slow activity LED
-    ctx.fillStyle = '#10141c';
-    ctx.fillRect(4, 52, 13, 22);
-    ctx.fillStyle = '#18202c';
-    ctx.fillRect(5, 53, 11, 20);
-    ctx.fillStyle = '#12313b';
-    ctx.fillRect(7, 56, 7, 1);
-    ctx.fillRect(7, 59, 5, 1);
-    ctx.fillRect(10, 61, 4, 1);
-    ctx.fillStyle = this.ledOn ? '#236b38' : '#102b19';
-    ctx.fillRect(7, 68, 2, 2);
+    // 7. Left-wall recessed technical panel + conduit + routing-field ticks + dual LEDs
+    ctx.fillStyle = '#0c0e11';
+    ctx.fillRect(9, 78, 2, 62);
+    ctx.fillStyle = '#151e2c';
+    ctx.fillRect(3, 46, 15, 32);
+    ctx.fillStyle = '#223044';
+    ctx.fillRect(4, 47, 13, 30);
+    ctx.fillStyle = '#1f5e70';
+    ctx.fillRect(6, 50, 9, 1);
+    ctx.fillRect(6, 53, 6, 1);
+    ctx.fillRect(9, 56, 6, 1);
+    ctx.fillRect(6, 59, 4, 1);
+    ctx.fillStyle = '#2a4162';
+    ctx.fillRect(6, 64, 9, 1);
+    ctx.fillStyle = this.ledOn ? '#226e45' : '#133324';
+    ctx.fillRect(6, 70, 2, 2);
+    ctx.fillStyle = this.ledOn ? '#3b2b10' : '#7a5518';
+    ctx.fillRect(11, 70, 2, 2);
 
-    // 8. Desk-margin inhabited pixel props (flanked outside central CRT monitor silhouette)
-    // Stacked 3.5" floppy disks (bottom-left shelf edge)
-    ctx.fillStyle = '#1a202b';
-    ctx.fillRect(10, 152, 18, 6);
-    ctx.fillStyle = '#382f1b';
-    ctx.fillRect(14, 153, 6, 3);
-    ctx.fillStyle = '#151a24';
-    ctx.fillRect(12, 146, 17, 6);
-    ctx.fillStyle = '#1c3a44';
-    ctx.fillRect(16, 147, 6, 3);
+    // 8. Desk-margin inhabited props
+    // Left shelf stack of 3 beveled 3.5" floppy disks
+    ctx.fillStyle = '#26282b';
+    ctx.fillRect(8, 152, 19, 6);
+    ctx.fillStyle = '#7a5518';
+    ctx.fillRect(13, 153, 6, 3);
+    ctx.fillStyle = '#181a1d';
+    ctx.fillRect(10, 146, 18, 6);
+    ctx.fillStyle = '#1f5e70';
+    ctx.fillRect(15, 147, 6, 3);
+    ctx.fillStyle = '#343840';
+    ctx.fillRect(11, 141, 16, 5);
+    ctx.fillStyle = '#464b54';
+    ctx.fillRect(16, 142, 6, 2);
 
-    // Coiled desk cable silhouette (left-to-center) + subtle 2-frame connector pulse
-    ctx.fillStyle = '#141922';
-    ctx.fillRect(32, 156, 12, 2);
-    ctx.fillRect(43, 154, 4, 2);
-    ctx.fillRect(46, 152, 12, 2);
-    ctx.fillStyle = this.ledOn ? '#1e303c' : '#141922';
+    // Coiled desk cable + connector & subtle 2-frame data pulse
+    ctx.fillStyle = '#181a1d';
+    ctx.fillRect(30, 156, 13, 2);
+    ctx.fillRect(42, 154, 4, 2);
+    ctx.fillRect(45, 152, 14, 2);
+    ctx.fillStyle = this.ledOn ? '#1f5e70' : '#181a1d';
     ctx.fillRect(47, 152, 2, 1);
 
-    // Small plant silhouette on right ledge
-    ctx.fillStyle = '#161b23';
-    ctx.fillRect(288, 146, 12, 10);
-    ctx.fillStyle = '#10231b';
-    ctx.fillRect(291, 138, 2, 8);
-    ctx.fillRect(295, 136, 2, 10);
-    ctx.fillRect(288, 140, 3, 2);
-    ctx.fillRect(297, 139, 3, 2);
+    // Right edge small studio desk lamp silhouette (subdued warm down-cone)
+    ctx.fillStyle = '#595246';
+    ctx.fillRect(304, 149, 12, 5);
+    ctx.fillRect(310, 128, 2, 21);
+    ctx.fillRect(303, 124, 9, 2);
+    ctx.fillStyle = '#857c6d';
+    ctx.fillRect(297, 125, 8, 5);
+    ctx.fillStyle = '#3b2b10';
+    ctx.fillRect(294, 130, 10, 10);
+
+    // Botanical plant pot on right ledge with stepped pot rim + foliage
+    ctx.fillStyle = '#18273e';
+    ctx.fillRect(284, 145, 13, 11);
+    ctx.fillStyle = '#343840';
+    ctx.fillRect(283, 144, 15, 2);
+    ctx.fillStyle = '#133324';
+    ctx.fillRect(288, 136, 2, 8);
+    ctx.fillRect(292, 134, 2, 10);
+    ctx.fillStyle = '#226e45';
+    ctx.fillRect(284, 138, 4, 2);
+    ctx.fillRect(294, 137, 4, 2);
+    ctx.fillRect(289, 132, 2, 3);
 
     this.lastTickMs = performance.now() - t0;
   }
@@ -292,31 +403,31 @@ export function createFloppyDiskCanvas() {
   ctx.imageSmoothingEnabled = false;
 
   // Matte dark slate diskette shell
-  ctx.fillStyle = '#1d242c';
+  ctx.fillStyle = '#26282b';
   ctx.fillRect(0, 0, 64, 32);
 
   // Subtle top lip & write-protect corner notch accents
-  ctx.fillStyle = '#2d3844';
+  ctx.fillStyle = '#343840';
   ctx.fillRect(1, 1, 62, 3);
-  ctx.fillStyle = '#0e1217';
+  ctx.fillStyle = '#0c0e11';
   ctx.fillRect(4, 24, 5, 5);
 
   // Brushed silver metal shutter in upper center
-  ctx.fillStyle = '#8b959e';
+  ctx.fillStyle = '#9ea8b4';
   ctx.fillRect(18, 2, 28, 12);
-  ctx.fillStyle = '#5c6670';
+  ctx.fillStyle = '#68737d';
   ctx.fillRect(36, 4, 7, 8);
-  ctx.fillStyle = '#b4bdc4';
+  ctx.fillStyle = '#c8d2dc';
   ctx.fillRect(18, 2, 28, 2);
 
   // Label block with restrained cyan/amber micro-stripes
-  ctx.fillStyle = '#121820';
+  ctx.fillStyle = '#181a1d';
   ctx.fillRect(12, 16, 40, 14);
   ctx.fillStyle = '#00a8be';
   ctx.fillRect(14, 18, 36, 2);
   ctx.fillStyle = '#c49010';
   ctx.fillRect(14, 21, 18, 2);
-  ctx.fillStyle = '#7e909e';
+  ctx.fillStyle = '#68737d';
   ctx.fillRect(14, 25, 28, 1);
   ctx.fillRect(14, 27, 20, 1);
 

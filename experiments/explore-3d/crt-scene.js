@@ -10,27 +10,31 @@ const STATE_LIGHT_HEX = {
   paused: 0xffbf00,
 };
 
-// Centralized fixed camera states (no pointer-driven orbit/yaw/pitch)
+// Centralized fixed camera states (Desktop + Mobile Portrait + Mobile Short Landscape; zero cursor parallax)
 export const CAMERA_POSES = {
-  standby: {
-    pos: [0, 1.08, 3.45],
-    target: [0, 0.68, 0.08],
-    fov: 35,
-    durationMs: 850,
+  desktop: {
+    standby: { pos: [0, 1.08, 3.45], target: [0, 0.68, 0.08], fov: 35, durationMs: 850 },
+    boot: { pos: [0, 1.24, 2.84], target: [0, 0.80, 0.12], fov: 35, durationMs: 750 },
+    menu: { pos: [0, 1.02, 2.60], target: [0, 0.90, 0.14], fov: 35, durationMs: 650 },
   },
-  boot: {
-    pos: [0, 1.24, 2.84],
-    target: [0, 0.80, 0.12],
-    fov: 35,
-    durationMs: 750,
+  mobilePortrait: {
+    standby: { pos: [0, 1.28, 5.75], target: [0, 0.72, 0.08], fov: 42, durationMs: 700 },
+    boot: { pos: [0, 1.32, 5.30], target: [0, 0.82, 0.12], fov: 42, durationMs: 650 },
+    menu: { pos: [0, 1.06, 5.40], target: [0, 0.86, 0.14], fov: 42, durationMs: 600 },
   },
-  menu: {
-    pos: [0, 1.02, 2.60],
-    target: [0, 0.90, 0.14],
-    fov: 35,
-    durationMs: 650,
+  mobileLandscape: {
+    standby: { pos: [0, 1.05, 4.05], target: [0, 0.70, 0.08], fov: 42, durationMs: 700 },
+    boot: { pos: [0, 1.18, 3.45], target: [0, 0.82, 0.12], fov: 42, durationMs: 650 },
+    menu: { pos: [0, 0.98, 3.15], target: [0, 0.86, 0.14], fov: 42, durationMs: 600 },
   },
 };
+
+function getPoseProfile(vw, vh, coarse) {
+  if (vw <= 639 || vh <= 560 || coarse) {
+    return vw > vh && vh <= 560 ? CAMERA_POSES.mobileLandscape : CAMERA_POSES.mobilePortrait;
+  }
+  return CAMERA_POSES.desktop;
+}
 
 function mergeBoxGeometries(THREE, specs) {
   const parts = specs.map((s) => {
@@ -100,9 +104,17 @@ export async function createCrtScene({
   initialQuality,
   initialPixelMode = 'smooth',
   reducedMotion,
+  coarsePointer = false,
+  getViewportSize,
   onFatalFallback,
 }) {
   const THREE = await import('./vendor/three.module.min.js');
+  const readVp = () => (getViewportSize ? getViewportSize() : {
+    w: Math.max(1, window.innerWidth),
+    h: Math.max(1, window.innerHeight),
+  });
+  const initVp = readVp();
+  let isCoarse = Boolean(coarsePointer);
 
   let renderer;
   try {
@@ -125,10 +137,10 @@ export async function createCrtScene({
   scene.background = new THREE.Color(0x0a0c10);
   scene.fog = new THREE.Fog(0x0a0c10, 4.4, 9.2);
 
-  const standbyPose = CAMERA_POSES.standby;
+  const standbyPose = getPoseProfile(initVp.w, initVp.h, isCoarse).standby;
   const camera = new THREE.PerspectiveCamera(
     standbyPose.fov,
-    Math.max(1, window.innerWidth) / Math.max(1, window.innerHeight),
+    Math.max(1, initVp.w) / Math.max(1, initVp.h),
     0.1,
     25
   );
@@ -536,23 +548,40 @@ export async function createCrtScene({
     if (quality !== 'low') renderSingleFrame();
   }
 
-  function applyQualitySettings(nextQuality) {
+  let lastViewportW = initVp.w;
+  let lastViewportH = initVp.h;
+
+  function applyQualitySettings(nextQuality, explicitW = null, explicitH = null) {
     quality = nextQuality;
-    const width = Math.max(1, window.innerWidth);
-    const height = Math.max(1, window.innerHeight);
+    const vp = readVp();
+    const width = Math.max(1, explicitW || vp.w);
+    const height = Math.max(1, explicitH || vp.h);
+    lastViewportW = width;
+    lastViewportH = height;
 
     let scale = 1;
     if (pixelMode === 'lowres75') scale = 0.75;
     else if (pixelMode === 'lowres50') scale = 0.5;
     metrics.renderScale = scale;
 
-    const dprCap = scale < 1 ? 1 : quality === 'high' ? 1.5 : 1.25;
+    const dprCap = scale < 1 ? 1 : quality === 'mobile' ? 1 : quality === 'high' ? 1.5 : 1.25;
     const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     metrics.dpr = +dpr.toFixed(2);
     renderer.setPixelRatio(dpr);
     renderer.setSize(Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale)), false);
 
     camera.aspect = width / height;
+    if (!cameraTweening) {
+      const poseSet = getPoseProfile(width, height, isCoarse);
+      const curPose = poseSet[currentPoseName] || poseSet.menu;
+      curCamPos.set(...curPose.pos);
+      curLookAt.set(...curPose.target);
+      curFov = curPose.fov;
+      goalCamPos.copy(curCamPos);
+      goalLookAt.copy(curLookAt);
+      goalFov = curFov;
+      camera.fov = curFov;
+    }
     camera.updateProjectionMatrix();
 
     const useShadow = quality === 'high';
@@ -584,8 +613,8 @@ export async function createCrtScene({
   }
 
   function projectBox(tlObj, brObj, minW, minH, pad = 0) {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const vw = Math.max(1, lastViewportW);
+    const vh = Math.max(1, lastViewportH);
     const midY = (tlObj.position.y + brObj.position.y) * 0.5;
     const midZ = (tlObj.position.z + brObj.position.z) * 0.5;
     const pMidL = new THREE.Vector3(tlObj.position.x, midY, midZ);
@@ -690,9 +719,11 @@ export async function createCrtScene({
   }
 
   function setCameraState(poseName, durationOverrideMs = null) {
-    const pose = CAMERA_POSES[poseName] || CAMERA_POSES.menu;
+    const vp = readVp();
+    const poseSet = getPoseProfile(vp.w, vp.h, isCoarse);
+    const pose = poseSet[poseName] || poseSet.menu;
     currentPoseName = poseName;
-    metrics.cameraPose = poseName;
+    metrics.cameraPose = `${vp.w <= 639 || vp.h <= 560 || isCoarse ? 'mobile-' : ''}${poseName}`;
     goalCamPos.set(...pose.pos);
     goalLookAt.set(...pose.target);
     goalFov = pose.fov;
@@ -760,9 +791,10 @@ export async function createCrtScene({
       lastActiveMs = now;
     }
 
-    const isIdle = !cameraTweening && !floppyMoving && !lightSettling && (now - lastActiveMs > 2600);
+    const settleDelay = quality === 'mobile' ? 400 : 2600;
+    const isIdle = !cameraTweening && !floppyMoving && !lightSettling && (now - lastActiveMs > settleDelay);
 
-    if (quality === 'medium' && isIdle) {
+    if ((quality === 'medium' || quality === 'mobile') && isIdle) {
       metrics.loopState = 'idle-asleep (0 FPS)';
       metrics.fps = 0;
       if (onMetrics) onMetrics(metrics);
@@ -846,14 +878,16 @@ export async function createCrtScene({
     frameTimeSamples.push(frameDur);
     if (frameTimeSamples.length > 60) frameTimeSamples.shift();
 
-    if (!isIdle && quality === 'high') {
+    if (!isIdle && (quality === 'high' || quality === 'mobile')) {
       slowFrameSamples.push(frameDur);
-      if (slowFrameSamples.length > 45) slowFrameSamples.shift();
-      if (slowFrameSamples.length === 45) {
-        const slowAvg = slowFrameSamples.reduce((a, b) => a + b, 0) / 45;
-        if (slowAvg > 24 && onAutoDowngrade) {
+      const limitFrames = quality === 'mobile' ? 30 : 45;
+      const thresholdMs = quality === 'mobile' ? 29 : 24;
+      if (slowFrameSamples.length > limitFrames) slowFrameSamples.shift();
+      if (slowFrameSamples.length === limitFrames) {
+        const slowAvg = slowFrameSamples.reduce((a, b) => a + b, 0) / limitFrames;
+        if (slowAvg > thresholdMs && onAutoDowngrade) {
           slowFrameSamples = [];
-          onAutoDowngrade('medium', slowAvg);
+          onAutoDowngrade(quality === 'mobile' ? '2d-fallback' : 'medium', slowAvg);
         }
       }
     }
@@ -884,11 +918,6 @@ export async function createCrtScene({
     }
   }
 
-  const onResize = () => {
-    applyQualitySettings(quality);
-    if (quality !== 'low') renderSingleFrame();
-  };
-
   const onVisibility = () => {
     isHidden = Boolean(document.hidden);
     if (isHidden) {
@@ -915,17 +944,23 @@ export async function createCrtScene({
     if (onFatalFallback) onFatalFallback('webglcontextlost');
   };
 
-  window.addEventListener('resize', onResize, { passive: true });
   document.addEventListener('visibilitychange', onVisibility);
   canvas.addEventListener('webglcontextlost', onContextLost);
 
   applyPixelMode(pixelMode);
-  applyQualitySettings(quality);
+  applyQualitySettings(quality, initVp.w, initVp.h);
   renderSingleFrame();
 
   return {
     setQuality(nextQ) {
       applyQualitySettings(nextQ);
+    },
+    resizeViewport(w, h) {
+      applyQualitySettings(quality, w, h);
+      if (quality !== 'low') renderSingleFrame();
+    },
+    setCoarsePointer(val) {
+      isCoarse = Boolean(val);
     },
     setPixelMode(nextMode) {
       applyPixelMode(nextMode);
@@ -968,7 +1003,6 @@ export async function createCrtScene({
     },
     dispose() {
       if (rafId) cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', onResize);
       document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('webglcontextlost', onContextLost);
       renderer.dispose();

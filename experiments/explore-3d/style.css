@@ -30,12 +30,21 @@
 }
 
 :root {
+  --app-height: 100dvh;
   --bg-ink: #0a0c10;
+  /* 6-shade Warm Putty-Beige Hardware Ramp */
+  --casing-peak: #ebe3d4;
+  --casing-light: #d8cfc0;
   --casing: #c8bfb0;
-  --casing-light: #e2dac9;
-  --casing-mid: #a59b88;
-  --casing-dark: #6d6658;
+  --casing-mid: #ada393;
+  --casing-dark: #857c6d;
+  --casing-edge: #595246;
+  /* 5-shade Charcoal Hardware Ramp */
+  --bezel-rim: #464b54;
+  --bezel-mid: #343840;
   --bezel: #26282b;
+  --bezel-deep: #181a1d;
+  --bezel-ink: #0c0e11;
   --glass: #061015;
   --green: #39ff14;
   --cyan: #00e5ff;
@@ -61,11 +70,14 @@
 
 html, body {
   width: 100%;
-  min-height: 100dvh;
+  height: var(--app-height);
+  max-height: var(--app-height);
   background: var(--bg-ink);
   color: var(--text-light);
   font-family: var(--font-body);
-  overflow-x: hidden;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overflow-anchor: none;
 }
 
 button, input, select {
@@ -88,6 +100,11 @@ button {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+.lbl-compact,
+.lbl-tiny {
+  display: none;
 }
 
 /* ===== Layer 1/2 Background Canvases ===== */
@@ -128,23 +145,40 @@ body.mode-switching .pixel2d-lower-rig {
   opacity: 0.72;
 }
 
-/* ===== Top Header & Display Mode Selector ===== */
-.proto-header {
+/* ===== Stable Full-Viewport Application Root ===== */
+.prototype-app {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  inset: 0;
+  width: 100%;
+  height: var(--app-height);
+  max-height: var(--app-height);
+  z-index: 10;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overflow-anchor: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Header & Display Mode Selector ===== */
+.proto-header {
+  flex-shrink: 0;
+  position: relative;
   z-index: 200;
-  padding: 10px 14px;
+  padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left));
   pointer-events: none;
 }
 
 .proto-nav {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   pointer-events: auto;
+}
+
+body.has-debug .proto-nav {
+  flex-wrap: wrap;
 }
 
 .ctrl-group {
@@ -168,6 +202,7 @@ body.mode-switching .pixel2d-lower-rig {
   font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 0.4px;
+  white-space: nowrap;
   color: var(--text-muted);
   background: rgba(10, 12, 16, 0.92);
   border: 1px solid rgba(232, 228, 216, 0.42);
@@ -205,7 +240,7 @@ body.mode-switching .pixel2d-lower-rig {
   padding-right: 16px;
 }
 
-/* Segmented Display Mode Fieldset (3D Workstation vs Pixel 2D) */
+/* Segmented Display Mode Fieldset */
 .display-mode-fieldset {
   display: inline-flex;
   align-items: center;
@@ -214,6 +249,7 @@ body.mode-switching .pixel2d-lower-rig {
   border: 1px solid rgba(232, 228, 216, 0.35);
   border-radius: 3px;
   background: rgba(10, 12, 16, 0.92);
+  flex-shrink: 0;
 }
 
 .display-mode-legend {
@@ -240,6 +276,7 @@ body.mode-switching .pixel2d-lower-rig {
   font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 0.4px;
+  white-space: nowrap;
   color: var(--text-muted);
   border: 1px solid transparent;
   border-radius: 2px;
@@ -264,16 +301,19 @@ body.mode-switching .pixel2d-lower-rig {
 
 /* ===== Main Semantic Container & Intro ===== */
 .proto-main {
-  position: relative;
-  z-index: 10;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overflow-anchor: none;
 }
 
 .proto-intro {
   position: fixed;
   top: 76px;
-  left: 16px;
+  left: max(16px, env(safe-area-inset-left));
   max-width: clamp(180px, 18vw, 260px);
   z-index: 15;
   transition: opacity 0.28s ease;
@@ -300,17 +340,17 @@ body.is-powered .proto-intro {
   border: 1px solid rgba(255, 191, 0, 0.55);
   padding: 3px 7px;
   border-radius: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .proto-title {
   font-family: var(--font-display);
-  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  font-size: clamp(1.2rem, 2.2vw, 1.9rem);
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 1px;
   color: var(--text-light);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .proto-desc {
@@ -332,6 +372,7 @@ body.is-powered .proto-intro {
 }
 
 .pixel2d-top-chrome,
+.px-chin-deco,
 .pixel2d-lower-rig,
 .screen-glass-corners,
 .pixel2d-floppy-svg,
@@ -366,15 +407,19 @@ body.is-powered .proto-intro {
   z-index: 2;
 }
 
+/* Strictly local scrolling ONLY inside the CRT glass aperture */
 .screen-content {
   position: relative;
   z-index: 1;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 12px 14px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(57, 255, 20, 0.45) rgba(6, 16, 21, 0.6);
 }
 
 /* ===== Shared CRT Screen UI States ===== */
@@ -431,7 +476,7 @@ body.is-powered .proto-intro {
   white-space: pre-wrap;
   font-family: var(--font-body);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--green);
 }
 
@@ -456,7 +501,7 @@ body.is-powered .proto-intro {
 
 /* Catalog Grid */
 .app-menu {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -577,7 +622,7 @@ body.is-powered .proto-intro {
 
 /* Sample Dossier (Readable IBM Plex Mono Body Copy) */
 .dossier-view {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -811,63 +856,104 @@ body.reduce-motion .screen-overlay.is-collapsing::after {
 }
 
 /* ============================================================
-   FIRST-CLASS PIXEL 2D WORKSTATION PRESENTATION
+   64-BIT-ERA PIXEL 2D WORKSTATION PRESENTATION
    ============================================================ */
 body.mode-pixel-2d .proto-header {
-  position: relative;
   background: rgba(10, 12, 16, 0.92);
   border-bottom: 1px solid rgba(0, 229, 255, 0.2);
 }
 
 body.mode-pixel-2d .proto-main {
-  min-height: calc(100dvh - 66px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 12px 12px 20px;
-  gap: 10px;
+  justify-content: center;
+  padding: 6px max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  gap: 4px;
 }
 
 body.mode-pixel-2d .proto-intro {
   position: static;
+  flex-shrink: 0;
   max-width: 680px;
   text-align: center;
+  margin-bottom: 2px;
 }
 
+body.mode-pixel-2d.is-powered .proto-intro {
+  display: none;
+}
+
+/* Multi-Shade Stepped Monitor Shell (Beige 6-shade ramp + Side Depth Plane) */
 body.mode-pixel-2d .crt-chassis {
   position: relative;
   left: auto;
   top: auto;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  max-width: 700px;
+  max-width: 690px;
+  max-height: min(560px, calc(100% - 92px));
   height: auto;
+  display: flex;
+  flex-direction: column;
   padding: 8px 14px 10px;
   background: var(--casing);
-  border: 4px solid #4e493f;
+  border: 3px solid var(--casing-edge);
+  border-right-width: 6px;
+  border-bottom-width: 6px;
   border-radius: 0;
-  /* Crisp stepped pixel bevel highlight & shadow edges (zero soft blur) */
   box-shadow:
-    inset 4px 4px 0 var(--casing-light),
-    inset -4px -4px 0 #8a8172,
-    0 8px 0 #080a0e;
+    inset 3px 3px 0 var(--casing-peak),
+    inset 6px 6px 0 var(--casing-light),
+    inset -3px -3px 0 var(--casing-mid),
+    inset -6px -6px 0 var(--casing-dark),
+    0 6px 0 var(--bezel-ink);
 }
 
-/* Top hardware vents & panel seams */
+/* Top hardware chrome: corner screws, model badge, seams & 10 vents */
 body.mode-pixel-2d .pixel2d-top-chrome {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 6px;
-  padding: 0 4px;
+  padding: 0 2px;
+}
+
+.px-screw {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  background: var(--casing-dark);
+  border-top: 2px solid var(--casing-edge);
+  border-left: 2px solid var(--casing-edge);
+  border-right: 1px solid var(--casing-light);
+  border-bottom: 1px solid var(--casing-light);
+}
+
+.px-badge-plate {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 1px 5px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  color: #c8d2dc;
+  background: #23272e;
+  border-top: 1px solid #464b54;
+  border-left: 1px solid #464b54;
+  border-right: 1px solid #0c0e11;
+  border-bottom: 1px solid #0c0e11;
 }
 
 body.mode-pixel-2d .pixel2d-seam {
   flex: 1;
-  height: 3px;
-  background: #8a8172;
-  box-shadow: 0 2px 0 #e2dac9;
+  height: 2px;
+  background: var(--casing-dark);
+  box-shadow: 0 2px 0 var(--casing-light);
 }
 
 body.mode-pixel-2d .pixel2d-vents {
@@ -877,22 +963,25 @@ body.mode-pixel-2d .pixel2d-vents {
 
 body.mode-pixel-2d .pixel2d-vents i {
   display: block;
-  width: 10px;
-  height: 4px;
-  background: #17191d;
-  border-bottom: 1px solid #dfd7c7;
+  width: 9px;
+  height: 5px;
+  background: var(--bezel-deep);
+  border-top: 1px solid var(--bezel-ink);
+  border-bottom: 1px solid var(--casing-light);
 }
 
-/* Charcoal recessed bezel + pixelated corner-shaded curved-glass illusion */
+/* Charcoal recessed bezel + pixelated corner-shaded glass + specular glint */
 body.mode-pixel-2d .screen-overlay {
-  min-height: clamp(250px, 44dvh, 430px);
+  flex: 1 1 auto;
+  min-height: 150px;
   height: auto;
   border-radius: 0;
-  border: 14px solid var(--bezel);
+  border: 12px solid var(--bezel);
   box-shadow:
-    inset 4px 4px 0 #131518,
-    inset -4px -4px 0 #373a42,
-    0 0 0 2px #585247;
+    inset 4px 4px 0 var(--bezel-ink),
+    inset -4px -4px 0 var(--bezel-mid),
+    0 0 0 2px var(--casing-edge),
+    0 2px 6px var(--pixel-desk-glow);
 }
 
 body.mode-pixel-2d .screen-glass-corners {
@@ -901,23 +990,39 @@ body.mode-pixel-2d .screen-glass-corners {
   inset: 0;
   pointer-events: none;
   z-index: 3;
-  /* Stepped 4px-quantized CRT corner curvature & subtle specular edge */
   background:
-    linear-gradient(135deg, rgba(0, 0, 0, 0.55) 8px, rgba(0, 0, 0, 0.25) 14px, transparent 14px) top left / 22px 22px no-repeat,
-    linear-gradient(225deg, rgba(0, 0, 0, 0.55) 8px, rgba(0, 0, 0, 0.25) 14px, transparent 14px) top right / 22px 22px no-repeat,
-    linear-gradient(45deg, rgba(0, 0, 0, 0.55) 8px, rgba(0, 0, 0, 0.25) 14px, transparent 14px) bottom left / 22px 22px no-repeat,
-    linear-gradient(315deg, rgba(0, 0, 0, 0.55) 8px, rgba(0, 0, 0, 0.25) 14px, transparent 14px) bottom right / 22px 22px no-repeat;
+    linear-gradient(135deg, rgba(0, 0, 0, 0.58) 7px, rgba(0, 0, 0, 0.25) 13px, transparent 13px) top left / 20px 20px no-repeat,
+    linear-gradient(225deg, rgba(0, 0, 0, 0.58) 7px, rgba(0, 0, 0, 0.25) 13px, transparent 13px) top right / 20px 20px no-repeat,
+    linear-gradient(45deg, rgba(0, 0, 0, 0.58) 7px, rgba(0, 0, 0, 0.25) 13px, transparent 13px) bottom left / 20px 20px no-repeat,
+    linear-gradient(315deg, rgba(0, 0, 0, 0.58) 7px, rgba(0, 0, 0, 0.25) 13px, transparent 13px) bottom right / 20px 20px no-repeat,
+    linear-gradient(135deg, transparent 8px, rgba(255, 255, 255, 0.035) 8px, rgba(255, 255, 255, 0.035) 12px, transparent 12px) top left / 56px 56px no-repeat;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* Pixel 2D Chin Hardware Controls: Centered Floppy + Right LED/Power */
+/* Pixel 2D Chin Hardware Controls */
 body.mode-pixel-2d .hw-controls {
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 7px;
   padding: 2px 4px 0;
+}
+
+body.mode-pixel-2d .px-chin-deco--left {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.px-chin-groove {
+  width: 28px;
+  height: 4px;
+  background: var(--casing-mid);
+  border-top: 2px solid var(--casing-dark);
+  border-bottom: 1px solid var(--casing-light);
 }
 
 body.mode-pixel-2d .hw-ctrl {
@@ -935,7 +1040,7 @@ body.mode-pixel-2d .hw-disk-btn {
   grid-column: 2;
   justify-self: center;
   min-width: 146px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   background: transparent;
   border: 2px solid transparent;
 }
@@ -963,7 +1068,7 @@ body.mode-pixel-2d .hw-disk-btn[data-drive-state="open"] .px-drive-led {
   fill: var(--cyan);
 }
 
-/* 6 stepped pixel frames for floppy ejection (no smooth transition) */
+/* 6 stepped pixel frames for floppy ejection */
 body.mode-pixel-2d .px-disk-sprite {
   transform: translateY(0px);
 }
@@ -988,11 +1093,12 @@ body.mode-pixel-2d .hw-power-btn {
   justify-self: end;
   gap: 8px;
   padding: 6px 10px;
-  background: #2b2e35;
-  border: 2px solid #14161a;
+  background: var(--bezel);
+  border: 2px solid var(--bezel-ink);
   box-shadow:
-    inset 2px 2px 0 #4a4f5a,
-    inset -2px -2px 0 #181a1f;
+    inset 2px 2px 0 var(--bezel-rim),
+    inset -2px -2px 0 var(--bezel-deep),
+    0 0 0 2px var(--casing-dark);
 }
 
 body.mode-pixel-2d .hw-power-btn:not(:disabled):hover,
@@ -1006,16 +1112,17 @@ body.mode-pixel-2d .hw-power-led-dot {
   height: 10px;
   background: #5c6b34;
   border: 1px solid #161a12;
+  box-shadow: 0 0 0 2px var(--bezel-deep);
 }
 
 body.mode-pixel-2d.is-powered .hw-power-led-dot {
   background: var(--green);
-  box-shadow: 0 0 6px rgba(57, 255, 20, 0.75);
+  box-shadow: 0 0 0 2px var(--bezel-deep), 0 0 6px rgba(57, 255, 20, 0.75);
 }
 
 body.mode-pixel-2d.is-restarting .hw-power-led-dot {
   background: var(--amber);
-  box-shadow: 0 0 6px rgba(255, 191, 0, 0.8);
+  box-shadow: 0 0 0 2px var(--bezel-deep), 0 0 6px rgba(255, 191, 0, 0.8);
 }
 
 body.mode-pixel-2d .hw-power-indicator {
@@ -1023,19 +1130,22 @@ body.mode-pixel-2d .hw-power-indicator {
 }
 
 body.mode-pixel-2d .hw-power-glyph {
-  display: inline;
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-display);
-  font-size: 11.5px;
+  font-size: 11px;
+  line-height: 1;
   letter-spacing: 0.6px;
   color: var(--text-light);
 }
 
-/* Below-Monitor Pixel Stand, 4x12 Keyboard & Blocky Desk Reflection */
+/* Pixel 2D Monitor Stand, Cable, Lock-LED Keyboard & Desk Reflection */
 body.mode-pixel-2d .pixel2d-lower-rig {
+  flex-shrink: 0;
   display: block;
   width: 100%;
-  max-width: 740px;
-  margin-top: -10px;
+  max-width: 720px;
+  margin-top: -6px;
   pointer-events: none;
 }
 
@@ -1043,7 +1153,7 @@ body.mode-pixel-2d .pixel2d-lower-rig {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 150px;
+  max-height: clamp(64px, 16vh, 148px);
   image-rendering: pixelated;
 }
 
@@ -1052,12 +1162,12 @@ body.mode-pixel-2d .pixel2d-lower-rig {
   transition: fill 0.18s ease;
 }
 
-/* ===== Responsive Breakpoints & Compact Viewports ===== */
+/* ===== Responsive Breakpoints, One-Row Mobile Header & Independent Mobile 3D UI ===== */
 @media (max-width: 1120px) {
   .proto-intro {
-    top: 72px;
-    left: 14px;
-    max-width: 215px;
+    top: 70px;
+    left: 12px;
+    max-width: 210px;
   }
   .proto-desc {
     font-size: 12.5px;
@@ -1071,23 +1181,140 @@ body.mode-pixel-2d .pixel2d-lower-rig {
   }
 }
 
+/* Mobile Phone Breakpoint (<= 639px): Strict 1-row Header + Readable CRT UI */
 @media (max-width: 639px) {
+  .proto-header {
+    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+  }
+
+  .proto-nav {
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .ctrl-btn {
+    padding: 6px 9px;
+    font-size: 11.5px;
+  }
+
+  .lbl-full {
+    display: none;
+  }
+  .lbl-compact {
+    display: inline;
+  }
+
+  .mode-pill {
+    padding: 6px 10px;
+    font-size: 11.5px;
+  }
+
+  .proto-intro {
+    position: static;
+    max-width: 100%;
+    text-align: center;
+    padding: 2px 8px;
+  }
+
+  .proto-title {
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+  }
+
+  .proto-desc {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  /* Compact Pixel 2D hardware margins to keep entire workstation within fixed mobile viewport */
+  body.mode-pixel-2d .proto-main {
+    padding: 4px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+
+  body.mode-pixel-2d .crt-chassis {
+    padding: 5px 7px 7px;
+    border-right-width: 4px;
+    border-bottom-width: 4px;
+    max-height: calc(100% - 76px);
+  }
+
+  body.mode-pixel-2d .pixel2d-top-chrome {
+    margin-bottom: 4px;
+  }
+
+  body.mode-pixel-2d .px-badge-plate {
+    display: none;
+  }
+
+  body.mode-pixel-2d .pixel2d-vents i {
+    width: 6px;
+    height: 4px;
+  }
+
+  body.mode-pixel-2d .screen-overlay {
+    border-width: 7px;
+    min-height: 120px;
+  }
+
+  body.mode-pixel-2d .hw-controls {
+    grid-template-columns: 1fr auto 1fr;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  body.mode-pixel-2d .px-chin-groove {
+    width: 12px;
+  }
+
+  body.mode-pixel-2d .hw-disk-btn {
+    grid-column: 2;
+    justify-self: center;
+    min-width: 112px;
+    padding: 3px 4px;
+  }
+
+  body.mode-pixel-2d .hw-power-btn {
+    grid-column: 3;
+    justify-self: end;
+    padding: 5px 8px;
+  }
+
+  body.mode-pixel-2d .pixel2d-floppy-svg {
+    width: 96px;
+    height: 26px;
+  }
+
+  .pixel2d-rig-svg {
+    max-height: 82px;
+  }
+
+  /* Shared readable screen catalog & dossier typography on mobile (Pixel 2D & Manual 3D) */
+  .screen-content {
+    padding: 8px 9px;
+  }
+
+  .app-menu-header {
+    font-size: 13px;
+  }
+
   .app-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
+    gap: 6px;
   }
 
   .app-tile {
     flex-direction: row;
     justify-content: space-between;
     text-align: left;
-    min-height: 48px;
-    padding: 10px 12px;
+    min-height: 46px;
+    padding: 8px 10px;
   }
 
   .app-index {
     position: static;
     margin-right: 6px;
+    font-size: 11px;
   }
 
   .app-name {
@@ -1095,58 +1322,176 @@ body.mode-pixel-2d .pixel2d-lower-rig {
     font-size: 13.5px;
   }
 
-  body.mode-pixel-2d .crt-chassis {
-    padding: 6px 8px 8px;
+  .app-status {
+    font-size: 11px;
   }
 
-  body.mode-pixel-2d .screen-overlay {
-    border-width: 8px;
-    min-height: clamp(220px, 40dvh, 380px);
+  .dossier-title {
+    font-size: 15px;
   }
 
-  body.mode-pixel-2d .pixel2d-vents i {
-    width: 7px;
+  .dossier-meta {
+    font-size: 13px;
   }
 
-  body.mode-pixel-2d .hw-controls {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 6px;
-  }
-
-  body.mode-pixel-2d .hw-disk-btn {
-    grid-column: 2;
-    justify-self: center;
-    min-width: 112px;
-    padding: 4px 4px;
-  }
-
-  body.mode-pixel-2d .hw-power-btn {
-    grid-column: 3;
-    justify-self: end;
-    padding: 6px 8px;
-  }
-
-  body.mode-pixel-2d .pixel2d-floppy-svg {
-    width: 96px;
-    height: 26px;
+  .dossier-body {
+    font-size: 14px;
+    line-height: 1.5;
   }
 }
 
-@media (max-height: 500px) {
-  body.mode-pixel-2d .pixel2d-lower-rig {
-    max-width: 460px;
+/* Very narrow <= 359px (320x568): Abbreviate Pixel 2D pill visibly to [ 2D ] while full aria-label remains */
+@media (max-width: 359px) {
+  .mode-option[for="mode-radio-2d"] .lbl-compact {
+    display: none;
+  }
+  .mode-option[for="mode-radio-2d"] .lbl-tiny {
+    display: inline;
+  }
+  .mode-pill {
+    padding: 6px 8px;
+  }
+  .proto-intro .proto-desc {
+    display: none;
+  }
+  body.mode-pixel-2d .px-chin-deco--left {
+    display: none;
+  }
+}
+
+/* Narrow Mobile 3D (<= 369px, e.g. 320x568): stack tile labels inside narrow projected aperture */
+@media (max-width: 369px) {
+  body.mode-3d .app-grid {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  body.mode-3d .app-tile {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 6px 6px;
+  }
+  body.mode-3d .app-index {
+    margin-right: 0;
+  }
+  body.mode-3d .app-name {
+    flex: 0 1 auto;
+    width: 100%;
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Mobile 3D wide-grid helper (2-column tiles when 370-639px aperture width permits tighter menu scroll) */
+@media (max-width: 639px) and (min-width: 370px) {
+  body.mode-3d .app-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+  body.mode-3d .app-tile {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 0;
+    min-height: 52px;
+    padding: 6px 4px;
+  }
+  body.mode-3d .app-index {
+    margin-right: 0;
+  }
+  body.mode-3d .app-name {
+    font-size: 13px;
+  }
+}
+
+@media (max-height: 640px) {
+  .proto-intro .proto-desc {
+    display: none;
+  }
+  body.mode-pixel-2d .crt-chassis {
+    max-height: calc(100% - 68px);
   }
   .pixel2d-rig-svg {
-    max-height: 76px;
+    max-height: 64px;
+  }
+}
+
+/* Short Landscape Phones & High Zoom */
+@media (max-height: 480px) {
+  .proto-intro {
+    display: none;
+  }
+  body.mode-pixel-2d .crt-chassis {
+    padding: 4px 6px 6px;
+    max-height: calc(100% - 48px);
+  }
+  body.mode-pixel-2d .screen-overlay {
+    min-height: 92px;
+    border-width: 5px;
+  }
+  body.mode-pixel-2d .hw-controls {
+    margin-top: 3px;
+  }
+  .pixel2d-rig-svg {
+    max-height: 44px;
+  }
+  body.mode-3d .app-grid {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  body.mode-3d .app-tile {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    gap: 6px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 5px 7px;
+  }
+  body.mode-3d .app-name {
+    font-size: 11px;
+    line-height: 1.25;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-height: 480px) and (min-width: 720px) {
+  body.mode-3d .app-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  body.mode-3d .app-tile {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  body.mode-3d .app-index {
+    margin-right: 0;
+  }
+}
+
+@media (max-height: 300px) {
+  body.mode-pixel-2d .proto-intro,
+  body.mode-pixel-2d .pixel2d-lower-rig {
+    display: none;
+  }
+  body.mode-pixel-2d .crt-chassis {
+    max-height: 100%;
   }
 }
 
 /* ===== Development Performance HUD (?debug=1 only) ===== */
 .perf-hud {
   position: fixed;
-  right: 12px;
-  bottom: 12px;
+  right: 10px;
+  bottom: 10px;
   z-index: 300;
   background: rgba(10, 12, 16, 0.92);
   border: 1px solid rgba(0, 229, 255, 0.45);

@@ -8,6 +8,19 @@ const INITIAL_PIXEL_MODE = ['smooth', 'quantized', 'lowres75', 'lowres50'].inclu
   ? params.get('pixel3d')
   : 'smooth';
 
+const EMBED_CONFIG = {
+  virtualDesktopWidth: 980,
+  minApertureW: 600,
+  minApertureH: 380,
+  loadTimeoutMs: 8000,
+  allowUrlOverride: true,
+};
+const rawEmbedWidthParam = params.get('embedw');
+const EMBED_WIDTH_OVERRIDE = EMBED_CONFIG.allowUrlOverride &&
+  (rawEmbedWidthParam === '980' || rawEmbedWidthParam === '100%' || rawEmbedWidthParam === 'auto')
+  ? rawEmbedWidthParam
+  : 'auto';
+
 const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 const coarseQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
 
@@ -134,7 +147,7 @@ const STATE_GLOW_HEX = {
   off: '#122014',
 };
 
-let currentView = 'standby'; // 'standby' | 'boot' | 'menu' | 'dossier' | 'restarting'
+let currentView = 'standby'; // 'standby' | 'boot' | 'menu' | 'dossier' | 'embed' | 'restarting'
 let preDossierView = 'menu';
 let lastTriggerAppId = null;
 let lastTriggerSource = 'catalog';
@@ -142,6 +155,8 @@ let activeTimers = [];
 let bootDone = false;
 let isRestarting = false;
 let modeSwitchTimer = null;
+let activeEmbedState = null;
+let lastEmbedReloadCount = 0;
 
 // Floppy bay state machine + 6-frame Pixel 2D stepper
 let drivePhase = 'closed'; // 'closed' | 'intent' | 'opening' | 'open'
@@ -208,6 +223,9 @@ function applyPixelSceneProjection(frame) {
     cs.setProperty('--power-vis-w', `${frame.powerVis.w.toFixed(2)}px`);
     cs.setProperty('--power-vis-h', `${frame.powerVis.h.toFixed(2)}px`);
   }
+  if (currentView === 'embed' && activeEmbedState) {
+    updateEmbedViewportMode(frame.screenRect);
+  }
 }
 
 function setPixelScenePose(poseName, immediate = false) {
@@ -261,10 +279,30 @@ function focusSafely(el) {
 }
 
 function readViewportMetrics() {
+  const docEl = document.documentElement;
+  const layoutW = Math.max(1, Math.round(docEl?.clientWidth || window.innerWidth));
+  const layoutH = Math.max(1, Math.round(window.innerHeight || docEl?.clientHeight));
   const vv = window.visualViewport;
-  const w = Math.max(1, Math.round(vv ? vv.width : window.innerWidth));
-  const h = Math.max(1, Math.round(vv ? vv.height : window.innerHeight));
-  return { w, h };
+  const visualScale = vv && typeof vv.scale === 'number' ? vv.scale : 1;
+  const visualW = Math.max(1, Math.round(vv ? vv.width : layoutW));
+  const visualH = Math.max(1, Math.round(vv ? vv.height : layoutH));
+  const visualOffsetLeft = vv ? +(vv.offsetLeft || 0).toFixed(2) : 0;
+  const visualOffsetTop = vv ? +(vv.offsetTop || 0).toFixed(2) : 0;
+  const isScaled = Boolean(vv) && Math.abs(visualScale - 1) >= 0.02;
+  const w = isScaled ? layoutW : (vv ? visualW : layoutW);
+  const h = isScaled ? layoutH : (vv ? visualH : layoutH);
+  return {
+    w,
+    h,
+    layoutW,
+    layoutH,
+    visualW,
+    visualH,
+    visualScale: +visualScale.toFixed(3),
+    visualOffsetLeft,
+    visualOffsetTop,
+    isScaled,
+  };
 }
 
 function isCompactViewport() {
@@ -469,8 +507,19 @@ function tickPixel2dLoop(now) {
     if (rawT >= 1) {
       pixelCamCurrent = to;
       pixelCamTween = null;
+      if (currentView === 'embed') {
+        pixelEnv.renderStatic();
+        stopPixel2dLoop('embed-paused (0 FPS)');
+        return;
+      }
       renderDebugHud();
     }
+  }
+
+  if (currentView === 'embed' && !pixelCamTween) {
+    pixelEnv.renderStatic();
+    stopPixel2dLoop('embed-paused (0 FPS)');
+    return;
   }
 
   if (!pixelCamTween && now - pixel2dActivityMs > 10000) {
@@ -501,6 +550,11 @@ function startOrResumePixel2dLoop() {
     stopPixel2dLoop('reduced-motion (0 FPS)');
     return;
   }
+  if (currentView === 'embed' && !pixelCamTween) {
+    pixelEnv.renderStatic();
+    stopPixel2dLoop('embed-paused (0 FPS)');
+    return;
+  }
   if (!pixel2dRafId) {
     pixel2dLastMs = performance.now();
     pixel2dStateText = 'pixel2d-active (13.5 FPS)';
@@ -510,7 +564,7 @@ function startOrResumePixel2dLoop() {
 
 function recordUserActivity() {
   pixel2dActivityMs = performance.now();
-  if (displayMode === '2d' && !pixel2dRafId && !reducedMotion && !document.hidden) {
+  if (displayMode === '2d' && !pixel2dRafId && !reducedMotion && !document.hidden && (currentView !== 'embed' || pixelCamTween)) {
     startOrResumePixel2dLoop();
   }
 }
@@ -535,6 +589,7 @@ function renderDebugHud(sceneMetrics = null) {
       };
 
   const effQuality = displayMode === '2d' ? 'low' : resolve3dQualityTier();
+  const vpDebug = readViewportMetrics();
   window.__explore3dMetrics = {
     displayMode,
     effectiveQuality: effQuality,
@@ -545,6 +600,21 @@ function renderDebugHud(sceneMetrics = null) {
     coarsePointer,
     currentView,
     drivePhase,
+    viewport: vpDebug,
+    embed: currentView === 'embed' && activeEmbedState
+      ? {
+          active: true,
+          loaded: activeEmbedState.loaded,
+          failed: activeEmbedState.failed,
+          src: activeEmbedState.currentSrc,
+          docWidthSetting: activeEmbedState.docWidthSetting,
+          panActive: activeEmbedState.panActive,
+          reloadCount: activeEmbedState.reloadCount,
+        }
+      : {
+          active: false,
+          reloadCount: lastEmbedReloadCount,
+        },
     ...m,
   };
 
@@ -596,6 +666,11 @@ async function ensureWebGL() {
         }
       },
       metricsCb: renderDebugHud,
+      projectionCb(scr) {
+        if (displayMode === '3d' && currentView === 'embed' && activeEmbedState) {
+          updateEmbedViewportMode(scr);
+        }
+      },
     });
     return true;
   } catch (err) {
@@ -645,10 +720,17 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     closeFloppyTray(true);
   }
 
-  const poseName = currentView === 'boot' ? 'boot' : currentView === 'standby' || currentView === 'restarting' ? 'standby' : 'menu';
+  const poseName = currentView === 'embed'
+    ? 'embed'
+    : currentView === 'boot'
+      ? 'boot'
+      : currentView === 'standby' || currentView === 'restarting'
+        ? 'standby'
+        : 'menu';
 
   if (displayMode === '2d') {
     if (webglScene) {
+      webglScene.setEmbedMode(false);
       webglScene.setActive(false);
       webglScene.setQuality('low');
     }
@@ -657,6 +739,9 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     canvasEl.setAttribute('data-active', 'false');
     pixelEnv.renderStatic();
     setPixelScenePose(poseName, true);
+    if (currentView === 'embed') {
+      updateEmbedViewportMode();
+    }
     startOrResumePixel2dLoop();
   } else {
     stopPixel2dLoop('inactive (3D mode)');
@@ -665,22 +750,27 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
       applyDisplayMode('2d', { manual: false, announceChange: false, immediate: true });
       return;
     }
+    document.body.classList.remove('mode-pixel-2d');
+    document.body.classList.add('mode-3d');
+    canvasEl.setAttribute('data-active', 'true');
     webglScene.setActive(true);
     webglScene.setReducedMotion(reducedMotion);
     webglScene.setQuality(resolve3dQualityTier());
+    webglScene.setEmbedMode(currentView === 'embed');
     webglScene.syncBeforeShow(poseName);
     let targetLight = 'menu';
     if (currentView === 'standby') targetLight = 'standby';
     else if (currentView === 'restarting') targetLight = 'paused';
+    else if (currentView === 'embed') targetLight = 'live';
     else if (currentView === 'dossier') {
       if (lastTriggerAppId === 'devpath') targetLight = 'paused';
       else if (lastTriggerAppId === 'professional' || lastTriggerAppId === 'sandbox') targetLight = 'live';
     }
     setScreenLightState(targetLight);
     webglScene.renderSingleFrame();
-    document.body.classList.remove('mode-pixel-2d');
-    document.body.classList.add('mode-3d');
-    canvasEl.setAttribute('data-active', 'true');
+    if (currentView === 'embed') {
+      updateEmbedViewportMode();
+    }
   }
 
   if (prevFocus && document.body.contains(prevFocus) && document.activeElement !== prevFocus) {
@@ -716,6 +806,9 @@ function applyNoWebglUI() {
 // ---- Shared Screen States (Layer 3) ----
 function renderStandby(restoreFocus = false) {
   clearActiveTimers();
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
   currentView = 'standby';
   isRestarting = false;
   hwPowerBtn.disabled = false;
@@ -759,6 +852,9 @@ function startWorkstation() {
 
 function renderBoot() {
   clearActiveTimers();
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
   currentView = 'boot';
   bootDone = false;
   const lines = [
@@ -844,6 +940,9 @@ function getGridRows(gridItems) {
 
 function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   clearActiveTimers();
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
   currentView = 'menu';
   document.body.classList.add('is-powered');
   if (displayMode === '3d' && webglScene) {
@@ -900,7 +999,11 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
       lastTriggerSource = 'catalog';
       lastTriggerAppId = id;
       preDossierView = 'menu';
-      renderDossier(id);
+      if (id === 'professional') {
+        renderProfessionalEmbed();
+      } else {
+        renderDossier(id);
+      }
     });
   });
 
@@ -955,7 +1058,396 @@ function renderMenu({ shouldFocus = false, focusAppId = null } = {}) {
   renderDebugHud();
 }
 
+function readCurrentScreenApertureRect() {
+  const w = parseFloat(chassisEl.style.getPropertyValue('--screen-w'));
+  const h = parseFloat(chassisEl.style.getPropertyValue('--screen-h'));
+  if (Number.isFinite(w) && Number.isFinite(h) && w > 10 && h > 10) {
+    return { w, h };
+  }
+  const r = overlayEl.getBoundingClientRect();
+  return { w: r.width, h: r.height };
+}
+
+function updateEmbedPanState() {
+  if (currentView !== 'embed' || !activeEmbedState || activeEmbedState.failed) return;
+  const { viewportEl, stageEl, statusLabelEl, srHintEl, loaded } = activeEmbedState;
+  const horizRange = Math.max(0, viewportEl.scrollWidth - viewportEl.clientWidth);
+  const hasPan = loaded && horizRange > 2;
+  activeEmbedState.panActive = hasPan;
+  stageEl.classList.toggle('has-pan', hasPan);
+  if (hasPan) {
+    const atEnd = viewportEl.scrollLeft + viewportEl.clientWidth >= viewportEl.scrollWidth - 4;
+    stageEl.classList.toggle('is-pan-end', atEnd);
+    statusLabelEl.textContent = 'LIVE PREVIEW · PAN ⇄ ⇅';
+    srHintEl.textContent = 'Professional Portfolio preview. Scroll horizontally and vertically to explore. Use Return to Catalog or press Escape to exit. Use Open Full Site to view the portfolio in the full browser window.';
+  } else if (loaded) {
+    stageEl.classList.remove('is-pan-end');
+    statusLabelEl.textContent = 'LIVE PREVIEW';
+    srHintEl.textContent = 'Professional Portfolio preview. Use Return to Catalog or press Escape to exit. Use Open Full Site to view the portfolio in the full browser window.';
+  }
+}
+
+function updateEmbedViewportMode(knownScreenRect = null) {
+  if (currentView !== 'embed' || !activeEmbedState) return;
+  const screenRect = knownScreenRect || readCurrentScreenApertureRect();
+  let docWidth;
+  if (EMBED_WIDTH_OVERRIDE === '980') {
+    docWidth = `${Math.max(Math.round(screenRect.w), EMBED_CONFIG.virtualDesktopWidth)}px`;
+  } else if (EMBED_WIDTH_OVERRIDE === '100%') {
+    docWidth = '100%';
+  } else {
+    const useDesktopVirtualWidth =
+      !coarsePointer &&
+      screenRect.w >= EMBED_CONFIG.minApertureW &&
+      screenRect.h >= EMBED_CONFIG.minApertureH;
+    docWidth = useDesktopVirtualWidth
+      ? `${Math.max(Math.round(screenRect.w), EMBED_CONFIG.virtualDesktopWidth)}px`
+      : '100%';
+  }
+  if (activeEmbedState.docWidthSetting !== docWidth) {
+    activeEmbedState.docWidthSetting = docWidth;
+    activeEmbedState.rootEl.style.setProperty('--embed-doc-w', docWidth);
+  }
+  requestAnimationFrame(() => updateEmbedPanState());
+}
+
+function teardownProfessionalEmbed() {
+  if (!activeEmbedState) return;
+  const state = activeEmbedState;
+  lastEmbedReloadCount = state.reloadCount;
+  activeEmbedState = null;
+  if (state.timeoutId) {
+    clearTimeout(state.timeoutId);
+    state.timeoutId = null;
+  }
+  if (typeof state.cleanupDocListeners === 'function') {
+    state.cleanupDocListeners();
+    state.cleanupDocListeners = null;
+  }
+  if (state.viewportEl && state.onViewportScroll) {
+    state.viewportEl.removeEventListener('scroll', state.onViewportScroll);
+  }
+  if (state.frame) {
+    try {
+      state.frame.src = 'about:blank';
+    } catch {}
+    state.frame.remove();
+  }
+  if (state.rootEl && state.rootEl.parentNode) {
+    state.rootEl.remove();
+  }
+}
+
+function returnFromEmbedToCatalog() {
+  if (currentView !== 'embed') return;
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
+  renderMenu({ shouldFocus: true, focusAppId: 'professional' });
+  announce('Returned to Explore CRT catalog.');
+}
+
+function bindEmbeddedDocumentBridges(state) {
+  if (typeof state.cleanupDocListeners === 'function') {
+    state.cleanupDocListeners();
+    state.cleanupDocListeners = null;
+  }
+  let win = null;
+  let doc = null;
+  try {
+    win = state.frame.contentWindow;
+    doc = state.frame.contentDocument;
+  } catch {
+    return;
+  }
+  if (!win || !doc) return;
+
+  const hasInnerInteractiveOpen = () => Boolean(
+    doc.querySelector('dialog[open], .tool-takeover.is-active, .tool-card.is-inline-open, .media-lightbox[open]')
+  );
+
+  // Track inner modal/disclosure state before same-origin Escape handlers mutate the DOM synchronously
+  let innerEscapeWasOpen = false;
+  const onWinKeyDownCapture = (e) => {
+    if (e.key === 'Escape') {
+      innerEscapeWasOpen = hasInnerInteractiveOpen();
+    }
+  };
+  const onWinKeyDownBubble = (e) => {
+    if (e.key !== 'Escape') return;
+    const consumeInner = innerEscapeWasOpen;
+    innerEscapeWasOpen = false;
+    if (consumeInner || e.defaultPrevented || hasInnerInteractiveOpen()) return;
+    e.preventDefault();
+    returnFromEmbedToCatalog();
+  };
+
+  // Intercept clicks on Explore CRT Hub links to prevent recursive framing of /explore/
+  const onDocClickCapture = (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const anchor = e.target && typeof e.target.closest === 'function' ? e.target.closest('a[href]') : null;
+    if (!anchor) return;
+    const rawHref = anchor.getAttribute('href') || '';
+    if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('mailto:')) return;
+    let parsed = null;
+    try {
+      parsed = new URL(anchor.href, window.location.origin);
+    } catch {
+      return;
+    }
+    const isExploreTarget =
+      anchor.classList.contains('hdr-explore') ||
+      (parsed.origin === window.location.origin && /^\/explore(\/|$)/i.test(parsed.pathname));
+    if (isExploreTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+      returnFromEmbedToCatalog();
+    }
+  };
+
+  win.addEventListener('keydown', onWinKeyDownCapture, true);
+  win.addEventListener('keydown', onWinKeyDownBubble, false);
+  doc.addEventListener('click', onDocClickCapture, true);
+
+  state.cleanupDocListeners = () => {
+    try {
+      win.removeEventListener('keydown', onWinKeyDownCapture, true);
+      win.removeEventListener('keydown', onWinKeyDownBubble, false);
+      doc.removeEventListener('click', onDocClickCapture, true);
+    } catch {}
+  };
+}
+
+function renderProfessionalEmbed() {
+  clearActiveTimers();
+  teardownProfessionalEmbed();
+  currentView = 'embed';
+  closeFloppyTray(true);
+  document.body.classList.add('is-powered');
+
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setEmbedMode(true);
+    webglScene.setCameraState('embed');
+  } else {
+    setPixelScenePose('embed');
+  }
+  setScreenLightState('live');
+
+  screenContentEl.classList.add('is-embed-active');
+  screenContentEl.scrollTop = 0;
+  screenContentEl.innerHTML = `
+    <div id="professional-embed" class="professional-embed" role="region" aria-label="Professional Portfolio CRT preview">
+      <div class="professional-embed__toolbar">
+        <button type="button" id="embed-return-btn" class="embed-ctrl-btn embed-ctrl-btn--return" aria-label="Return to Catalog">
+          <span class="lbl-full">◂ RETURN TO CATALOG</span>
+          <span class="lbl-compact" aria-hidden="true">◂ CATALOG</span>
+        </button>
+
+        <span id="embed-status-label" class="professional-embed__status" aria-live="polite">LIVE PREVIEW</span>
+
+        <a id="embed-open-full-link" class="embed-ctrl-btn embed-ctrl-btn--open" href="/" target="_top" aria-label="Open full Professional Portfolio">
+          <span class="lbl-full">OPEN FULL SITE ↗</span>
+          <span class="lbl-compact" aria-hidden="true">FULL SITE ↗</span>
+        </a>
+      </div>
+
+      <p id="embed-sr-hint" class="sr-only">
+        Professional Portfolio preview. Use Return to Catalog or press Escape to exit. Use Open Full Site to view the portfolio in the full browser window.
+      </p>
+
+      <div id="embed-stage" class="professional-embed__stage">
+        <div id="embed-viewport" class="professional-embed__viewport"></div>
+        <div id="embed-loading" class="professional-embed__loading" role="status">
+          <p class="professional-embed__loading-text">LOADING PROFESSIONAL PORTFOLIO ...</p>
+        </div>
+        <div id="embed-fallback" class="professional-embed__fallback" hidden>
+          <p class="professional-embed__fallback-title">Professional Portfolio preview is unavailable.</p>
+          <div class="professional-embed__fallback-actions">
+            <button type="button" id="embed-retry-btn" class="embed-ctrl-btn embed-ctrl-btn--return">RETRY</button>
+            <a id="embed-fallback-open-link" class="embed-ctrl-btn embed-ctrl-btn--open" href="/" target="_top" aria-label="Open full Professional Portfolio">OPEN FULL SITE ↗</a>
+            <button type="button" id="embed-fallback-return-btn" class="embed-ctrl-btn embed-ctrl-btn--return">RETURN TO CATALOG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const rootEl = document.getElementById('professional-embed');
+  const stageEl = document.getElementById('embed-stage');
+  const viewportEl = document.getElementById('embed-viewport');
+  const loadingEl = document.getElementById('embed-loading');
+  const fallbackEl = document.getElementById('embed-fallback');
+  const statusLabelEl = document.getElementById('embed-status-label');
+  const srHintEl = document.getElementById('embed-sr-hint');
+  const returnBtn = document.getElementById('embed-return-btn');
+  const openFullLink = document.getElementById('embed-open-full-link');
+  const retryBtn = document.getElementById('embed-retry-btn');
+  const fallbackReturnBtn = document.getElementById('embed-fallback-return-btn');
+
+  const state = {
+    rootEl,
+    stageEl,
+    viewportEl,
+    loadingEl,
+    fallbackEl,
+    statusLabelEl,
+    srHintEl,
+    returnBtn,
+    openFullLink,
+    frame: null,
+    currentSrc: '/',
+    fallbackTried: false,
+    loaded: false,
+    failed: false,
+    timeoutId: null,
+    cleanupDocListeners: null,
+    onViewportScroll: null,
+    reloadCount: 0,
+    docWidthSetting: '100%',
+    panActive: false,
+  };
+  activeEmbedState = state;
+  lastEmbedReloadCount = 0;
+
+  state.onViewportScroll = () => updateEmbedPanState();
+  viewportEl.addEventListener('scroll', state.onViewportScroll, { passive: true });
+
+  returnBtn.addEventListener('click', returnFromEmbedToCatalog);
+  fallbackReturnBtn.addEventListener('click', returnFromEmbedToCatalog);
+  rootEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      returnFromEmbedToCatalog();
+    }
+  });
+
+  const showFailure = () => {
+    if (activeEmbedState !== state) return;
+    if (state.timeoutId) {
+      clearTimeout(state.timeoutId);
+      state.timeoutId = null;
+    }
+    state.failed = true;
+    state.loaded = false;
+    loadingEl.hidden = true;
+    fallbackEl.hidden = false;
+    statusLabelEl.textContent = 'UNAVAILABLE';
+    announce('Professional Portfolio preview is unavailable.');
+    renderDebugHud();
+  };
+
+  const armTimeout = () => {
+    if (state.timeoutId) clearTimeout(state.timeoutId);
+    state.timeoutId = setTimeout(() => {
+      if (activeEmbedState === state && !state.loaded) {
+        showFailure();
+      }
+    }, EMBED_CONFIG.loadTimeoutMs);
+  };
+
+  const attachFrame = (initialSrc) => {
+    if (state.frame) {
+      try { state.frame.src = 'about:blank'; } catch {}
+      state.frame.remove();
+    }
+    if (typeof state.cleanupDocListeners === 'function') {
+      state.cleanupDocListeners();
+      state.cleanupDocListeners = null;
+    }
+    state.loaded = false;
+    state.failed = false;
+    state.currentSrc = initialSrc;
+    loadingEl.hidden = false;
+    fallbackEl.hidden = true;
+    announce('Loading Professional Portfolio preview.');
+
+    const frame = document.createElement('iframe');
+    frame.id = 'professional-embed-frame';
+    frame.className = 'professional-embed__frame';
+    frame.title = 'Professional Portfolio preview';
+    frame.src = initialSrc;
+    state.frame = frame;
+
+    frame.addEventListener('load', () => {
+      if (activeEmbedState !== state || state.frame !== frame) return;
+      state.reloadCount += 1;
+      lastEmbedReloadCount = state.reloadCount;
+
+      let doc = null;
+      let locPath = '';
+      try {
+        doc = frame.contentDocument;
+        locPath = frame.contentWindow?.location?.pathname || '';
+      } catch {
+        showFailure();
+        return;
+      }
+
+      if (locPath && /^\/explore(\/|$)/i.test(locPath)) {
+        returnFromEmbedToCatalog();
+        return;
+      }
+
+      const isValidPortfolio = Boolean(doc && doc.getElementById('main') && doc.getElementById('hdr'));
+      if (!isValidPortfolio) {
+        if (!state.fallbackTried && (locPath === '/' || locPath === '/index.html' || state.currentSrc === '/')) {
+          state.fallbackTried = true;
+          state.currentSrc = '/professional/index.html';
+          armTimeout();
+          frame.src = '/professional/index.html';
+          return;
+        }
+        showFailure();
+        return;
+      }
+
+      if (state.timeoutId) {
+        clearTimeout(state.timeoutId);
+        state.timeoutId = null;
+      }
+      state.loaded = true;
+      state.failed = false;
+      loadingEl.hidden = true;
+      fallbackEl.hidden = true;
+      bindEmbeddedDocumentBridges(state);
+      viewportEl.scrollLeft = 0;
+      updateEmbedViewportMode();
+      announce('Professional Portfolio preview loaded.');
+      renderDebugHud();
+    });
+
+    frame.addEventListener('error', () => {
+      if (activeEmbedState !== state || state.frame !== frame) return;
+      if (!state.fallbackTried && state.currentSrc === '/') {
+        state.fallbackTried = true;
+        state.currentSrc = '/professional/index.html';
+        armTimeout();
+        frame.src = '/professional/index.html';
+        return;
+      }
+      showFailure();
+    });
+
+    armTimeout();
+    viewportEl.appendChild(frame);
+  };
+
+  retryBtn.addEventListener('click', () => {
+    state.fallbackTried = false;
+    attachFrame('/');
+    focusSafely(returnBtn);
+  });
+
+  updateEmbedViewportMode();
+  attachFrame('/');
+  focusSafely(returnBtn);
+  renderDebugHud();
+}
+
 function renderDossier(appId) {
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
   currentView = 'dossier';
   if (displayMode === '3d' && webglScene) {
     webglScene.setCameraState('menu');
@@ -1029,6 +1521,9 @@ function triggerRestart() {
   }
 
   clearActiveTimers();
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
   closeFloppyTray(true);
   isRestarting = true;
   hwPowerBtn.disabled = true;
@@ -1218,17 +1713,32 @@ if (coarseQuery && typeof coarseQuery.addEventListener === 'function') {
 
 let lastAppliedVpW = 0;
 let lastAppliedVpH = 0;
+let lastAppliedScale = 1;
 let vpDebounceTimer = null;
+let settledProjRafId = null;
+
+function applySettledProjection(w, h) {
+  if (displayMode === '3d' && webglScene) {
+    webglScene.setQuality(resolve3dQualityTier());
+    webglScene.resizeViewport(w, h);
+  } else if (displayMode === '2d') {
+    setPixelScenePose(pixelPoseTarget, true);
+  }
+}
 
 function syncAppViewportHeight(force = false) {
-  const { w, h } = readViewportMetrics();
+  const vp = readViewportMetrics();
+  const { w, h, layoutH, visualScale, isScaled } = vp;
+  const appH = isScaled ? layoutH : h;
   const dW = Math.abs(w - lastAppliedVpW);
-  const dH = Math.abs(h - lastAppliedVpH);
-  if (!force && dW < 3 && dH < 3) return;
+  const dH = Math.abs(appH - lastAppliedVpH);
+  const dScale = Math.abs(visualScale - lastAppliedScale);
+  if (!force && dW < 2 && dH < 2 && dScale < 0.02) return;
   lastAppliedVpW = w;
-  lastAppliedVpH = h;
-  document.documentElement.style.setProperty('--app-height', `${h}px`);
-  if (window.scrollY !== 0 || window.scrollX !== 0) {
+  lastAppliedVpH = appH;
+  lastAppliedScale = visualScale;
+  document.documentElement.style.setProperty('--app-height', `${appH}px`);
+  if (!isScaled && visualScale <= 1.01 && (window.scrollY !== 0 || window.scrollX !== 0)) {
     window.scrollTo(0, 0);
   }
   if (!storedManualMode) {
@@ -1238,12 +1748,16 @@ function syncAppViewportHeight(force = false) {
       return;
     }
   }
-  if (displayMode === '3d' && webglScene) {
-    webglScene.setQuality(resolve3dQualityTier());
-    webglScene.resizeViewport(w, h);
-  } else if (displayMode === '2d') {
-    setPixelScenePose(pixelPoseTarget, true);
+  if (force) {
+    applySettledProjection(w, h);
+    return;
   }
+  if (settledProjRafId) cancelAnimationFrame(settledProjRafId);
+  settledProjRafId = requestAnimationFrame(() => {
+    settledProjRafId = null;
+    const settled = readViewportMetrics();
+    applySettledProjection(settled.w, settled.h);
+  });
 }
 
 function onViewportChangedDebounced() {
@@ -1258,6 +1772,8 @@ window.addEventListener('resize', onViewportChangedDebounced, { passive: true })
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', onViewportChangedDebounced, { passive: true });
   window.visualViewport.addEventListener('scroll', () => {
+    const vv = window.visualViewport;
+    if (vv && (vv.scale || 1) > 1.01) return;
     if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
   }, { passive: true });
 }

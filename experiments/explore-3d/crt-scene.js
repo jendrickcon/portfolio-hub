@@ -16,22 +16,28 @@ export const CAMERA_POSES = {
     standby: { pos: [0, 1.08, 3.45], target: [0, 0.68, 0.08], fov: 35, durationMs: 850 },
     boot: { pos: [0, 1.24, 2.84], target: [0, 0.80, 0.12], fov: 35, durationMs: 750 },
     menu: { pos: [0, 1.02, 2.60], target: [0, 0.90, 0.14], fov: 35, durationMs: 650 },
+    embed: { pos: [0, 0.88, 2.13], target: [0, 0.77, 0.14], fov: 35, durationMs: 600 },
   },
   mobilePortrait: {
     standby: { pos: [0, 1.28, 5.75], target: [0, 0.72, 0.08], fov: 42, durationMs: 700 },
     boot: { pos: [0, 1.32, 5.30], target: [0, 0.82, 0.12], fov: 42, durationMs: 650 },
     menu: { pos: [0, 1.06, 5.40], target: [0, 0.86, 0.14], fov: 42, durationMs: 600 },
+    embed: { pos: [0, 0.90, 4.35], target: [0, 0.77, 0.14], fov: 42, durationMs: 550 },
   },
   mobileLandscape: {
     standby: { pos: [0, 1.05, 4.05], target: [0, 0.70, 0.08], fov: 42, durationMs: 700 },
     boot: { pos: [0, 1.18, 3.45], target: [0, 0.82, 0.12], fov: 42, durationMs: 650 },
     menu: { pos: [0, 0.98, 3.15], target: [0, 0.86, 0.14], fov: 42, durationMs: 600 },
+    embed: { pos: [0, 0.86, 2.52], target: [0, 0.76, 0.14], fov: 42, durationMs: 550 },
   },
 };
 
 function getPoseProfile(vw, vh, coarse) {
+  if (vw < vh) {
+    return CAMERA_POSES.mobilePortrait;
+  }
   if (vw <= 639 || vh <= 560 || coarse) {
-    return vw > vh && vh <= 560 ? CAMERA_POSES.mobileLandscape : CAMERA_POSES.mobilePortrait;
+    return CAMERA_POSES.mobileLandscape;
   }
   return CAMERA_POSES.desktop;
 }
@@ -520,8 +526,10 @@ export async function createCrtScene({
   let slowFrameSamples = [];
   let uploadTimestamps = [];
   let isActive = true;
+  let embedMode = false;
   let onAutoDowngrade = null;
   let onMetrics = null;
+  let onProjection = null;
 
   function applyPixelMode(nextMode) {
     pixelMode = nextMode || 'smooth';
@@ -588,7 +596,7 @@ export async function createCrtScene({
     const useShadow = quality === 'high';
     renderer.shadowMap.enabled = useShadow;
     keyLight.castShadow = useShadow;
-    dustPoints.visible = quality === 'high' && !isReduced;
+    dustPoints.visible = quality === 'high' && !isReduced && !embedMode;
 
     if (quality === 'low' || isReduced) {
       if (rafId) {
@@ -613,9 +621,9 @@ export async function createCrtScene({
     requestFrameOrLoop();
   }
 
-  function projectBox(tlObj, brObj, minW, minH, pad = 0) {
-    const vw = Math.max(1, lastViewportW);
-    const vh = Math.max(1, lastViewportH);
+  function projectBox(tlObj, brObj, minW = 0, minH = 0, pad = 0) {
+    const vw = Math.max(1, (canvas && canvas.clientWidth > 10 ? canvas.clientWidth : lastViewportW));
+    const vh = Math.max(1, (canvas && canvas.clientHeight > 10 ? canvas.clientHeight : lastViewportH));
     const midY = (tlObj.position.y + brObj.position.y) * 0.5;
     const midZ = (tlObj.position.z + brObj.position.z) * 0.5;
     const pMidL = new THREE.Vector3(tlObj.position.x, midY, midZ);
@@ -651,7 +659,7 @@ export async function createCrtScene({
 
   function updateAllProjections() {
     if (!overlayContainer || !isActive || quality === 'low') return;
-    const scr = projectBox(cornerTL, cornerBR, 180, 140, 0);
+    const scr = projectBox(cornerTL, cornerBR, 0, 0, 0);
     overlayContainer.style.setProperty('--screen-x', `${scr.x}px`);
     overlayContainer.style.setProperty('--screen-y', `${scr.y}px`);
     overlayContainer.style.setProperty('--screen-w', `${scr.w}px`);
@@ -668,6 +676,8 @@ export async function createCrtScene({
     overlayContainer.style.setProperty('--disk-hit-y', `${disk.y}px`);
     overlayContainer.style.setProperty('--disk-hit-w', `${disk.w}px`);
     overlayContainer.style.setProperty('--disk-hit-h', `${disk.h}px`);
+
+    if (onProjection) onProjection(scr);
   }
 
   function applyFloppyPose(progress) {
@@ -724,7 +734,7 @@ export async function createCrtScene({
     const poseSet = getPoseProfile(vp.w, vp.h, isCoarse);
     const pose = poseSet[poseName] || poseSet.menu;
     currentPoseName = poseName;
-    metrics.cameraPose = `${vp.w <= 639 || vp.h <= 560 || isCoarse ? 'mobile-' : ''}${poseName}`;
+    metrics.cameraPose = `${vp.w < vp.h || vp.w <= 639 || vp.h <= 560 || isCoarse ? 'mobile-' : ''}${poseName}`;
     goalCamPos.set(...pose.pos);
     goalLookAt.set(...pose.target);
     goalFov = pose.fov;
@@ -792,8 +802,16 @@ export async function createCrtScene({
       lastActiveMs = now;
     }
 
-    const settleDelay = quality === 'mobile' ? 400 : 2600;
+    const settleDelay = embedMode ? 120 : quality === 'mobile' ? 400 : 2600;
     const isIdle = !cameraTweening && !floppyMoving && !lightSettling && (now - lastActiveMs > settleDelay);
+
+    if (embedMode && isIdle) {
+      dustPoints.visible = false;
+      metrics.loopState = 'embed-asleep (0 FPS)';
+      metrics.fps = 0;
+      if (onMetrics) onMetrics(metrics);
+      return;
+    }
 
     if ((quality === 'medium' || quality === 'mobile') && isIdle) {
       metrics.loopState = 'idle-asleep (0 FPS)';
@@ -961,6 +979,18 @@ export async function createCrtScene({
         rafId = null;
       }
     },
+    setEmbedMode(val) {
+      embedMode = Boolean(val);
+      dustPoints.visible = quality === 'high' && !isReduced && !embedMode;
+      if (!embedMode && isActive && !isReduced && quality !== 'low') {
+        lastActiveMs = performance.now();
+        requestFrameOrLoop();
+      } else if (embedMode && !cameraTweening && !rafId) {
+        metrics.loopState = 'embed-asleep (0 FPS)';
+        metrics.fps = 0;
+        if (onMetrics) onMetrics(metrics);
+      }
+    },
     setQuality(nextQ) {
       applyQualitySettings(nextQ);
     },
@@ -976,7 +1006,7 @@ export async function createCrtScene({
     },
     setReducedMotion(val) {
       isReduced = Boolean(val);
-      dustPoints.visible = quality === 'high' && !isReduced;
+      dustPoints.visible = quality === 'high' && !isReduced && !embedMode;
       if (isReduced) {
         if (rafId) {
           cancelAnimationFrame(rafId);
@@ -1003,9 +1033,10 @@ export async function createCrtScene({
     setCameraState,
     setScreenState,
     setFloppyState,
-    setCallbacks({ autoDowngrade, metricsCb }) {
+    setCallbacks({ autoDowngrade, metricsCb, projectionCb }) {
       onAutoDowngrade = autoDowngrade;
       onMetrics = metricsCb;
+      onProjection = projectionCb || null;
     },
     getMetrics() {
       return { ...metrics };

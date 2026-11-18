@@ -45,12 +45,23 @@ export const PIXEL_SCENE_POSES = {
     shortLandscape: { focalW: 268, focalH: 232 },
     durationMs: 600,
   },
+  embed: {
+    name: 'embed',
+    focusY: 139,
+    portrait: { focalW: 228, focalH: 206 },
+    landscape: { focalW: 248, focalH: 210 },
+    shortLandscape: { focalW: 236, focalH: 196 },
+    durationMs: 550,
+  },
 };
 
 export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', stageTop = 0) {
-  const safeW = Math.max(200, stageW);
-  const safeH = Math.max(120, stageH);
+  const safeW = Math.max(80, stageW);
+  const safeH = Math.max(60, stageH);
   const pose = PIXEL_SCENE_POSES[poseName] || PIXEL_SCENE_POSES.standby;
+  const isEmbed = pose.name === 'embed';
+  const isShort = safeH <= 360;
+  const isNarrow = safeW <= 440;
 
   let framing = pose.landscape;
   if (safeW < safeH && safeW < 760) {
@@ -60,11 +71,16 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
   }
 
   const rawScale = Math.min(safeW / framing.focalW, safeH / framing.focalH);
-  // Guarantee complete 4:3 CRT outer shell (256x218) remains unclipped inside stage bounds
-  const margin = safeW <= 360 || safeH <= 260 ? 6 : 12;
-  const maxScaleW = (safeW - margin) / PIXEL_WORLD.monitorBounds.w;
-  const maxScaleH = (safeH - margin) / PIXEL_WORLD.monitorBounds.h;
-  const scale = Math.max(0.35, Math.min(rawScale, maxScaleW, maxScaleH));
+  // In normal poses keep the entire 4:3 CRT casing (256x218) unclipped;
+  // in embed pose permit outer casing rim crop while keeping bezel + chin + power switch visible
+  const margin = isEmbed
+    ? (safeW <= 360 || safeH <= 260 ? 4 : 8)
+    : (safeW <= 360 || safeH <= 260 ? 6 : 12);
+  const fitW = isEmbed ? (isNarrow ? 226 : 244) : PIXEL_WORLD.monitorBounds.w;
+  const fitH = isEmbed ? (isShort ? 194 : 206) : PIXEL_WORLD.monitorBounds.h;
+  const maxScaleW = (safeW - margin) / fitW;
+  const maxScaleH = (safeH - margin) / fitH;
+  const scale = Math.max(0.20, Math.min(rawScale, maxScaleW, maxScaleH));
 
   const cx = safeW * 0.5;
   const centerBias = poseName === 'standby' && safeW < 760 && safeH >= 620 ? 0.54 : 0.50;
@@ -73,9 +89,11 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
   const tx = cx - 240 * scale;
   let ty = cy - pose.focusY * scale;
 
-  // Keep monitor shell top/bottom inside available stage area
-  const minTy = 4 - PIXEL_WORLD.monitorBounds.y * scale;
-  const maxTy = (safeH - 4) - (PIXEL_WORLD.monitorBounds.y + PIXEL_WORLD.monitorBounds.h) * scale;
+  // Keep monitor shell (or embed top bezel & bottom hardware chin) inside available stage area
+  const topRefY = isEmbed ? (isShort ? 42 : 34) : PIXEL_WORLD.monitorBounds.y;
+  const botRefY = isEmbed ? (isShort ? 236 : 242) : (PIXEL_WORLD.monitorBounds.y + PIXEL_WORLD.monitorBounds.h);
+  const minTy = (isEmbed ? 2 : 4) - topRefY * scale;
+  const maxTy = (safeH - (isEmbed ? 2 : 4)) - botRefY * scale;
   if (minTy <= maxTy) {
     ty = Math.max(minTy, Math.min(maxTy, ty));
   } else {

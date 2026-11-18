@@ -2,10 +2,10 @@
 
 Jendrick / Enuhri's personal portfolio repository. It holds two related experiences for the same person and body of work:
 
-- **[Professional](professional/index.html)** — the primary hiring-facing portfolio under `professional/`.
-- **Explore** — the retro CRT / old-computer experience at the repository root, containing legacy work, experiments, and app-like project presentations.
+- **[Professional](professional/index.html)** — the primary hiring-facing portfolio served at the canonical root `/`.
+- **[Explore](explore/index.html)** — the retro CRT / old-computer experience served under `/explore/`, containing experiments, interactive prototypes, and app-like project presentations.
 
-A root Professional/Explore chooser does not exist yet. Visitors reach Professional by its direct path.
+Both experiences are linked bidirectionally (with `/professional/` permanently redirecting to `/`). No mandatory entrance chooser sits in front of the Professional View.
 
 This is a student portfolio built through iterative, AI-assisted development. It is published as a working portfolio, not as production software: some projects are functional, some are experiments, and some are presented through descriptions rather than runnable code.
 
@@ -21,13 +21,13 @@ This is a student portfolio built through iterative, AI-assisted development. It
 | Featured project reconstructions   | Implemented           | Presented from shipped evidence and screenshots, including UDM-RADAR GWA trend chart |
 | Supporting-media viewer            | Implemented           | Lightbox viewer for supporting project captures            |
 | Capabilities cards & dialog        | Implemented           | Interactive animated SVG capability cards and shared evidence dialog |
-| Explore (CRT Hub)                  | Implemented / partial | Preserved legacy and experimental experience; multi-route production deployment pending |
-| Vercel deployment (`professional`) | Implemented           | Custom domain `https://www.jendrick.dev` serves `professional/` directly; Explore routes return 404 until root migration |
-| Explore route migration & chooser  | Pending               | Planned root deployment (`/` Professional, `/explore/` CRT Hub) and safety fixes |
+| Explore (CRT Hub)                  | Implemented (`explore/`) | Preserved experimental experience at `/explore/` with URL hash state and return links to `/` |
+| Vercel deployment (`professional`) | Implemented (Live)    | Custom domain `https://www.jendrick.dev` currently deploys from the `professional` root directory |
+| Root routing configuration         | Implemented (`vercel.json`) | Maps `/` to Professional, `/explore/` to CRT Hub, `/professional/` -> `308 /`; pending Vercel Root Directory switch |
 | App 06 / DevPath mapping           | Planned (Paused)      | App 06 is DevPath conceptually, with CRT catalog integration still pending |
-| Explore refinement                 | Pending               | One application at a time                                  |
+| Explore refinement                 | Pending               | Catalog integration, `/portfolio/` retirement (PR D), and mobile/a11y polish (PR E) |
 
-Pull requests #1–#13 are merged into `main`. The **Professional View** is live on Vercel at `https://www.jendrick.dev` (currently deployed from the `professional` directory), while **Explore** multi-route deployment and root routing integration remain pending.
+Pull requests #1–#15 are merged on `main`, and PR C adds root deployment alignment in [vercel.json](vercel.json). The **Professional View** is live on Vercel at `https://www.jendrick.dev` (currently deployed from the `professional` directory); `/explore/` and sub-app routes go live once PR C merges and the Vercel project Root Directory is switched to the repository root.
 
 Status labels used here: **Implemented** — supported by code and runtime checks; **Partial / Experimental** — incomplete or not fully verified; **Planned** — agreed but not built; **Paused** — development intentionally stopped; **Deferred** — waiting on evidence or media; **Legacy** — retained older work.
 
@@ -48,7 +48,7 @@ The Toolkit describes capabilities with project references rather than a bare sk
 
 ## Explore
 
-The root of the repository is the CRT Hub: a retro computer interface, boot sequence, and application menu that launches the projects below. It is preserved as a legacy HCI project and an experimental surface, and it is not the primary professional presentation.
+The [explore/](explore/index.html) route (`/explore/`) hosts the CRT Hub: a retro computer interface, boot sequence, URL-hash navigation (`#menu`, `#app=<id>`), a persistent `◂ Professional Portfolio` return link (`/`), and the application launcher. It is an experimental secondary surface rather than the primary hiring presentation.
 
 ## Projects
 
@@ -61,7 +61,7 @@ The root of the repository is the CRT Hub: a retro computer interface, boot sequ
 | Audiary                                   | Supporting personal project             | Supporting project              | Real capture available                                                                             |
 | LAYA                                      | Android prerelease                      | Supporting project              | AR garden and balance-puzzle prototype; device verification pending                                |
 | Waffle's Nine Lives                       | Android MVP                             | Supporting project              | Top-down action roguelike with rooms, enemies and nine lives                                       |
-| [Art Gallery](art-gallery/index.html)     | Experiment, work remains                | Explore application             | Interactive gallery with Firebase/Firestore features; security and rendering work remains; Cloud Firestore is used separately from Portfolio Hub hosting |
+| [Art Gallery](art-gallery/index.html)     | Experiment, work remains                | Explore application             | Interactive gallery with Firebase/Firestore features; Firestore rules still require console review; Cloud Firestore is used separately from Portfolio Hub hosting |
 | [CyberDefender](cyberdefender/index.html) | Web reimagining                         | Explore application             | Web reimagining of the original Godot prototype                                                    |
 | [Sandbox](sandbox/index.html)             | Experiment                              | Explore application             | Falling-sand and cellular-automata simulation; media and evidence pending                          |
 | [DevPath](devpath/index.html)             | Development paused                      | App 06 (conceptually)           | Architecture and decision-graph prototype; broader domains are incomplete; CRT catalog integration pending |
@@ -76,24 +76,26 @@ These are separate facts and should not be combined into one claim.
 
 **Hosting history.** Portfolio Hub was hosted on a Windows Azure VM using IIS. That is where the project was developed and served from during that period, and it is not a permanent hosting commitment.
 
-**Current direction.** The **Professional View** is live on Vercel at `https://www.jendrick.dev`, currently deploying from the `professional` root directory. Multi-route production deployment of the Explore applications (`/explore/`, `/art-gallery/`, `/cyberdefender/`, `/portfolio/`, `/sandbox/`, `/devpath/`) alongside the Professional View at `/` remains pending until safety fixes and root routing configuration are completed.
+**Current direction.** The **Professional View** is live on Vercel at `https://www.jendrick.dev`. A repository-root [vercel.json](vercel.json) configuration maps `/` to `professional/index.html`, `/professional/` to `/` (`308`), `/explore/` to `explore/index.html`, and all Explore sub-app routes (`/art-gallery/`, `/cyberdefender/`, `/sandbox/`, `/devpath/`, and temporarily compatible `/portfolio/`). Live multi-route availability activates after merging PR C and updating the Vercel dashboard Root Directory from `professional` to repository root.
 
 **Firebase / Cloud Firestore.** Firebase Authentication and Cloud Firestore are associated with the Enuhri Art Gallery experiment. They are separate cloud services, not the hosting platform for Portfolio Hub, and they are not part of the Azure or IIS hosting history.
 
 ## Repository structure
 
 ```text
-professional/      Professional View (primary hiring-facing portfolio)
-portfolio/         Legacy HCI portfolio application
+professional/      Professional View (served at / via vercel.json rewrites)
+explore/           CRT Explore Hub (served at /explore/)
+portfolio/         Legacy HCI portfolio application (temporary compatibility until PR D retirement)
 art-gallery/       Enuhri Art Gallery (Firebase Authentication / Firestore)
 cyberdefender/     CyberDefender web reimagining
 sandbox/           Falling-sand simulation experiment
 devpath/           DevPath decision-graph prototype (paused)
-assets/            Shared assets for the Explore root
+assets/            Shared sprites and previews for /explore/
+vercel.json        Repository-root rewrites and /professional/ -> / redirect
 docs/              Documentation and handoff notes
 ```
 
-The Explore root also carries the CRT Hub entry page and shared assets. `professional/` is self-contained, with its own HTML, CSS, JavaScript, and assets.
+`professional/` remains self-contained (with its own HTML, CSS, JavaScript, fonts, résumé, and evidence assets), and `vercel.json` rewrites root asset requests cleanly to `professional/`.
 
 ## Local development
 
@@ -110,13 +112,13 @@ Then open `http://127.0.0.1:8848/index.html`.
 
 Keep the terminal open while testing and press `Ctrl+C` to stop. This is a local development address, not a production URL. There is no build step and no dependency install for the static frontend.
 
-To view the Explore root instead, serve from the repository root:
+To view the Explore hub locally, serve from the repository root (note that plain `http.server` serves `explore/` at `/explore/` without `vercel.json` root rewrites for `/`):
 
 ```text
 py -m http.server 8080 --bind 127.0.0.1
 ```
 
-Then open `http://127.0.0.1:8080/index.html`.
+Then open `http://127.0.0.1:8080/explore/`.
 
 DevPath keeps its own data and engine checks, which require Node.js:
 
@@ -139,17 +141,16 @@ Ignore patterns are not a security boundary. Firestore rules and cloud configura
 
 ## Roadmap
 
-1. Fix Explore route defects and Enuhri Art Gallery safety issues.
-2. Migrate Vercel deployment to repository root so `/` serves the Professional View and `/explore/` plus Explore sub-apps work cleanly.
-3. Integrate Sandbox, DevPath (`App 06`, paused status), and featured case-study links into the CRT Explore catalog.
-4. Polish Explore mobile layout, keyboard focus, and reduced-motion behavior.
-5. Complete final cross-browser, physical-device, accessibility, privacy, and production QA.
+1. Merge PR C and switch the Vercel project Root Directory from `professional` to repository root so `/`, `/explore/`, `/professional/`, and sub-apps match production expectations.
+2. Integrate Sandbox, DevPath (`paused prototype`), and featured case-study links into the `/explore/` CRT catalog, and retire the temporary `portfolio/` directory (PR D).
+3. Polish Explore mobile layout, keyboard focus, and reduced-motion behavior (PR E).
+4. Complete final cross-browser, physical-device, accessibility, privacy, and production QA.
 
 ## Known limitations
 
-- Explore applications carry documented defects that have not been fixed, including unsafe HTML rendering paths in the Art Gallery and unverified Firestore rules.
-- The legacy `portfolio/` application has a contact form without a sending handler.
-- The CRT Hub has placeholder controls that are not fully wired.
+- Firestore security rules for the Art Gallery cloud database are managed in Firebase Console and remain unverified in this repository.
+- Explore sub-apps (`/explore/`, `/sandbox/`, `/devpath/`) are not yet publicly reachable on `https://www.jendrick.dev` until PR C merges and Vercel's Root Directory is switched from `professional` to repository root.
+- CRT Hub sound remains intentionally removed until Web Audio cues are implemented in a later pass.
 - Comprehensive mobile, cross-browser, and physical-device testing remains pending.
 
 ## Development context

@@ -267,7 +267,7 @@ body.crt-zoomed .power-button-hotspot {
 .screen-scanlines {
   position: absolute;
   inset: 0;
-  background-image: url('assets/monitor/scanlines.png');
+  background-image: url('../assets/monitor/scanlines.png');
   background-size: 100% 6px;
   background-repeat: repeat-y;
   opacity: 0.5;
@@ -796,6 +796,22 @@ body.crt-zoomed .accessories {
 .settings-btn:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.settings-btn--professional {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--cyan);
+  border-color: rgba(0, 229, 255, 0.5);
+  background: rgba(10, 10, 12, 0.85);
+}
+
+.settings-btn--professional:hover,
+.settings-btn--professional:focus-visible {
+  color: #02070a;
+  background: var(--cyan);
+  border-color: var(--cyan);
 }
 
 .settings-btn--power {

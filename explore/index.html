@@ -4,13 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enuhri Portfolio Hub</title>
+  <link rel="canonical" href="https://www.jendrick.dev/explore/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>💻</text></svg>" />
-  <link rel="stylesheet" href="style.css?v=1.8" />
+  <link rel="stylesheet" href="style.css?v=1.9" />
 </head>
 <body>
 
   <!-- Always-visible accessibility controls, independent of CRT phase -->
   <div id="display-settings" class="display-settings" role="group" aria-label="Display settings">
+    <a href="/" id="return-professional-link" class="settings-btn settings-btn--professional" title="Return to the main Professional Portfolio">◂ Professional Portfolio</a>
     <button type="button" id="toggle-power-btn" class="settings-btn settings-btn--power" aria-pressed="false" title="Power / Return to landing page">POWER: OFF</button>
     <button type="button" id="toggle-scanlines-btn" class="settings-btn" aria-pressed="true">SCANLINES: ON</button>
     <button type="button" id="toggle-motion-btn" class="settings-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
@@ -39,11 +41,11 @@
         <div class="crt-composition">
 
           <!-- Supplied desk sprite provides the physical setting for the computer. -->
-          <img class="desk-sprite" src="assets/sprites/desk.png" alt="" aria-hidden="true" />
+          <img class="desk-sprite" src="../assets/sprites/desk.png" alt="" aria-hidden="true" />
 
           <!-- The monitor itself -->
           <div class="crt-monitor">
-            <img class="monitor-casing" src="assets/sprites/monitor.png" alt="" aria-hidden="true" />
+            <img class="monitor-casing" src="../assets/sprites/monitor.png" alt="" aria-hidden="true" />
 
             <!-- Positioned to sit exactly inside the glass, per the sprite manifest -->
             <div class="screen-overlay">
@@ -72,7 +74,7 @@
 
           <!-- Keyboard + mouse, decorative -->
           <div class="accessories">
-            <img class="keyboard-sprite" src="assets/sprites/keyboard.png" alt="" aria-hidden="true" />
+            <img class="keyboard-sprite" src="../assets/sprites/keyboard.png" alt="" aria-hidden="true" />
           </div>
 
         </div>
@@ -83,6 +85,6 @@
 
   </main>
 
-  <script src="script.js?v=1.8"></script>
+  <script src="script.js?v=1.9"></script>
 </body>
 </html>

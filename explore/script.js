@@ -17,7 +17,7 @@ const screenContent = document.getElementById('screen-content');
 const screenOverlay = document.querySelector('.screen-overlay');
 const powerButtonHotspot = document.getElementById('power-button-hotspot');
 
-let reducedMotion = false;
+let reducedMotion = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let scanlinesEnabled = true;
 
 function isReducedMotion() {
@@ -28,6 +28,12 @@ function isReducedMotion() {
 const powerBtn = document.getElementById('toggle-power-btn');
 const scanlinesBtn = document.getElementById('toggle-scanlines-btn');
 const motionBtn = document.getElementById('toggle-motion-btn');
+
+if (reducedMotion) {
+  document.body.classList.add('reduce-motion');
+  motionBtn.setAttribute('aria-pressed', 'true');
+  motionBtn.textContent = 'REDUCE MOTION: ON';
+}
 
 function setPowerState(isOn) {
   if (!powerBtn) return;
@@ -79,7 +85,7 @@ const APPS = [
     technologies: ['HTML5', 'CSS3', 'JavaScript'],
     devStatus: 'ACTIVE / DEPLOYED',
     image: null,
-    link: 'portfolio/',
+    link: '/portfolio/',
   },
   {
     id: 'udm-radar',
@@ -100,7 +106,7 @@ const APPS = [
     ],
     technologies: ['PHP 8.2', 'MySQL / MariaDB', 'Python', 'Flask', 'scikit-learn', 'Chart.js', 'Dompdf'],
     devStatus: 'FUNCTIONAL PROTOTYPE / ACTIVE DEVELOPMENT',
-    image: 'assets/projects/udm-radar.png',
+    image: '../assets/projects/udm-radar.png',
     link: null,
   },
   {
@@ -122,7 +128,7 @@ const APPS = [
     ],
     technologies: ['Django 5.2', 'Python', 'Google Gemini 3.6 Flash', 'Pydantic', 'SQLite', 'Vanilla JS'],
     devStatus: 'CORE PLATFORM COMPLETE / POLISH PHASE',
-    image: 'assets/projects/studyquest.png',
+    image: '../assets/projects/studyquest.png',
     link: null,
   },
   {
@@ -143,7 +149,7 @@ const APPS = [
     technologies: ['HTML5 Canvas', 'CSS3', 'JavaScript'],
     devStatus: 'FUNCTIONAL / DEPLOYED',
     image: null,
-    link: 'art-gallery/',
+    link: '/art-gallery/',
   },
   {
     id: 'cyberdefender',
@@ -165,8 +171,8 @@ const APPS = [
     ],
     technologies: ['HTML5 & Modern DOM', 'Vanilla ES Modules', 'SVG Vector Graphics', 'Web Audio API', 'Offline LocalStorage'],
     devStatus: 'LIVE NATIVE WEB BUILD / FULLY OPERATIONAL',
-    image: 'assets/projects/cyberdefender.png',
-    link: 'cyberdefender/',
+    image: '../assets/projects/cyberdefender.png',
+    link: '/cyberdefender/',
   },
   {
     id: 'app-06',
@@ -267,6 +273,11 @@ function renderBootScreen() {
   });
 
   bootSequenceEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      resetToLanding();
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handleBootAdvance(bootTextEl, skipBtn);
@@ -314,8 +325,37 @@ function finishBoot(skipBtn) {
   if (skipBtn) skipBtn.textContent = 'CONTINUE ▸';
 }
 
-function goToAppMenu() {
-  renderAppMenu();
+const INLINE_APP_IDS = new Set(['udm-radar', 'studyquest', 'cyberdefender', 'app-06']);
+let fadeTimeoutId = null;
+
+function setUrlHash(targetHash, { replace = false } = {}) {
+  const normalized = targetHash || '';
+  if (!normalized) {
+    if (window.location.hash) {
+      window.history[replace ? 'replaceState' : 'pushState'](
+        null,
+        '',
+        window.location.pathname + window.location.search
+      );
+    }
+    return;
+  }
+  if (window.location.hash !== normalized) {
+    window.history[replace ? 'replaceState' : 'pushState'](null, '', normalized);
+  }
+}
+
+function goToAppMenu({ updateHistory = true, immediate = false } = {}) {
+  if (updateHistory) setUrlHash('#menu');
+  document.body.classList.add('crt-zoomed');
+  setPowerState(true);
+  if (immediate || isReducedMotion()) {
+    clearTimeout(fadeTimeoutId);
+    screenContent.classList.remove('screen-fade-out');
+    renderAppMenu();
+  } else {
+    renderAppMenu();
+  }
 }
 
 function renderAppMenu() {
@@ -381,30 +421,43 @@ function handleMenuKeydown(event, tiles) {
   tiles[nextIndex].focus();
 }
 
-function fadeSwap(renderFn) {
+function fadeSwap(renderFn, { immediate = false } = {}) {
+  clearTimeout(fadeTimeoutId);
+  if (immediate || isReducedMotion()) {
+    screenContent.classList.remove('screen-fade-out');
+    renderFn();
+    return;
+  }
   screenContent.classList.add('screen-fade-out');
-  const delay = isReducedMotion() ? 0 : 180;
-  setTimeout(() => {
+  fadeTimeoutId = setTimeout(() => {
     renderFn();
     screenContent.classList.remove('screen-fade-out');
-  }, delay);
+  }, 180);
 }
 
-function selectApp(appId) {
-  document.body.classList.remove('app-menu-active');
-
+function selectApp(appId, { updateHistory = true, immediate = false } = {}) {
   if (appId === 'portfolio') {
-    window.location.assign('portfolio/');
+    window.location.assign('/portfolio/');
     return;
   }
 
   if (appId === 'art-gallery') {
-    window.location.assign('art-gallery/');
+    window.location.assign('/art-gallery/');
     return;
   }
 
   const app = APPS.find((a) => a.id === appId);
-  fadeSwap(() => renderProjectView(app));
+  if (!app || !INLINE_APP_IDS.has(appId)) {
+    setUrlHash('#menu', { replace: true });
+    goToAppMenu({ updateHistory: false, immediate: true });
+    return;
+  }
+
+  document.body.classList.remove('app-menu-active');
+  document.body.classList.add('crt-zoomed');
+  setPowerState(true);
+  if (updateHistory) setUrlHash(`#app=${app.id}`);
+  fadeSwap(() => renderProjectView(app), { immediate });
 }
 
 function renderProjectView(app) {
@@ -420,7 +473,7 @@ function renderProjectView(app) {
   const playDemoHtml = app.id === 'cyberdefender'
     ? `
       <div class="project-play-wrap">
-        <a class="project-play-btn" href="cyberdefender/">▶ PLAY REMADE WEB DEMO</a>
+        <a class="project-play-btn" href="/cyberdefender/">▶ PLAY REMADE WEB DEMO</a>
       </div>
     `
     : '';
@@ -497,26 +550,31 @@ function renderProjectView(app) {
 }
 
 function returnToAppMenu() {
+  setUrlHash('#menu');
   fadeSwap(renderAppMenu);
 }
 
-function resetToLanding() {
+function resetToLanding({ updateHistory = true, immediate = false } = {}) {
   clearTimeout(zoomTimeoutId);
   zoomTimeoutId = null;
+  clearTimeout(fadeTimeoutId);
+  fadeTimeoutId = null;
   bootTimeoutIds.forEach(clearTimeout);
   bootTimeoutIds = [];
   document.body.classList.remove('app-menu-active');
   document.body.classList.remove('project-view-active');
   document.body.classList.remove('crt-zoomed');
   setPowerState(false);
+  if (updateHistory) setUrlHash('');
 
-  if (isReducedMotion()) {
+  if (immediate || isReducedMotion()) {
+    screenContent.classList.remove('screen-fade-out');
     screenContent.innerHTML = LANDING_CONTENT_HTML;
     document.getElementById('play-btn').addEventListener('click', startZoomAndBoot);
     document.getElementById('play-btn').focus();
   } else {
     screenContent.classList.add('screen-fade-out');
-    setTimeout(() => {
+    fadeTimeoutId = setTimeout(() => {
       screenContent.innerHTML = LANDING_CONTENT_HTML;
       screenContent.classList.remove('screen-fade-out');
       document.getElementById('play-btn').addEventListener('click', startZoomAndBoot);
@@ -525,9 +583,49 @@ function resetToLanding() {
   }
 }
 
+function syncFromLocation({ immediate = true } = {}) {
+  const rawHash = window.location.hash;
+  if (!rawHash || rawHash === '#') {
+    if (document.body.classList.contains('crt-zoomed')) {
+      resetToLanding({ updateHistory: false, immediate: true });
+    }
+    return;
+  }
+
+  clearTimeout(zoomTimeoutId);
+  zoomTimeoutId = null;
+  clearTimeout(fadeTimeoutId);
+  fadeTimeoutId = null;
+  bootTimeoutIds.forEach(clearTimeout);
+  bootTimeoutIds = [];
+
+  if (rawHash === '#menu') {
+    goToAppMenu({ updateHistory: false, immediate });
+    return;
+  }
+
+  if (rawHash.startsWith('#app=')) {
+    const appId = decodeURIComponent(rawHash.slice(5));
+    if (INLINE_APP_IDS.has(appId)) {
+      selectApp(appId, { updateHistory: false, immediate });
+      return;
+    }
+  }
+
+  setUrlHash('#menu', { replace: true });
+  goToAppMenu({ updateHistory: false, immediate: true });
+}
+
 playBtn.addEventListener('click', startZoomAndBoot);
 powerButtonHotspot.addEventListener('click', (event) => {
   event.preventDefault();
   event.stopPropagation();
   resetToLanding();
 });
+
+window.addEventListener('popstate', () => syncFromLocation({ immediate: true }));
+window.addEventListener('hashchange', () => syncFromLocation({ immediate: true }));
+
+if (window.location.hash && window.location.hash !== '#') {
+  syncFromLocation({ immediate: true });
+}

@@ -1378,8 +1378,8 @@ html[data-entry-gate="open"] body{
   overflow:hidden;
 }
 .entry-gate{
-  --entry-backdrop:rgba(13, 17, 23, .94);
-  --entry-panel-bg:rgba(21, 27, 36, .92);
+  --entry-backdrop:rgba(11, 15, 21, .94);
+  --entry-panel-bg:rgba(20, 26, 35, .92);
   --entry-panel-border:var(--line-strong);
   --entry-primary-bg:linear-gradient(155deg, rgba(127, 166, 255, .14), rgba(29, 36, 48, .96) 55%);
   --entry-primary-border:rgba(127, 166, 255, .62);
@@ -1390,6 +1390,17 @@ html[data-entry-gate="open"] body{
   --entry-explore-amber:#ecc274;
   --entry-pill-bg:rgba(255, 255, 255, .05);
   --entry-pill-border:rgba(255, 255, 255, .14);
+  --entry-svg-bg-fill:#0d1219;
+  --entry-svg-pro:#7fa6ff;
+  --entry-svg-exp:#3dd682;
+  --entry-svg-cyan:#33d4ea;
+  --entry-svg-amber:#e6b86a;
+  --entry-svg-grid:#7c90ad;
+  --entry-svg-label-pro:#8eb0ff;
+  --entry-svg-label-exp:#63d996;
+  --entry-svg-label-center:#aeb8c7;
+  --entry-svg-glow-p:0.10;
+  --entry-svg-glow-e:0.09;
   position:fixed;
   inset:0;
   z-index:960;
@@ -1404,7 +1415,7 @@ html[data-entry-gate="open"] body{
   color:var(--accent);
 }
 [data-theme="light"] .entry-gate{
-  --entry-backdrop:rgba(241, 245, 243, .95);
+  --entry-backdrop:rgba(241, 245, 243, .96);
   --entry-panel-bg:rgba(255, 255, 255, .96);
   --entry-panel-border:var(--line-strong);
   --entry-primary-bg:linear-gradient(155deg, rgba(33, 74, 167, .09), #ffffff 55%);
@@ -1416,6 +1427,17 @@ html[data-entry-gate="open"] body{
   --entry-explore-amber:#8a5609;
   --entry-pill-bg:rgba(24, 32, 30, .05);
   --entry-pill-border:rgba(24, 32, 30, .18);
+  --entry-svg-bg-fill:#f4f7f5;
+  --entry-svg-pro:#214aa7;
+  --entry-svg-exp:#16653d;
+  --entry-svg-cyan:#0f6b7a;
+  --entry-svg-amber:#9a6210;
+  --entry-svg-grid:#51625c;
+  --entry-svg-label-pro:#214aa7;
+  --entry-svg-label-exp:#145a36;
+  --entry-svg-label-center:#2c3a35;
+  --entry-svg-glow-p:0.07;
+  --entry-svg-glow-e:0.06;
 }
 .entry-gate[hidden]{
   display:none;
@@ -1430,22 +1452,52 @@ html[data-entry-gate="open"] .entry-gate[hidden]{
   height:100%;
   pointer-events:none;
   color:var(--accent);
-  opacity:.72;
-}
-[data-theme="light"] .entry-signal-svg{
-  opacity:.52;
 }
 .entry-signal-layer{
   transform-box:view-box;
   transition:transform 240ms var(--ease-standard);
 }
 .entry-signal-layer--grid{
-  opacity:.32;
+  opacity:.24;
   transform:translate3d(calc(var(--signal-dx, 0) * 6px), calc(var(--signal-dy, 0) * 5px), 0);
 }
-.entry-signal-layer--routes{
-  opacity:.65;
-  transform:translate3d(calc(var(--signal-dx, 0) * 14px), calc(var(--signal-dy, 0) * 10px), 0);
+.entry-signal-layer--origin,
+.entry-signal-layer--margins{
+  opacity:.62;
+  transform:translate3d(calc(var(--signal-dx, 0) * 11px), calc(var(--signal-dy, 0) * 8px), 0);
+}
+[data-theme="light"] .entry-signal-layer--origin,
+[data-theme="light"] .entry-signal-layer--margins{
+  opacity:.66;
+}
+.entry-svg-label{
+  font-family:var(--mono);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.14em;
+  stroke:none;
+}
+.entry-svg-label--center{
+  fill:var(--entry-svg-label-center);
+  opacity:.72;
+}
+.entry-svg-label--pro{
+  fill:var(--entry-svg-label-pro);
+  opacity:.74;
+}
+.entry-svg-label--exp{
+  fill:var(--entry-svg-label-exp);
+  opacity:.72;
+}
+@media(max-width:1180px){
+  .entry-svg-margin{
+    display:none;
+  }
+}
+@media(max-width:759px), (max-height:700px){
+  .entry-signal-layer--origin{
+    display:none;
+  }
 }
 .entry-panel{
   position:relative;
@@ -1498,6 +1550,12 @@ html[data-entry-gate="open"] .entry-gate[hidden]{
   font-size:clamp(.95rem, 1.4vw, 1.05rem);
   line-height:1.58;
   color:var(--text-muted);
+}
+.entry-copy-lead{
+  display:block;
+  margin-bottom:4px;
+  font-weight:500;
+  color:var(--text);
 }
 .entry-choices{
   display:grid;
@@ -1622,6 +1680,18 @@ html[data-entry-gate="open"] .entry-gate[hidden]{
 }
 .entry-choice--explore:hover .entry-cta{
   background:rgba(59, 212, 127, .12);
+}
+@media(max-width:480px){
+  .entry-panel{
+    padding:20px 16px;
+  }
+  .entry-head{
+    margin-bottom:16px;
+  }
+  .entry-choice{
+    padding:16px;
+    gap:8px;
+  }
 }
 @media(prefers-reduced-motion:reduce), (pointer:coarse){
   .entry-signal-layer{

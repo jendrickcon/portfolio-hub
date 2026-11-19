@@ -19,41 +19,129 @@
 <canvas id="page-field" class="page-field" aria-hidden="true"></canvas>
 <a class="skip" href="#main">Skip to content</a>
 
-<!-- Portfolio Entry Gate: session-scoped choice between canonical portfolio and CRT workstation -->
+<!-- Portfolio Entry Gate: session-scoped choice between focused portfolio and CRT workstation -->
 <div id="entry-gate" class="entry-gate" role="dialog" aria-modal="true" aria-labelledby="entry-heading" aria-describedby="entry-desc" hidden>
- <svg class="entry-signal-svg" viewBox="0 0 1200 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+ <svg class="entry-signal-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
   <defs>
-   <radialGradient id="entryGlowPrimary" cx="30%" cy="55%" r="48%">
-    <stop offset="0%" stop-color="currentColor" stop-opacity="0.16"/>
-    <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+   <radialGradient id="entryGlowPrimary" cx="24%" cy="52%" r="44%">
+    <stop offset="0%" stop-color="var(--entry-svg-pro)" stop-opacity="var(--entry-svg-glow-p)"/>
+    <stop offset="100%" stop-color="var(--entry-svg-pro)" stop-opacity="0"/>
    </radialGradient>
-   <radialGradient id="entryGlowExplore" cx="76%" cy="56%" r="42%">
-    <stop offset="0%" stop-color="#3bd47f" stop-opacity="0.15"/>
-    <stop offset="100%" stop-color="#3bd47f" stop-opacity="0"/>
+   <radialGradient id="entryGlowExplore" cx="76%" cy="52%" r="42%">
+    <stop offset="0%" stop-color="var(--entry-svg-exp)" stop-opacity="var(--entry-svg-glow-e)"/>
+    <stop offset="100%" stop-color="var(--entry-svg-exp)" stop-opacity="0"/>
    </radialGradient>
   </defs>
-  <rect class="entry-sig-glow-p" width="1200" height="720" fill="url(#entryGlowPrimary)"/>
-  <rect class="entry-sig-glow-e" width="1200" height="720" fill="url(#entryGlowExplore)"/>
-  <g class="entry-signal-layer entry-signal-layer--grid" stroke="currentColor" stroke-width="1" fill="none">
-   <path d="M96 120v16M88 128h16M336 104v12M330 110h12M600 92v16M592 100h16M884 118v12M878 124h12M1092 138v16M1084 146h16"/>
-   <path d="M120 596v14M113 603h14M600 608v16M592 616h16M1068 588v14M1061 595h14"/>
-   <path d="M72 220h48M72 480h36M1080 240h48M1092 484h36" stroke-dasharray="4 6"/>
+
+  <rect width="1440" height="900" fill="url(#entryGlowPrimary)"/>
+  <rect width="1440" height="900" fill="url(#entryGlowExplore)"/>
+
+  <!-- Layer A: Sparse architectural drafting grid markers -->
+  <g class="entry-signal-layer entry-signal-layer--grid" stroke="var(--entry-svg-grid)" stroke-width="1" fill="none">
+   <path d="M96 92v14M89 99h14M1344 92v14M1337 99h14M96 798v14M89 805h14M1344 798v14M1337 805h14"/>
+   <path d="M512 68v10M507 73h10M928 68v10M923 73h10M714 816h12M720 810v12"/>
   </g>
-  <g class="entry-signal-layer entry-signal-layer--routes" fill="none">
-   <!-- Origin bus feeding both routes -->
-   <path class="entry-trace entry-trace--bus" d="M600 44V136" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5"/>
-   <rect class="entry-node" x="595" y="131" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
-   <!-- Calm drafted route -> Primary Professional Portfolio -->
-   <path class="entry-trace entry-trace--primary" d="M595 136H340L300 176V268H188L164 292V472L204 512H452" stroke="currentColor" stroke-width="1.6"/>
-   <path class="entry-trace entry-trace--primary-sub" d="M300 220H120V380H164" stroke="currentColor" stroke-width="1" stroke-dasharray="6 6"/>
-   <circle class="entry-node entry-node--primary" cx="300" cy="176" r="4" fill="currentColor"/>
-   <circle class="entry-node entry-node--primary" cx="164" cy="292" r="3.5" fill="currentColor"/>
-   <!-- Pixel-stepped route -> Explore CRT Workstation -->
-   <path class="entry-trace entry-trace--explore" d="M605 136H848V176H988V256H1044V440H960V504H764" stroke="#3bd47f" stroke-width="1.6"/>
-   <path class="entry-trace entry-trace--explore-sub" d="M848 176V216H1088V356H1044" stroke="#e6b86a" stroke-width="1.1" stroke-dasharray="4 4"/>
-   <rect class="entry-node entry-node--explore" x="844" y="172" width="8" height="8" fill="#3bd47f"/>
-   <rect class="entry-node entry-node--explore" x="984" y="252" width="8" height="8" fill="#3bd47f"/>
-   <rect class="entry-node entry-node--amber" x="1040" y="352" width="7" height="7" fill="#e6b86a"/>
+
+  <!-- Layer B: Shared top-center origin & bifurcation spine (visible desktop + mobile) -->
+  <g class="entry-signal-layer entry-signal-layer--origin" fill="none">
+   <text class="entry-svg-label entry-svg-label--center" x="720" y="68" text-anchor="middle">JENDRICK / ENUHRI</text>
+   <circle cx="720" cy="92" r="10" stroke="var(--entry-svg-pro)" stroke-width="1.3"/>
+   <rect x="717" y="89" width="6" height="6" fill="var(--entry-svg-exp)" shape-rendering="crispEdges"/>
+   <!-- Left spine -> Focused Professional Portfolio (blue 45deg chamfer) -->
+   <path d="M710 92H200L156 136V196" stroke="var(--entry-svg-pro)" stroke-width="1.25"/>
+   <!-- Right spine -> Interactive Explore Workstation (phosphor orthogonal steps) -->
+   <path d="M730 92H1244V132H1274V196" stroke="var(--entry-svg-exp)" stroke-width="1.25" shape-rendering="crispEdges"/>
+  </g>
+
+  <!-- Layer C: Peripheral domain vocabularies (desktop margins only, hidden <=1180px) -->
+  <g class="entry-signal-layer entry-signal-layer--margins entry-svg-margin" fill="none">
+   <!-- LEFT MARGIN: Editorial drafting & evidence system -->
+   <g class="entry-margin-pro" stroke="var(--entry-svg-pro)">
+    <!-- Measured index rail + section ticks -->
+    <path d="M156 196V684" stroke-width="1.2"/>
+    <path d="M150 220h6M150 280h6M150 340h6M150 400h6M150 460h6M150 520h6M150 580h6M150 640h6" stroke-width="1" opacity="0.6"/>
+
+    <!-- PROFILE: wireframe resume sheet -->
+    <path d="M156 244H132" stroke-width="1.15"/>
+    <circle cx="156" cy="244" r="3" fill="var(--entry-svg-pro)" stroke="none"/>
+    <rect x="52" y="198" width="78" height="96" rx="3" stroke-width="1.2"/>
+    <path d="M64 218h36M64 232h54M64 244h48M64 256h54M64 270h34" stroke-width="1" opacity="0.8"/>
+    <path d="M46 208v-10h10M136 284v10h-10" stroke-width="1" opacity="0.55"/>
+    <text class="entry-svg-label entry-svg-label--pro" x="52" y="313">PROFILE</text>
+
+    <!-- WORK: 2x2 project showcase wireframe -->
+    <path d="M156 394H132" stroke-width="1.15"/>
+    <circle cx="156" cy="394" r="3" fill="var(--entry-svg-pro)" stroke="none"/>
+    <rect x="52" y="366" width="78" height="58" rx="3" stroke-width="1.15"/>
+    <rect x="58" y="372" width="30" height="20" rx="1.5" stroke-width="1" opacity="0.85"/>
+    <rect x="94" y="372" width="30" height="20" rx="1.5" stroke-width="1" opacity="0.65"/>
+    <rect x="58" y="398" width="30" height="20" rx="1.5" stroke-width="1" opacity="0.65"/>
+    <rect x="94" y="398" width="30" height="20" rx="1.5" stroke-width="1" opacity="0.85"/>
+    <text class="entry-svg-label entry-svg-label--pro" x="52" y="442">WORK</text>
+
+    <!-- EVIDENCE: calibrated artifact & verification badge -->
+    <path d="M156 496H132" stroke-width="1.15"/>
+    <circle cx="156" cy="496" r="3" fill="var(--entry-svg-pro)" stroke="none"/>
+    <rect x="52" y="478" width="78" height="36" rx="2.5" stroke-width="1.15"/>
+    <path d="M62 496l5 5 10-11M86 491h32M86 501h24" stroke-width="1.1"/>
+    <text class="entry-svg-label entry-svg-label--pro" x="52" y="532">EVIDENCE</text>
+
+    <!-- JOURNEY: stepped milestone timeline -->
+    <path d="M156 602H132L118 616H52" stroke-width="1.15"/>
+    <circle cx="156" cy="602" r="3" fill="var(--entry-svg-pro)" stroke="none"/>
+    <circle cx="112" cy="616" r="3.5" fill="var(--entry-svg-bg-fill)" stroke-width="1.2"/>
+    <circle cx="84" cy="616" r="3.5" fill="var(--entry-svg-bg-fill)" stroke-width="1.2"/>
+    <circle cx="56" cy="616" r="3.5" fill="var(--entry-svg-pro)" stroke-width="1.2"/>
+    <text class="entry-svg-label entry-svg-label--pro" x="52" y="640">JOURNEY</text>
+
+    <!-- Quiet bottom tie-line -->
+    <path d="M156 684V790L182 816H510" stroke-width="1" stroke-dasharray="4 6" opacity="0.45"/>
+   </g>
+
+   <!-- RIGHT MARGIN: CRT hardware, 6-slot catalog, DevPath fork & SANDBOX.SYS floppy -->
+   <g class="entry-margin-exp" shape-rendering="crispEdges">
+    <!-- Orthogonal bus -->
+    <path d="M1274 196V644" stroke="var(--entry-svg-exp)" stroke-width="1.2"/>
+
+    <!-- BOOT + APPS 01-06: 4:3 CRT Monitor wireframe with 3x2 slot matrix -->
+    <path d="M1274 234H1292" stroke="var(--entry-svg-exp)" stroke-width="1.2"/>
+    <rect x="1271" y="231" width="6" height="6" fill="var(--entry-svg-exp)"/>
+    <text class="entry-svg-label entry-svg-label--exp" x="1292" y="216">BOOT</text>
+    <rect x="1292" y="226" width="104" height="86" stroke="var(--entry-svg-exp)" stroke-width="1.25"/>
+    <rect x="1302" y="236" width="84" height="60" stroke="var(--entry-svg-exp)" stroke-width="1" opacity="0.85"/>
+    <rect x="1324" y="312" width="40" height="8" stroke="var(--entry-svg-exp)" stroke-width="1.1"/>
+    <rect x="1380" y="302" width="4" height="4" fill="var(--entry-svg-amber)"/>
+    <!-- Inner 3x2 catalog tiles -->
+    <rect x="1308" y="244" width="20" height="16" stroke="var(--entry-svg-cyan)" stroke-width="1.15"/>
+    <rect x="1334" y="244" width="20" height="16" stroke="var(--entry-svg-exp)" stroke-width="1"/>
+    <rect x="1360" y="244" width="20" height="16" stroke="var(--entry-svg-exp)" stroke-width="1"/>
+    <rect x="1308" y="268" width="20" height="16" stroke="var(--entry-svg-exp)" stroke-width="1"/>
+    <rect x="1334" y="268" width="20" height="16" stroke="var(--entry-svg-exp)" stroke-width="1"/>
+    <rect x="1360" y="268" width="20" height="16" stroke="var(--entry-svg-amber)" stroke-width="1" stroke-dasharray="2 2"/>
+    <text class="entry-svg-label entry-svg-label--exp" x="1292" y="338">APPS 01&#8211;06</text>
+
+    <!-- DEVPATH: stepped 3-node decision fork -->
+    <path d="M1274 414H1294" stroke="var(--entry-svg-exp)" stroke-width="1.2"/>
+    <rect x="1271" y="411" width="6" height="6" fill="var(--entry-svg-exp)"/>
+    <rect x="1294" y="410" width="8" height="8" stroke="var(--entry-svg-exp)" stroke-width="1.2"/>
+    <path d="M1302 414H1332V394H1370" stroke="var(--entry-svg-amber)" stroke-width="1.15"/>
+    <rect x="1370" y="391" width="6" height="6" fill="var(--entry-svg-amber)"/>
+    <path d="M1302 414H1332V438H1370" stroke="var(--entry-svg-cyan)" stroke-width="1.1" stroke-dasharray="3 3"/>
+    <rect x="1370" y="435" width="6" height="6" stroke="var(--entry-svg-cyan)" stroke-width="1.15"/>
+    <text class="entry-svg-label entry-svg-label--exp" x="1294" y="464">DEVPATH</text>
+
+    <!-- SANDBOX.SYS: 3.5" floppy diskette wireframe -->
+    <path d="M1274 578H1294" stroke="var(--entry-svg-exp)" stroke-width="1.2"/>
+    <rect x="1271" y="575" width="6" height="6" fill="var(--entry-svg-cyan)"/>
+    <path d="M1294 540H1360L1370 550V616H1294Z" stroke="var(--entry-svg-exp)" stroke-width="1.25"/>
+    <rect x="1312" y="540" width="38" height="24" stroke="var(--entry-svg-cyan)" stroke-width="1"/>
+    <rect x="1306" y="578" width="52" height="30" stroke="var(--entry-svg-exp)" stroke-width="1" opacity="0.8"/>
+    <rect x="1298" y="604" width="5" height="5" fill="var(--entry-svg-amber)"/>
+    <text class="entry-svg-label entry-svg-label--exp" x="1294" y="636">SANDBOX.SYS</text>
+
+    <!-- Quiet bottom tie-line -->
+    <path d="M1274 644V790H1250V816H930" stroke="var(--entry-svg-exp)" stroke-width="1" stroke-dasharray="4 6" opacity="0.45"/>
+   </g>
   </g>
  </svg>
 
@@ -61,12 +149,12 @@
   <header class="entry-head">
    <p class="entry-eyebrow mono"><span class="entry-eyebrow-dot" aria-hidden="true"></span>HELLO, WORLD!</p>
    <h2 id="entry-heading" class="entry-title">Welcome to my portfolio.</h2>
-   <p id="entry-desc" class="entry-copy">Choose the experience that fits your visit. Continue to the focused professional portfolio for my r&eacute;sum&eacute;, selected projects, contributions, and contact details, or open the interactive workstation to explore experiments and prototypes.</p>
+   <p id="entry-desc" class="entry-copy"><strong class="entry-copy-lead">One body of work, two ways to explore it.</strong> Open the focused portfolio for my r&eacute;sum&eacute;, selected projects, contributions, and contact details, or enter the workstation for interactive builds, experiments, and prototypes.</p>
   </header>
 
   <div class="entry-choices" role="group" aria-label="Portfolio experiences">
    <button type="button" id="entry-primary-btn" class="entry-choice entry-choice--primary">
-    <span class="entry-choice-kicker mono">01 // CANONICAL PORTFOLIO &middot; RECOMMENDED</span>
+    <span class="entry-choice-kicker mono">01 // FOCUSED PORTFOLIO &middot; RECOMMENDED</span>
     <span class="entry-choice-title">View Professional Portfolio</span>
     <span class="entry-choice-sub">For recruiters, collaborators, and focused project review</span>
     <span class="entry-meta-list" aria-hidden="true">
@@ -78,7 +166,7 @@
    </button>
 
    <a href="/explore/" id="entry-explore-link" class="entry-choice entry-choice--explore">
-    <span class="entry-choice-kicker mono">02 // WORKSTATION &middot; 3D &amp; PIXEL 2D</span>
+    <span class="entry-choice-kicker mono">02 // WORKSTATION &middot; 3D &amp; 2D</span>
     <span class="entry-choice-title">Explore the Workstation</span>
     <span class="entry-choice-sub">For interactive projects, experiments, and the retro-computing experience</span>
     <span class="entry-meta-list" aria-hidden="true">

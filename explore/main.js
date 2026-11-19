@@ -123,6 +123,55 @@ const PREVIEW_ALLOWED_MESSAGES = new Set([
   'project-embed-open-full-case-study',
 ]);
 
+const LAUNCH_DESTINATIONS = {
+  professional: {
+    url: '/',
+    appName: 'Professional Portfolio',
+    headline: 'OPENING PROFESSIONAL PORTFOLIO...',
+    detail: 'HANDING OFF TO FULL SITE',
+  },
+  'udm-radar': {
+    url: '/#udm-radar',
+    appName: 'UDM-RADAR Case Study',
+    headline: 'OPENING UDM-RADAR CASE STUDY...',
+    detail: 'LOADING EVIDENCE AND INTERACTIVE RECONSTRUCTION',
+  },
+  studyquest: {
+    url: '/#studyquest',
+    appName: 'StudyQuest Case Study',
+    headline: 'OPENING STUDYQUEST CASE STUDY...',
+    detail: 'LOADING EVIDENCE AND INTERACTIVE RECONSTRUCTION',
+  },
+  'art-gallery': {
+    url: '/art-gallery/',
+    appName: 'Enuhri Art Gallery',
+    headline: 'OPENING ENUHRI ART GALLERY...',
+    detail: 'CONNECTING TO THE VIRTUAL EXHIBIT',
+    returnHash: '#menu',
+  },
+  cyberdefender: {
+    url: '/cyberdefender/',
+    appName: 'Cyber Defender',
+    headline: 'OPENING CYBER DEFENDER...',
+    detail: 'INITIALIZING SIMULATED THREAT ENVIRONMENT',
+    returnHash: '#menu',
+  },
+  devpath: {
+    url: '/devpath/',
+    appName: 'DevPath',
+    headline: 'OPENING DEVPATH...',
+    detail: 'LOADING GAME ARCHITECTURE GRAPH',
+    returnHash: '#menu',
+  },
+  sandbox: {
+    url: '/sandbox/',
+    appName: 'Sandbox',
+    headline: 'MOUNTING SANDBOX.SYS...',
+    detail: 'LOADING MATERIAL SIMULATION',
+    returnHash: '#menu',
+  },
+};
+
 // Six visible catalog slots (DevPath occupies Slot 06; Sandbox launches from centered floppy bay)
 const CATALOG_SLOTS = [
   {
@@ -240,7 +289,8 @@ const CATALOG_SLOTS = [
     technologies: ['HTML5', 'CSS3', 'Vanilla ES Modules', 'SVG Graph', 'JSON Schema'],
     devStatus: 'PAUSED PROTOTYPE — GAME ARCHITECTURE AVAILABLE; BROADER DOMAINS INCOMPLETE',
     actions: [
-      { label: 'OPEN PROTOTYPE (/devpath/) ▸', href: '/devpath/', primary: true, external: false },
+      { label: 'OPEN DEVPATH ▸', compactLabel: 'OPEN', ariaLabel: 'Open DevPath', href: '/devpath/', primary: true, external: false },
+      { label: 'VIEW SOURCE REPOSITORY', compactLabel: 'SOURCE', href: 'https://github.com/jendrickcon/portfolio-hub/tree/main/devpath', primary: false, external: true, icon: 'github' },
     ],
   },
 ];
@@ -265,6 +315,20 @@ let activeEmbedState = null;
 let lastEmbedReloadCount = 0;
 let activeDossierPreview = null;
 let cancelDossierShellAnim = null;
+let activeLaunchState = null;
+
+function clearLaunchTransition() {
+  if (!activeLaunchState) return;
+  const st = activeLaunchState;
+  activeLaunchState = null;
+  if (st.raf1) cancelAnimationFrame(st.raf1);
+  if (st.raf2) cancelAnimationFrame(st.raf2);
+  if (st.navTimerId) clearTimeout(st.navTimerId);
+  if (st.recoveryTimerId) clearTimeout(st.recoveryTimerId);
+  if (typeof st.onKeyDown === 'function') {
+    document.removeEventListener('keydown', st.onKeyDown, true);
+  }
+}
 
 function teardownDossierPreview() {
   if (typeof cancelDossierShellAnim === 'function') {
@@ -395,6 +459,7 @@ function setPixelScenePose(poseName, immediate = false) {
 function clearActiveTimers() {
   activeTimers.forEach(clearTimeout);
   activeTimers = [];
+  clearLaunchTransition();
 }
 
 function scheduleTimer(fn, ms) {
@@ -577,7 +642,125 @@ function openFloppyTrayLatched() {
   }
 }
 
+function launchDestination(destKey, { triggerEl = null } = {}) {
+  const cfg = LAUNCH_DESTINATIONS[destKey];
+  if (!cfg || activeLaunchState || isRestarting) return;
+
+  const restoreView = currentView;
+  const restoreAppId = lastTriggerAppId;
+  const restoreTriggerId = triggerEl && triggerEl.id ? triggerEl.id : null;
+
+  clearActiveTimers();
+  teardownDossierPreview();
+  teardownProfessionalEmbed();
+  screenContentEl.classList.remove('is-embed-active');
+  if (webglScene) webglScene.setEmbedMode(false);
+  closeFloppyTray(true);
+
+  currentView = 'launch-transition';
+  hwPowerBtn.disabled = false;
+  document.body.classList.remove('is-restarting');
+  document.body.classList.add('is-powered');
+  setScreenLightState('live');
+
+  screenContentEl.innerHTML = `
+    <div id="launch-transition-view" class="launch-transition-view" role="status" aria-live="polite" aria-label="Opening ${cfg.appName}">
+      <div class="launch-transition-card">
+        <p class="launch-transition-kicker">${cfg.headline}</p>
+        <p class="launch-transition-app">${cfg.appName.toUpperCase()}</p>
+        <p class="launch-transition-route"><span class="launch-route-label">ROUTE:</span> ${cfg.url}</p>
+        <div class="launch-transition-steps">
+          <p>${cfg.detail}</p>
+          <p>SAVING WORKSTATION STATE &bull; HANDOFF READY</p>
+        </div>
+        <div id="launch-transition-recovery" class="launch-transition-recovery" hidden>
+          <p class="launch-transition-delay">Navigation is taking longer than expected.</p>
+          <button type="button" id="launch-cancel-btn" class="dossier-action-btn dossier-action-btn--return">◂ RETURN TO WORKSTATION</button>
+        </div>
+      </div>
+    </div>
+  `;
+  screenContentEl.scrollTop = 0;
+  announce(`Opening ${cfg.appName}.`);
+
+  const state = {
+    destKey,
+    raf1: 0,
+    raf2: 0,
+    navTimerId: null,
+    recoveryTimerId: null,
+    onKeyDown: null,
+  };
+  activeLaunchState = state;
+
+  const restorePriorScreen = () => {
+    if (activeLaunchState !== state) return;
+    clearLaunchTransition();
+    if (restoreView === 'dossier' && restoreAppId) {
+      renderDossier(restoreAppId, { updateHistory: false, immediatePose: true });
+      if (restoreTriggerId) focusSafely(document.getElementById(restoreTriggerId));
+    } else if (restoreView === 'embed') {
+      renderProfessionalEmbed({ updateHistory: false, immediatePose: true });
+    } else if (restoreView === 'standby') {
+      renderStandby({ restoreFocus: true, updateHistory: false });
+    } else {
+      renderMenu({ shouldFocus: true, focusAppId: restoreAppId || null, updateHistory: false, immediatePose: true });
+    }
+    announce(`${cfg.appName} launch cancelled.`);
+  };
+
+  state.onKeyDown = (e) => {
+    if (activeLaunchState !== state) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      restorePriorScreen();
+    }
+  };
+  document.addEventListener('keydown', state.onKeyDown, true);
+
+  const cancelBtn = document.getElementById('launch-cancel-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', restorePriorScreen);
+  }
+
+  state.recoveryTimerId = setTimeout(() => {
+    if (activeLaunchState !== state) return;
+    const recoveryEl = document.getElementById('launch-transition-recovery');
+    if (recoveryEl) recoveryEl.hidden = false;
+  }, 1050);
+
+  const customDelay = Number(window.__EXPLORE_LAUNCH_DELAY_MS);
+  const waitMs = Number.isFinite(customDelay) && customDelay > 0
+    ? customDelay
+    : (reducedMotion ? 90 : 220);
+
+  state.raf1 = requestAnimationFrame(() => {
+    if (activeLaunchState !== state) return;
+    state.raf2 = requestAnimationFrame(() => {
+      if (activeLaunchState !== state) return;
+      state.navTimerId = setTimeout(() => {
+        if (activeLaunchState !== state) return;
+        try {
+          if (cfg.returnHash) {
+            setUrlHash(cfg.returnHash, { replace: true });
+          }
+          window.location.assign(cfg.url);
+        } catch {
+          restorePriorScreen();
+        }
+      }, waitMs);
+    });
+  });
+  renderDebugHud();
+}
+
 function launchExternalRoute(url) {
+  const matchedKey = Object.keys(LAUNCH_DESTINATIONS).find((k) => LAUNCH_DESTINATIONS[k].url === url);
+  if (matchedKey) {
+    launchDestination(matchedKey);
+    return;
+  }
   setUrlHash('#menu', { replace: true });
   window.location.assign(url);
 }
@@ -1028,7 +1211,7 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     let targetLight = 'menu';
     if (currentView === 'standby') targetLight = 'standby';
     else if (currentView === 'restarting') targetLight = 'paused';
-    else if (currentView === 'embed') targetLight = 'live';
+    else if (currentView === 'embed' || currentView === 'launch-transition') targetLight = 'live';
     else if (currentView === 'dossier' && lastTriggerAppId === 'devpath') targetLight = 'paused';
     setScreenLightState(targetLight);
     webglScene.renderSingleFrame();
@@ -1280,7 +1463,7 @@ function renderMenu({ shouldFocus = false, focusAppId = null, updateHistory = fa
       if (id === 'professional') {
         renderProfessionalEmbed({ updateHistory: true });
       } else if (id === 'art-gallery') {
-        launchExternalRoute('/art-gallery/');
+        launchDestination('art-gallery', { triggerEl: btn });
       } else {
         renderDossier(id, { updateHistory: true });
       }
@@ -1597,6 +1780,18 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
 
   state.onViewportScroll = () => updateEmbedPanState();
   viewportEl.addEventListener('scroll', state.onViewportScroll, { passive: true });
+
+  const fallbackOpenLink = document.getElementById('embed-fallback-open-link');
+  const bindFullSiteLaunch = (linkEl) => {
+    if (!linkEl) return;
+    linkEl.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      launchDestination('professional', { triggerEl: linkEl });
+    });
+  };
+  bindFullSiteLaunch(openFullLink);
+  bindFullSiteLaunch(fallbackOpenLink);
 
   returnBtn.addEventListener('click', returnFromEmbedToCatalog);
   fallbackReturnBtn.addEventListener('click', returnFromEmbedToCatalog);
@@ -1964,7 +2159,7 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
       const isCompact = window.innerWidth <= 639;
       const maxH = isCompact
         ? Math.max(150, apertureH - 52)
-        : Math.max(280, Math.min(430, apertureH - 58));
+        : Math.max(280, Math.min(460, apertureH - 36));
       const minH = Math.min(280, maxH);
       return { minH, maxH };
     };
@@ -2103,7 +2298,7 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
         } else if (data.type === 'project-embed-close-request') {
           closeInteractivePreview({ restoreFocus: true });
         } else if (data.type === 'project-embed-open-full-case-study') {
-          window.location.assign(previewCfg.caseStudyHref);
+          launchDestination(entry.id);
         }
       };
       window.addEventListener('message', state.onMessage);
@@ -2187,6 +2382,15 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
     renderMenu({ shouldFocus: true, focusAppId: entry.id, updateHistory: true });
     announce('Returned to catalog menu.');
   };
+
+  const dossierLaunchLink = document.getElementById('dossier-open-case-link') || document.getElementById('dossier-primary-launch-link');
+  if (dossierLaunchLink && LAUNCH_DESTINATIONS[entry.id]) {
+    dossierLaunchLink.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      launchDestination(entry.id, { triggerEl: dossierLaunchLink });
+    });
+  }
 
   document.getElementById('dossier-close-btn').addEventListener('click', backOut);
   document.getElementById('dossier-return-btn').addEventListener('click', backOut);
@@ -2372,7 +2576,7 @@ hwDiskBtn.addEventListener('click', (e) => {
 
   if (drivePhase === 'open' || (drivePhase === 'opening' && !fromTouch && !fromKeyboard) || (drivePhase === 'opening' && driveLatched)) {
     closeFloppyTray(true);
-    launchExternalRoute('/sandbox/');
+    launchDestination('sandbox', { triggerEl: hwDiskBtn });
     return;
   }
 

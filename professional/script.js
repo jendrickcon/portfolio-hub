@@ -245,11 +245,7 @@
       return;
     }
 
-    const getEmbedPadY = () => {
-      const cs = getComputedStyle(figure);
-      return (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-    };
-    const measureEmbedHeight = () => Math.ceil(demo.getBoundingClientRect().height + getEmbedPadY());
+    const measureEmbedHeight = () => Math.ceil(mainEl.getBoundingClientRect().height + 4);
     let lastNotifiedHeight = -1;
     let heightRafId = 0;
     const postHeightNow = () => {

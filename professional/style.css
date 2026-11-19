@@ -408,6 +408,8 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 .cyberdefender-image-link:focus-visible,.sandbox-image-link:focus-visible{outline:3px solid #a6c3ff;outline-offset:3px}
 .media-actions{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px}
 .media-primary-link{display:inline-flex;align-items:center;gap:5px}
+.repo-action{display:inline-flex;align-items:center;gap:7px}
+.repo-icon{width:16px;height:16px;flex:0 0 16px;fill:currentColor}
 @media(max-width:540px){.media-gallery img,.media-entry.has-shot img{max-height:250px;aspect-ratio:auto;object-position:center}}
 
 /* Identity foundation: navigation and status use sans; sequence numbers use mono. */

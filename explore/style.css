@@ -924,6 +924,7 @@ body.is-powered .proto-intro {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 44px;
   padding: 8px 14px;
   color: var(--cyan);
@@ -938,6 +939,12 @@ body.is-powered .proto-intro {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
+.dossier-link-btn .repo-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: currentColor;
+}
 
 .dossier-link-btn:hover,
 .dossier-link-btn:focus-visible {

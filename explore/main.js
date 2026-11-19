@@ -155,8 +155,8 @@ const CATALOG_SLOTS = [
     devStatus: 'FUNCTIONAL CAPSTONE PROTOTYPE — SYNTHETIC DATASET / HUMAN REVIEW ONLY',
     image: '../assets/projects/udm-radar.png',
     actions: [
-      { label: 'VIEW INTERACTIVE CASE STUDY ▸', href: '/#udm-radar', primary: true, external: false },
-      { label: 'VIEW SOURCE REPOSITORY', href: 'https://github.com/jendrickcon/udm-radar', primary: false, external: true, icon: 'github' },
+    { label: 'OPEN FULL CASE STUDY ▸', compactLabel: 'CASE STUDY', ariaLabel: 'Open full case study', href: '/#udm-radar', primary: true, external: false },
+    { label: 'VIEW SOURCE REPOSITORY', compactLabel: 'SOURCE', href: 'https://github.com/jendrickcon/udm-radar', primary: false, external: true, icon: 'github' },
     ],
   },
   {
@@ -178,8 +178,8 @@ const CATALOG_SLOTS = [
     devStatus: 'FUNCTIONAL TEAM PROJECT — LEARNING OUTCOMES NOT VERIFIED',
     image: '../assets/projects/studyquest.png',
     actions: [
-      { label: 'VIEW INTERACTIVE CASE STUDY ▸', href: '/#studyquest', primary: true, external: false },
-      { label: 'VIEW SOURCE REPOSITORY', href: 'https://github.com/zap1104/studyquest', primary: false, external: true, icon: 'github' },
+    { label: 'OPEN FULL CASE STUDY ▸', compactLabel: 'CASE STUDY', ariaLabel: 'Open full case study', href: '/#studyquest', primary: true, external: false },
+    { label: 'VIEW SOURCE REPOSITORY', compactLabel: 'SOURCE', href: 'https://github.com/zap1104/studyquest', primary: false, external: true, icon: 'github' },
     ],
   },
   {
@@ -254,8 +254,13 @@ let modeSwitchTimer = null;
 let activeEmbedState = null;
 let lastEmbedReloadCount = 0;
 let activeDossierPreview = null;
+let cancelDossierShellAnim = null;
 
 function teardownDossierPreview() {
+  if (typeof cancelDossierShellAnim === 'function') {
+    cancelDossierShellAnim();
+    cancelDossierShellAnim = null;
+  }
   if (!activeDossierPreview) return;
   const preview = activeDossierPreview;
   activeDossierPreview = null;
@@ -1762,6 +1767,10 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
         <div id="dossier-preview-active" class="dossier-preview-active" hidden>
           <div class="dossier-preview-toolbar">
             <p id="dossier-preview-notice" class="dossier-preview-notice" tabindex="-1">Interactive reconstruction from the Professional Portfolio</p>
+            <button type="button" id="dossier-preview-close-btn" class="dossier-preview-close-btn" aria-label="Close interactive preview">
+              <span class="lbl-full">CLOSE INTERACTIVE PREVIEW</span>
+              <span class="lbl-compact" aria-hidden="true">CLOSE PREVIEW</span>
+            </button>
           </div>
           <div id="dossier-preview-mount" class="dossier-preview-mount"></div>
         </div>
@@ -1771,49 +1780,68 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
   } else if (entry.image) {
     mediaHtml = `
       <div class="dossier-screenshot-frame">
-        <img class="dossier-screenshot" src="${entry.image}" alt="${entry.name} preview" />
+        <img class="dossier-screenshot" src="${entry.image}" alt="${entry.photoAlt || `${entry.name} preview`}" />
       </div>
     `;
   }
 
   const actionsList = Array.isArray(entry.actions) ? entry.actions : [];
-  const primaryActions = actionsList.filter((a) => a.primary);
-  const secondaryActions = actionsList.filter((a) => !a.primary);
+  const primaryAction = actionsList.find((a) => a.primary) || null;
+  const repoAction = actionsList.find((a) => !a.primary && a.icon === 'github') || null;
 
-  const renderActionLink = (action, isPrimary) => {
-    const cls = `${isPrimary ? 'dossier-play-btn' : 'dossier-link-btn'}${action.icon === 'github' ? ' repo-action' : ''}`;
-    const relAttr = action.external ? ' target="_blank" rel="noopener noreferrer"' : '';
-    const srExt = action.external ? '<span class="sr-only"> (opens in a new tab)</span>' : '';
-    const labelHtml = action.icon === 'github' ? `${GITHUB_MARK_SVG}<span>${action.label}</span>` : action.label;
-    return `<a class="${cls}" href="${action.href}"${relAttr}>${labelHtml}${srExt}</a>`;
-  };
-
-  const primaryActionsHtml = previewCfg
+  const previewToggleHtml = previewCfg
     ? `
-      <div class="dossier-actions dossier-actions--preview">
+      <div id="dossier-preview-launch-row" class="dossier-actions dossier-actions--preview">
         <button type="button" id="dossier-preview-toggle-btn" class="dossier-play-btn dossier-preview-toggle-btn" aria-expanded="false">TRY INTERACTIVE PREVIEW</button>
-        <a id="dossier-open-case-link" class="dossier-link-btn dossier-case-btn" href="${previewCfg.caseStudyHref}">OPEN FULL CASE STUDY ▸</a>
       </div>
     `
-    : (primaryActions.length
-      ? `<div class="dossier-actions">${primaryActions.map((a) => renderActionLink(a, true)).join('')}</div>`
-      : '');
-
-  const secondaryActionsHtml = secondaryActions.length
-    ? `<div class="dossier-actions">${secondaryActions.map((a) => renderActionLink(a, false)).join('')}</div>`
     : '';
+
+  const repoActionHtml = repoAction
+    ? `<a id="dossier-repo-link" class="dossier-action-btn dossier-action-btn--repo repo-action" href="${repoAction.href}" target="_blank" rel="noopener noreferrer" aria-label="View source repository, opens in a new tab">${GITHUB_MARK_SVG}<span class="lbl-full">${repoAction.label}</span><span class="lbl-compact" aria-hidden="true">${repoAction.compactLabel || 'SOURCE'}</span><span class="sr-only">, opens in a new tab</span></a>`
+    : '';
+
+  let primaryBarHtml = '';
+  if (previewCfg) {
+    primaryBarHtml = `<a id="dossier-open-case-link" class="dossier-action-btn dossier-action-btn--primary" href="${previewCfg.caseStudyHref}" aria-label="Open full case study"><span class="lbl-full">OPEN FULL CASE STUDY ▸</span><span class="lbl-compact" aria-hidden="true">CASE STUDY</span></a>`;
+  } else if (primaryAction) {
+    primaryBarHtml = `<a id="dossier-primary-launch-link" class="dossier-action-btn dossier-action-btn--primary" href="${primaryAction.href}" aria-label="${primaryAction.ariaLabel || primaryAction.label}"><span class="lbl-full">${primaryAction.label}</span><span class="lbl-compact" aria-hidden="true">${primaryAction.compactLabel || 'OPEN'}</span></a>`;
+  }
+
+  const actionBarHtml = `
+    <nav id="dossier-action-bar" class="dossier-action-bar" aria-label="${entry.name} actions">
+      <button type="button" id="dossier-return-btn" class="dossier-action-btn dossier-action-btn--return" aria-label="Return to application catalog">
+        <span class="lbl-full">◂ RETURN TO CATALOG</span>
+        <span class="lbl-compact" aria-hidden="true">RETURN</span>
+      </button>
+      ${repoActionHtml}
+      ${primaryBarHtml}
+    </nav>
+  `;
 
   const taglineHtml = entry.tagline
     ? `<p class="dossier-tagline">"${entry.tagline}"</p>`
     : '';
 
+  const extraSectionsHtml = Array.isArray(entry.extraSections) && entry.extraSections.length
+    ? entry.extraSections.map((sec) => `
+      <h3 class="dossier-section-title">${sec.title}</h3>
+      <p class="dossier-body">${sec.body}</p>
+    `).join('')
+    : '';
+
+  const featuresTitle = entry.featuresTitle || 'KEY FEATURES';
   const featuresHtml = Array.isArray(entry.features) && entry.features.length
     ? `
-      <h3 class="dossier-section-title">KEY FEATURES</h3>
+      <h3 class="dossier-section-title">${featuresTitle}</h3>
       <ul class="dossier-features">
         ${entry.features.map((f) => `<li>${f}</li>`).join('')}
       </ul>
     `
+    : '';
+
+  const boundaryHtml = entry.boundaryNote
+    ? `<p class="dossier-boundary-note">${entry.boundaryNote}</p>`
     : '';
 
   const techHtml = Array.isArray(entry.technologies) && entry.technologies.length
@@ -1830,18 +1858,17 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
         <button type="button" id="dossier-close-btn" class="dossier-close-btn" aria-label="Close ${entry.name} dossier and return to catalog">✕</button>
       </div>
       ${mediaHtml}
-      ${primaryActionsHtml}
+      ${previewToggleHtml}
       <p class="dossier-meta">${entry.category}</p>
       ${taglineHtml}
       <p class="dossier-body">${entry.summary}</p>
+      ${extraSectionsHtml}
       ${featuresHtml}
+      ${boundaryHtml}
       ${techHtml}
       <h3 class="dossier-section-title">STATUS</h3>
       <p class="dossier-status">${entry.devStatus || entry.status}</p>
-      ${secondaryActionsHtml}
-      <div class="dossier-footer">
-        <button type="button" id="dossier-return-btn" class="dossier-return-btn">◂ RETURN TO CATALOG</button>
-      </div>
+      ${actionBarHtml}
     </article>
   `;
   screenContentEl.scrollTop = 0;
@@ -1855,9 +1882,12 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
     const loadingView = document.getElementById('dossier-preview-loading');
     const activeView = document.getElementById('dossier-preview-active');
     const noticeEl = document.getElementById('dossier-preview-notice');
+    const toolbarCloseBtn = document.getElementById('dossier-preview-close-btn');
     const mountEl = document.getElementById('dossier-preview-mount');
     const errorEl = document.getElementById('dossier-preview-error');
+    const launchRow = document.getElementById('dossier-preview-launch-row');
     const toggleBtn = document.getElementById('dossier-preview-toggle-btn');
+    let lastAppliedMountH = -1;
 
     if (posterImg && posterMissing) {
       posterImg.addEventListener('error', () => {
@@ -1866,12 +1896,79 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
       });
     }
 
+    const animateMediaShellHeight = (mutateFn) => {
+      if (typeof cancelDossierShellAnim === 'function') {
+        cancelDossierShellAnim();
+        cancelDossierShellAnim = null;
+      }
+      const fromH = Math.ceil(mediaShell.getBoundingClientRect().height);
+      mutateFn();
+      mediaShell.style.transition = 'none';
+      mediaShell.style.height = 'auto';
+      const toH = Math.ceil(mediaShell.getBoundingClientRect().height);
+
+      if (reducedMotion || fromH <= 0 || toH <= 0 || Math.abs(toH - fromH) < 2) {
+        mediaShell.style.transition = '';
+        mediaShell.style.height = '';
+        return;
+      }
+
+      mediaShell.style.height = `${fromH}px`;
+      void mediaShell.offsetHeight;
+      mediaShell.style.transition = 'height 220ms cubic-bezier(0.2, 0.7, 0.2, 1)';
+      mediaShell.style.height = `${toH}px`;
+
+      let finished = false;
+      let timerId = null;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        if (timerId) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+        mediaShell.removeEventListener('transitionend', onEnd);
+        mediaShell.style.transition = '';
+        mediaShell.style.height = '';
+        if (cancelDossierShellAnim === abort) cancelDossierShellAnim = null;
+      };
+      const abort = () => {
+        if (finished) return;
+        finished = true;
+        if (timerId) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+        mediaShell.removeEventListener('transitionend', onEnd);
+      };
+      const onEnd = (e) => {
+        if (e.target === mediaShell && e.propertyName === 'height') finish();
+      };
+      cancelDossierShellAnim = abort;
+      mediaShell.addEventListener('transitionend', onEnd);
+      timerId = setTimeout(finish, 280);
+    };
+
+    const getMountHeightBounds = () => {
+      const apertureH = screenContentEl.clientHeight || 360;
+      const isCompact = window.innerWidth <= 639;
+      const maxH = isCompact
+        ? Math.max(150, apertureH - 52)
+        : Math.max(280, Math.min(430, apertureH - 58));
+      const minH = Math.min(280, maxH);
+      return { minH, maxH };
+    };
+
     const syncUiToClosed = () => {
       mediaShell.dataset.previewState = 'poster';
+      mediaShell.removeAttribute('aria-busy');
       posterView.hidden = false;
       loadingView.hidden = true;
       activeView.hidden = true;
+      launchRow.hidden = false;
+      toggleBtn.hidden = false;
       mountEl.style.height = '';
+      lastAppliedMountH = -1;
       toggleBtn.textContent = 'TRY INTERACTIVE PREVIEW';
       toggleBtn.setAttribute('aria-expanded', 'false');
       setScreenLightState('menu');
@@ -1880,42 +1977,61 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
     const applyMountHeight = (h) => {
       const numeric = Number(h);
       if (!Number.isFinite(numeric) || numeric <= 0) return;
-      const isCompact = window.innerWidth <= 639;
-      const clamped = isCompact
-        ? Math.max(150, Math.min(260, Math.ceil(numeric)))
-        : Math.max(180, Math.min(410, Math.ceil(numeric)));
-      mountEl.style.height = `${clamped}px`;
+      const { minH, maxH } = getMountHeightBounds();
+      const clamped = Math.max(minH, Math.min(maxH, Math.ceil(numeric)));
+      if (lastAppliedMountH > 0 && Math.abs(clamped - lastAppliedMountH) < 2) return;
+      lastAppliedMountH = clamped;
+      animateMediaShellHeight(() => {
+        mountEl.style.height = `${clamped}px`;
+      });
     };
 
     const failInteractivePreview = () => {
       teardownDossierPreview();
-      syncUiToClosed();
-      errorEl.hidden = false;
+      animateMediaShellHeight(() => {
+        syncUiToClosed();
+        errorEl.hidden = false;
+      });
       announce('Interactive preview unavailable. Open the full case study instead.');
+      focusSafely(toggleBtn);
     };
 
     closeInteractivePreview = ({ restoreFocus = true } = {}) => {
       const preservedScroll = screenContentEl.scrollTop;
       teardownDossierPreview();
-      syncUiToClosed();
-      errorEl.hidden = true;
+      animateMediaShellHeight(() => {
+        syncUiToClosed();
+        errorEl.hidden = true;
+      });
       screenContentEl.scrollTop = preservedScroll;
       announce(`${entry.name} interactive preview closed.`);
       if (restoreFocus) focusSafely(toggleBtn);
     };
 
-    const activateLoadedPreview = (state) => {
+    const activateLoadedPreview = (state, initialHeight = null) => {
       if (activeDossierPreview !== state || state.ready) return;
       state.ready = true;
       if (state.timeoutId) {
         clearTimeout(state.timeoutId);
         state.timeoutId = null;
       }
-      mediaShell.dataset.previewState = 'active';
-      posterView.hidden = true;
-      loadingView.hidden = true;
-      errorEl.hidden = true;
-      activeView.hidden = false;
+      animateMediaShellHeight(() => {
+        mediaShell.dataset.previewState = 'active';
+        mediaShell.removeAttribute('aria-busy');
+        posterView.hidden = true;
+        loadingView.hidden = true;
+        errorEl.hidden = true;
+        activeView.hidden = false;
+        launchRow.hidden = true;
+        toggleBtn.hidden = true;
+        const { minH, maxH } = getMountHeightBounds();
+        const fallbackH = window.innerWidth <= 639 ? maxH : minH;
+        const targetMountH = Number.isFinite(Number(initialHeight)) && Number(initialHeight) > 0
+          ? Math.max(minH, Math.min(maxH, Math.ceil(Number(initialHeight))))
+          : fallbackH;
+        lastAppliedMountH = targetMountH;
+        mountEl.style.height = `${targetMountH}px`;
+      });
       document.body.classList.add('is-dossier-preview-active');
       setScreenLightState('live');
       announce(`${entry.name} interactive reconstruction loaded.`);
@@ -1929,13 +2045,18 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
         : null;
       const initialSrc = customOverride || previewCfg.embedUrl;
 
-      mediaShell.dataset.previewState = 'loading';
-      posterView.hidden = false;
-      errorEl.hidden = true;
-      activeView.hidden = true;
-      loadingView.hidden = false;
-      toggleBtn.textContent = 'CLOSE INTERACTIVE PREVIEW';
-      toggleBtn.setAttribute('aria-expanded', 'true');
+      animateMediaShellHeight(() => {
+        mediaShell.dataset.previewState = 'loading';
+        mediaShell.setAttribute('aria-busy', 'true');
+        posterView.hidden = false;
+        errorEl.hidden = true;
+        activeView.hidden = true;
+        loadingView.hidden = false;
+        launchRow.hidden = false;
+        toggleBtn.hidden = false;
+        toggleBtn.textContent = 'CLOSE INTERACTIVE PREVIEW';
+        toggleBtn.setAttribute('aria-expanded', 'true');
+      });
       announce(`Loading ${entry.name} interactive reconstruction.`);
 
       const iframe = document.createElement('iframe');
@@ -1966,10 +2087,9 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
         if (!PREVIEW_ALLOWED_MESSAGES.has(data.type)) return;
 
         if (data.type === 'project-embed-ready') {
-          activateLoadedPreview(state);
-          applyMountHeight(data.height);
+          activateLoadedPreview(state, data.height);
         } else if (data.type === 'project-embed-height') {
-          applyMountHeight(data.height);
+          if (state.ready) applyMountHeight(data.height);
         } else if (data.type === 'project-embed-close-request') {
           closeInteractivePreview({ restoreFocus: true });
         } else if (data.type === 'project-embed-open-full-case-study') {
@@ -2015,7 +2135,9 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
           failInteractivePreview();
           return;
         }
-        activateLoadedPreview(state);
+        if (!state.ready) {
+          activateLoadedPreview(state);
+        }
       });
 
       iframe.addEventListener('error', () => {
@@ -2042,6 +2164,12 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
         openInteractivePreview();
       }
     });
+
+    if (toolbarCloseBtn) {
+      toolbarCloseBtn.addEventListener('click', () => {
+        closeInteractivePreview({ restoreFocus: true });
+      });
+    }
   }
 
   const backOut = () => {

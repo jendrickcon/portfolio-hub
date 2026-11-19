@@ -245,8 +245,27 @@
       return;
     }
 
-    const measureEmbedHeight = () => Math.ceil(figure.getBoundingClientRect().height);
-    const notifyHeight = () => postEmbedMessage('project-embed-height', { height: measureEmbedHeight() });
+    const getEmbedPadY = () => {
+      const cs = getComputedStyle(figure);
+      return (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    };
+    const measureEmbedHeight = () => Math.ceil(demo.getBoundingClientRect().height + getEmbedPadY());
+    let lastNotifiedHeight = -1;
+    let heightRafId = 0;
+    const postHeightNow = () => {
+      const nextHeight = measureEmbedHeight();
+      if (!Number.isFinite(nextHeight) || nextHeight <= 0) return;
+      if (lastNotifiedHeight > 0 && Math.abs(nextHeight - lastNotifiedHeight) < 2) return;
+      lastNotifiedHeight = nextHeight;
+      postEmbedMessage('project-embed-height', { height: nextHeight });
+    };
+    const notifyHeight = () => {
+      if (heightRafId) return;
+      heightRafId = window.requestAnimationFrame(() => {
+        heightRafId = 0;
+        postHeightNow();
+      });
+    };
 
     nav.hidden = false;
     fallback.hidden = true;
@@ -308,7 +327,7 @@
     });
 
     if (typeof ResizeObserver === 'function') {
-      new ResizeObserver(() => notifyHeight()).observe(figure);
+      new ResizeObserver(() => notifyHeight()).observe(demo);
     }
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(notifyHeight).catch(() => {});
@@ -316,7 +335,9 @@
 
     demo.dataset.demoReady = '1';
     window.requestAnimationFrame(() => {
-      postEmbedMessage('project-embed-ready', { height: measureEmbedHeight() });
+      const initialHeight = measureEmbedHeight();
+      lastNotifiedHeight = initialHeight;
+      postEmbedMessage('project-embed-ready', { height: initialHeight });
     });
     return;
   }

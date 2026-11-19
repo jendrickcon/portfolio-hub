@@ -5,7 +5,7 @@ Jendrick / Enuhri's personal portfolio repository. It holds two related experien
 - **[Professional](professional/index.html)** — the primary hiring-facing portfolio served at the canonical root `/`.
 - **[Explore](explore/index.html)** — the retro CRT / old-computer experience served under `/explore/`, containing experiments, interactive prototypes, and app-like project presentations.
 
-Both experiences are linked bidirectionally (with `/professional/` and the retired `/portfolio/` routes permanently redirecting via `308` to `/`). No mandatory entrance chooser sits in front of the Professional View.
+Both experiences are linked bidirectionally (with `/professional/` and the retired `/portfolio/` routes permanently redirecting via `308` to `/`). On a fresh session at `/`, an optional recruiter-first experience selector lets visitors continue directly to the **Professional Portfolio** or launch the **Explore Workstation**; direct section links (such as `/#work`), repeat same-session visits, and the embedded CRT preview inside `/explore/` bypass the selector automatically.
 
 This is a student portfolio built through iterative, AI-assisted development. It is published as a working portfolio, not as production software: some projects are functional, some are experiments, and some are presented through descriptions rather than runnable code.
 
@@ -21,11 +21,13 @@ This is a student portfolio built through iterative, AI-assisted development. It
 | Featured project reconstructions   | Implemented           | Presented from shipped evidence and screenshots, including UDM-RADAR GWA trend chart |
 | Supporting-media viewer            | Implemented           | Lightbox viewer for supporting project captures            |
 | Capabilities cards & dialog        | Implemented           | Interactive animated SVG capability cards and shared evidence dialog |
-| Explore (CRT Hub)                  | Implemented (`explore/`) | Six-slot CRT catalog (`/explore/`) with direct sub-app launches, inline project dossiers, and URL hash state |
-| DevPath entry in Explore           | Paused Prototype      | Shown separately below the six primary catalog tiles as `PAUSED PROTOTYPE` (`#app=devpath`) |
-| Root deployment (`vercel.json`)    | Implemented (Live)    | Deploys from repository root: `/` to Professional, `/explore/` to CRT Hub, `/professional/` & `/portfolio/` -> `308 /` |
+| Portfolio experience entry screen  | Implemented (`/`)     | Session-scoped dialog at `/` with primary Professional default, Explore Workstation option, focus trap, and automatic hash/iframe bypass |
+| Explore workstation (3D & Pixel 2D)| Implemented (`explore/`) | Dual-mode procedural 3D WebGL (Three.js r170) + fixed-aspect 4:3 Pixel 2D CRT workstation with shared semantic screen, 6-slot catalog, inline project dossiers, and URL hash state |
+| Professional-in-CRT embed          | Implemented (`explore/`) | Selecting `01 Professional Portfolio` inside `/explore/` loads the live same-origin `/` portfolio inside the CRT iframe with close-up framing, pan/scroll controls, and recursion protection |
+| DevPath entry in Explore           | Paused Prototype      | Occupies Slot `06` (`PAUSED PROTOTYPE`, `#app=devpath`) inside the six-slot Explore workstation catalog |
+| Hidden Sandbox floppy bay          | Implemented (`explore/`) | Centered physical 3.5" floppy bay (`SANDBOX.SYS`) below the CRT screen opens to launch `/sandbox/` |
+| Root deployment (`vercel.json`)    | Implemented (Live)    | Deploys from repository root: `/` to Professional, `/explore/` to CRT Workstation, `/professional/` & `/portfolio/` -> `308 /` |
 | Legacy HCI portfolio (`portfolio/`) | Retired (Archived)    | Externally archived and removed from active repository; `/portfolio/` redirects (`308`) to `/` |
-| Explore polish (PR E)              | Pending               | Final Explore mobile/a11y polish and cross-device QA       |
 
 Pull requests #1–#16 are merged on `main`, and repository-root deployment via [vercel.json](vercel.json) is live on `https://www.jendrick.dev` serving `/`, `/explore/`, `/art-gallery/`, `/cyberdefender/`, `/sandbox/`, and `/devpath/`.
 
@@ -48,7 +50,7 @@ The Toolkit describes capabilities with project references rather than a bare sk
 
 ## Explore
 
-The [explore/](explore/index.html) route (`/explore/`) hosts the CRT Hub: a retro computer interface, boot sequence, URL-hash navigation (`#menu`, `#app=<id>`), a persistent `◂ Professional Portfolio` return link (`/`), a six-slot primary application catalog (`Professional Portfolio`, `UDM-RADAR`, `StudyQuest`, `Enuhri Art Gallery`, `CyberDefender`, and `Sandbox`), and a visually secondary `DevPath · PAUSED PROTOTYPE` bar. It is an experimental secondary surface rather than the primary hiring presentation.
+The [explore/](explore/index.html) route (`/explore/`) hosts the dual-mode **Explore Workstation**: a procedural Three.js r170 **3D** desk workstation paired with an intentionally authored fixed-aspect **Pixel 2D** workstation mode, both sharing one projected semantic CRT interface and a deterministic `320×180` animated cityscape window (`pixel-env.js`). It features a Standby/Boot flow, a persistent `◂ Professional Portfolio` return control (`/`), URL-hash navigation (`#menu`, `#app=<id>`), a six-slot application catalog (`01 Professional Portfolio` [live same-origin CRT embed], `02 UDM-RADAR`, `03 StudyQuest`, `04 Enuhri Art Gallery`, `05 CyberDefender`, and `06 DevPath` [`PAUSED PROTOTYPE`]), a centered physical 3.5" `SANDBOX.SYS` floppy bay launching `/sandbox/`, and a working physical CRT Power button. It remains an experimental secondary surface alongside the canonical hiring presentation.
 
 ## Projects
 
@@ -63,8 +65,8 @@ The [explore/](explore/index.html) route (`/explore/`) hosts the CRT Hub: a retr
 | Waffle's Nine Lives                       | Android MVP                             | Supporting project              | Top-down action roguelike with rooms, enemies and nine lives                                       |
 | [Art Gallery](art-gallery/index.html)     | Experiment, work remains                | Explore application             | Interactive gallery with Firebase/Firestore features; Firestore rules still require console review; Cloud Firestore is used separately from Portfolio Hub hosting |
 | [CyberDefender](cyberdefender/index.html) | Web reimagining                         | Explore application             | Web reimagining of the original Godot prototype                                                    |
-| [Sandbox](sandbox/index.html)             | Experiment                              | Explore application             | Falling-sand and cellular-automata simulation with header return link to `/explore/#menu`          |
-| [DevPath](devpath/index.html)             | Development paused                      | Secondary Explore entry         | Architecture and decision-graph prototype (`PAUSED PROTOTYPE`); Game Architecture is available while broader domains remain incomplete |
+| [Sandbox](sandbox/index.html)             | Experiment                              | Hidden floppy bay (`SANDBOX.SYS`) | Falling-sand and cellular-automata simulation launched from the CRT floppy bay with return link to `/explore/#menu` |
+| [DevPath](devpath/index.html)             | Development paused                      | Slot 06 catalog entry           | Architecture and decision-graph prototype (`PAUSED PROTOTYPE`, `#app=devpath`); Game Architecture is available while broader domains remain incomplete |
 
 UDM-RADAR and StudyQuest are represented here through descriptions and evidence. Their full runnable systems live in their own repositories, so this repository does not independently verify their internal implementation. These entries do not claim live institutional deployment or the use of real student records.
 
@@ -83,13 +85,13 @@ These are separate facts and should not be combined into one claim.
 ## Repository structure
 
 ```text
-professional/      Professional View (served at / via vercel.json rewrites)
-explore/           CRT Explore Hub (served at /explore/)
+professional/      Professional View + session-scoped experience entry selector (served at / via vercel.json rewrites)
+explore/           Dual-mode 3D & Pixel 2D Explore workstation (`main.js`, `crt-scene.js`, `pixel-env.js`, local fonts, vendored Three.js)
 art-gallery/       Enuhri Art Gallery (Firebase Authentication / Firestore)
 cyberdefender/     CyberDefender web reimagining
 sandbox/           Falling-sand simulation experiment
 devpath/           DevPath decision-graph prototype (paused)
-assets/            Shared sprites and previews for /explore/
+assets/projects/   Active project dossier preview screenshots for /explore/ (retired PNG shell sprites removed)
 vercel.json        Repository-root rewrites and 308 redirects (/professional/, /portfolio/ -> /)
 docs/              Documentation and handoff notes
 ```
@@ -140,8 +142,7 @@ Ignore patterns are not a security boundary. Firestore rules and cloud configura
 
 ## Roadmap
 
-1. Finish Explore mobile layout, keyboard focus, and reduced-motion polish (PR E).
-2. Complete final cross-browser, physical-device, accessibility, privacy, and production QA.
+1. Complete final physical-device verification and post-preview production monitoring across desktop, tablet, and phone targets.
 
 ## Known limitations
 

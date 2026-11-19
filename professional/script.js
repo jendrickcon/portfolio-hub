@@ -1,7 +1,344 @@
 
 (() => {
+  /* Portfolio Experience Entry Gate Controller */
+  (() => {
+    const STORAGE_KEY = 'enuhri_entry_choice_seen';
+    const root = document.documentElement;
+    const gate = document.getElementById('entry-gate');
+    const primaryBtn = document.getElementById('entry-primary-btn');
+    const exploreLink = document.getElementById('entry-explore-link');
+    if (!gate || !primaryBtn || !exploreLink) return;
+
+    const bgRegions = [
+      document.querySelector('.skip'),
+      document.getElementById('hdr'),
+      document.getElementById('main'),
+      document.querySelector('footer'),
+    ].filter(Boolean);
+
+    function shouldOpenGate() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1' || params.get('embed') === 'project' || params.get('entry') === '0' || root.dataset.embedProject) return false;
+        const inIframe = window.self !== window.top || Boolean(window.frameElement);
+        if (inIframe) return false;
+        if (window.location.hash && window.location.hash.length > 1) return false;
+        if (params.get('entry') === '1') return true;
+        return window.sessionStorage.getItem(STORAGE_KEY) !== '1';
+      } catch (_) {
+        return root.dataset.entryGate === 'open';
+      }
+    }
+
+    if (!shouldOpenGate()) {
+      delete root.dataset.entryGate;
+      gate.hidden = true;
+      return;
+    }
+
+    const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const finePointerMq = window.matchMedia('(pointer: fine)');
+    const focusables = [primaryBtn, exploreLink];
+    const svgEl = gate.querySelector('.entry-signal-svg');
+    const haloCircle = document.getElementById('pointer-halo-circle');
+    let pointerRaf = 0;
+    let pointerClientX = 0;
+    let pointerClientY = 0;
+    let pointerNormX = 0.5;
+    let pointerInPanel = false;
+    let pointerActive = false;
+    let targetDx = 0;
+    let targetDy = 0;
+
+    function setBackgroundInert(isInert) {
+      bgRegions.forEach((el) => {
+        el.inert = isInert;
+        if (isInert) el.setAttribute('aria-hidden', 'true');
+        else el.removeAttribute('aria-hidden');
+      });
+    }
+
+    function hideHalo() {
+      if (!pointerActive) return;
+      pointerActive = false;
+      gate.style.setProperty('--entry-halo-opacity', '0');
+      delete gate.dataset.haloZone;
+    }
+
+    function clearPointerEffects() {
+      if (pointerRaf) {
+        window.cancelAnimationFrame(pointerRaf);
+        pointerRaf = 0;
+      }
+      pointerActive = false;
+      gate.style.removeProperty('--signal-dx');
+      gate.style.removeProperty('--signal-dy');
+      gate.style.removeProperty('--entry-pointer-x');
+      gate.style.removeProperty('--entry-pointer-y');
+      gate.style.removeProperty('--entry-halo-opacity');
+      delete gate.dataset.haloZone;
+    }
+
+    function updateHaloPosition() {
+      gate.style.setProperty('--entry-pointer-x', `${pointerClientX.toFixed(1)}px`);
+      gate.style.setProperty('--entry-pointer-y', `${pointerClientY.toFixed(1)}px`);
+      gate.dataset.haloZone = pointerNormX < 0.44 ? 'pro' : (pointerNormX > 0.56 ? 'exp' : 'center');
+      gate.style.setProperty('--entry-halo-opacity', '1');
+      pointerActive = true;
+
+      if (!svgEl || !haloCircle || typeof svgEl.createSVGPoint !== 'function') return;
+      const ctm = svgEl.getScreenCTM();
+      if (!ctm) return;
+      try {
+        const pt = svgEl.createSVGPoint();
+        pt.x = pointerClientX;
+        pt.y = pointerClientY;
+        const svgPt = pt.matrixTransform(ctm.inverse());
+        haloCircle.setAttribute('cx', svgPt.x.toFixed(1));
+        haloCircle.setAttribute('cy', svgPt.y.toFixed(1));
+      } catch {
+        // Ignore non-invertible CTM during layout transition.
+      }
+    }
+
+    function applyPointerEffects() {
+      pointerRaf = 0;
+      if (motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) {
+        clearPointerEffects();
+        return;
+      }
+      gate.style.setProperty('--signal-dx', targetDx.toFixed(4));
+      gate.style.setProperty('--signal-dy', targetDy.toFixed(4));
+      if (pointerInPanel) hideHalo();
+      else updateHaloPosition();
+    }
+
+    function onPointerMove(event) {
+      if (event.pointerType === 'touch' || motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) return;
+      const w = Math.max(window.innerWidth, 1);
+      const h = Math.max(window.innerHeight, 1);
+      pointerClientX = event.clientX;
+      pointerClientY = event.clientY;
+      pointerNormX = pointerClientX / w;
+      pointerInPanel = Boolean(event.target && typeof event.target.closest === 'function' && event.target.closest('.entry-panel'));
+      targetDx = (pointerNormX - 0.5) * 2;
+      targetDy = ((pointerClientY / h) - 0.5) * 2;
+      if (!pointerRaf) pointerRaf = window.requestAnimationFrame(applyPointerEffects);
+    }
+
+    function onPointerLeave() {
+      if (pointerRaf) {
+        window.cancelAnimationFrame(pointerRaf);
+        pointerRaf = 0;
+      }
+      hideHalo();
+    }
+
+    function onMotionOrPointerChange() {
+      if (motionMq.matches || !finePointerMq.matches) {
+        clearPointerEffects();
+      }
+    }
+
+    function onKeyDown(event) {
+      if (gate.hidden) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        dismissGate();
+        return;
+      }
+      if (event.key === 'Tab') {
+        const activeIdx = focusables.indexOf(document.activeElement);
+        event.preventDefault();
+        if (event.shiftKey) {
+          const prev = activeIdx <= 0 ? focusables[focusables.length - 1] : focusables[activeIdx - 1];
+          prev.focus({ preventScroll: true });
+        } else {
+          const next = (activeIdx === -1 || activeIdx >= focusables.length - 1) ? focusables[0] : focusables[activeIdx + 1];
+          next.focus({ preventScroll: true });
+        }
+      }
+    }
+
+    function markSeen() {
+      try {
+        window.sessionStorage.setItem(STORAGE_KEY, '1');
+      } catch (_) {}
+    }
+
+    function dismissGate() {
+      if (gate.hidden) return;
+      markSeen();
+      clearPointerEffects();
+      document.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('pointermove', onPointerMove);
+      gate.removeEventListener('pointerleave', onPointerLeave);
+      motionMq.removeEventListener('change', onMotionOrPointerChange);
+      finePointerMq.removeEventListener('change', onMotionOrPointerChange);
+
+      gate.hidden = true;
+      delete root.dataset.entryGate;
+      setBackgroundInert(false);
+
+      const mainEl = document.getElementById('main');
+      if (mainEl) {
+        if (!mainEl.hasAttribute('tabindex')) mainEl.setAttribute('tabindex', '-1');
+        mainEl.focus({ preventScroll: true });
+      }
+    }
+
+    root.dataset.entryGate = 'open';
+    gate.hidden = false;
+    setBackgroundInert(true);
+
+    primaryBtn.addEventListener('click', dismissGate);
+    exploreLink.addEventListener('click', markSeen);
+    document.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    gate.addEventListener('pointerleave', onPointerLeave, { passive: true });
+    motionMq.addEventListener('change', onMotionOrPointerChange);
+    finePointerMq.addEventListener('change', onMotionOrPointerChange);
+
+    window.requestAnimationFrame(() => {
+      if (!gate.hidden) primaryBtn.focus({ preventScroll: true });
+    });
+  })();
+
   const $$ = s => [...document.querySelectorAll(s)];
-  const html = document.documentElement, hdr = document.getElementById('hdr');
+  const html = document.documentElement;
+
+  /* Scoped Project Reconstruction Embed (?embed=project&project=udm-radar|studyquest) */
+  const scopedProjectId = html.dataset.embedProject;
+  if (scopedProjectId === 'udm-radar' || scopedProjectId === 'studyquest') {
+    const query = new URLSearchParams(window.location.search);
+    document.querySelectorAll('#page-field, #entry-gate, #hdr, footer, dialog, .skip').forEach(el => el.remove());
+
+    const postEmbedMessage = (type, extra = {}) => {
+      if (!window.parent || window.parent === window) return;
+      try {
+        window.parent.postMessage({
+          source: 'enuhri-project-embed',
+          type,
+          project: scopedProjectId,
+          ...extra,
+        }, window.location.origin);
+      } catch (_) {}
+    };
+
+    const panel = document.getElementById(scopedProjectId);
+    const figure = panel ? panel.querySelector('.chapter-preview') : null;
+    const mainEl = document.getElementById('main');
+    if (query.get('simulateError') === '1' || !figure || !mainEl) {
+      html.dataset.embedFailed = '1';
+      return;
+    }
+
+    mainEl.innerHTML = '';
+    mainEl.className = 'scoped-project-main';
+    mainEl.appendChild(figure);
+
+    const demo = figure.querySelector('[data-demo-project]');
+    const nav = demo ? demo.querySelector('.demo-nav, .demo-tabs') : null;
+    const fallback = demo ? demo.querySelector('.demo-nav-static, .demo-study-nav-static, .demo-pcs-nav-static') : null;
+    if (!demo || !nav || !fallback) {
+      html.dataset.embedFailed = '1';
+      return;
+    }
+
+    const measureEmbedHeight = () => Math.ceil(mainEl.getBoundingClientRect().height + 4);
+    let lastNotifiedHeight = -1;
+    let heightRafId = 0;
+    const postHeightNow = () => {
+      const nextHeight = measureEmbedHeight();
+      if (!Number.isFinite(nextHeight) || nextHeight <= 0) return;
+      if (lastNotifiedHeight > 0 && Math.abs(nextHeight - lastNotifiedHeight) < 2) return;
+      lastNotifiedHeight = nextHeight;
+      postEmbedMessage('project-embed-height', { height: nextHeight });
+    };
+    const notifyHeight = () => {
+      if (heightRafId) return;
+      heightRafId = window.requestAnimationFrame(() => {
+        heightRafId = 0;
+        postHeightNow();
+      });
+    };
+
+    nav.hidden = false;
+    fallback.hidden = true;
+    const buttons = [...nav.querySelectorAll('[data-demo-target]')];
+    const pages = [...demo.querySelectorAll('[data-demo-view]')];
+    let pointerRevision = 0;
+    let pointerPosition = null;
+    let hoverTimer;
+    let hoverCandidate;
+    let lastSelectionRevision = -1;
+
+    const trackScopedPointer = event => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      if (!pointerPosition || event.clientX !== pointerPosition.x || event.clientY !== pointerPosition.y) {
+        pointerRevision++;
+        pointerPosition = { x: event.clientX, y: event.clientY };
+      }
+    };
+    document.addEventListener('pointermove', trackScopedPointer, true);
+    document.addEventListener('pointerdown', trackScopedPointer, true);
+
+    const cancelHover = () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+      hoverCandidate = null;
+    };
+    const select = button => {
+      cancelHover();
+      if (button.getAttribute('aria-pressed') === 'true') return;
+      lastSelectionRevision = pointerRevision;
+      buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
+      notifyHeight();
+    };
+    const scheduleHover = (button, event) => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      if (button.getAttribute('aria-pressed') === 'true') { cancelHover(); return; }
+      if (lastSelectionRevision === pointerRevision || hoverCandidate === button) return;
+      cancelHover();
+      hoverCandidate = button;
+      hoverTimer = setTimeout(() => {
+        if (button.matches(':hover')) select(button);
+        else cancelHover();
+      }, 200);
+    };
+    buttons.forEach(button => {
+      button.addEventListener('pointerenter', event => scheduleHover(button, event));
+      button.addEventListener('pointermove', event => scheduleHover(button, event));
+      button.addEventListener('pointerleave', () => { if (hoverCandidate === button) cancelHover(); });
+      button.addEventListener('focus', () => select(button));
+      button.addEventListener('click', () => select(button));
+    });
+
+    window.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        postEmbedMessage('project-embed-close-request');
+      }
+    });
+
+    if (typeof ResizeObserver === 'function') {
+      new ResizeObserver(() => notifyHeight()).observe(demo);
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(notifyHeight).catch(() => {});
+    }
+
+    demo.dataset.demoReady = '1';
+    window.requestAnimationFrame(() => {
+      const initialHeight = measureEmbedHeight();
+      lastNotifiedHeight = initialHeight;
+      postEmbedMessage('project-embed-ready', { height: initialHeight });
+    });
+    return;
+  }
+
+  const hdr = document.getElementById('hdr');
   const run = document.getElementById('story'), track = run.querySelector('.track');
   const stage = run.querySelector('.stage');
   const footer = document.querySelector('footer');

@@ -1,95 +1,587 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-workstation-state="initializing">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enuhri Portfolio Hub</title>
-  <link rel="canonical" href="https://www.jendrick.dev/explore/" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14'>💻</text></svg>" />
-  <link rel="stylesheet" href="style.css?v=2.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Enuhri | Explore Workstation</title>
+  <meta name="description" content="Enuhri interactive retro CRT workstation — explore live projects, case-study dossiers, and experiments in 3D or Pixel 2D." />
+  <link rel="icon" href="data:," />
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    [hidden]{display:none!important}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    html,body{width:100%;height:100vh;height:100dvh;max-height:100dvh;background:#0a0c10;color:#e8e4d8;font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;overflow:hidden}
+    .prototype-app{position:fixed;inset:0;width:100%;height:100%;z-index:10;display:flex;flex-direction:column;overflow:hidden}
+    .proto-header{flex-shrink:0;position:relative;z-index:220;padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left))}
+    .proto-nav{display:flex;flex-wrap:nowrap;align-items:center;gap:8px}
+    .ctrl-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px 12px;font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.4px;white-space:nowrap;color:#b6b0a2;background:rgba(10,12,16,.92);border:1px solid rgba(232,228,216,.42);border-radius:3px;text-decoration:none}
+    .ctrl-btn--return{color:#00e5ff;border-color:rgba(0,229,255,.55)}
+    .display-mode-fieldset{display:inline-flex;align-items:center;gap:4px;padding:2px 4px;border:1px solid rgba(232,228,216,.35);border-radius:3px;background:rgba(10,12,16,.92);flex-shrink:0}
+    .display-mode-legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+    .mode-option{display:inline-flex;cursor:pointer}
+    .mode-pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:6px 11px;font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:12px;color:#b6b0a2;border:1px solid transparent;border-radius:2px}
+    .lbl-compact{display:none}
+    @media(max-width:639px){
+      .proto-header{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}
+      .proto-nav{justify-content:space-between;gap:6px}
+      .ctrl-btn{padding:6px 9px;font-size:11.5px}
+      .lbl-full{display:none}.lbl-compact{display:inline}
+      .mode-pill{padding:6px 10px;font-size:11.5px}
+    }
+    html[data-workstation-state="initializing"] .crt-canvas,
+    html[data-workstation-state="initializing"] .pixel2d-room-bands,
+    html[data-workstation-state="initializing"] .pixel2d-world,
+    html[data-workstation-state="initializing"] .proto-intro,
+    html[data-workstation-state="initializing"] .crt-chassis,
+    html[data-workstation-state="initializing"] .hw-controls,
+    html[data-workstation-state="error"] .crt-canvas,
+    html[data-workstation-state="error"] .pixel2d-room-bands,
+    html[data-workstation-state="error"] .pixel2d-world,
+    html[data-workstation-state="error"] .proto-intro,
+    html[data-workstation-state="error"] .crt-chassis,
+    html[data-workstation-state="error"] .hw-controls{
+      opacity:0;visibility:hidden;pointer-events:none
+    }
+    .proto-main{flex:1 1 auto;min-height:0;width:100%;position:relative;overflow:hidden}
+    .workstation-init{position:fixed;inset:0;z-index:180;display:flex;align-items:center;justify-content:center;padding:max(64px,calc(env(safe-area-inset-top) + 60px)) 16px 24px;background:radial-gradient(ellipse at 50% 48%,rgba(16,30,40,.46) 0%,#0a0c10 72%)}
+    .workstation-init__card{position:relative;width:min(100%,400px);padding:20px 22px;background:#061015;border:1px solid rgba(57,255,20,.34);border-radius:4px;box-shadow:0 0 0 1px #26282b,0 18px 48px rgba(0,0,0,.72),inset 0 0 28px rgba(0,0,0,.78)}
+    .init-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .init-led{width:6px;height:6px;background:#ffbf00;box-shadow:0 0 6px rgba(255,191,0,.6);flex:none}
+    .init-brand{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:1.4px;color:#e8e4d8}
+    .init-title{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:clamp(14px,2.2vw,16.5px);letter-spacing:.9px;color:#39ff14;line-height:1.35;margin-bottom:8px}
+    .init-stage{display:flex;align-items:center;gap:8px;font-size:12.5px;letter-spacing:.5px;color:#b6b0a2;margin-bottom:14px}
+    .init-cue{color:#00e5ff;line-height:1}
+    .init-foot{border-top:1px solid rgba(232,228,216,.14);padding-top:10px;display:flex;flex-direction:column;gap:10px}
+    .init-hint{font-size:11.5px;line-height:1.45;color:#b6b0a2}
+  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- Always-visible return link & display settings, independent of CRT phase -->
-  <header class="hub-header">
-    <nav id="display-settings" class="display-settings" aria-label="Display and return navigation">
-      <a href="/" id="return-professional-link" class="settings-btn settings-btn--professional" title="Return to the main Professional Portfolio">◂ Professional Portfolio</a>
-      <div class="settings-group" role="group" aria-label="Display settings">
-        <button type="button" id="toggle-power-btn" class="settings-btn settings-btn--power" aria-pressed="false" title="Power / Return to landing screen">POWER: OFF</button>
-        <button type="button" id="toggle-scanlines-btn" class="settings-btn" aria-pressed="true">SCANLINES: ON</button>
-        <button type="button" id="toggle-motion-btn" class="settings-btn" aria-pressed="false">REDUCE MOTION: OFF</button>
+  <!-- Layer 1 WebGL Canvas (3D mode; offscreen bitmap shared cleanly with Pixel 2D backdrop) -->
+  <canvas id="crt-scene-canvas" class="crt-canvas" aria-hidden="true" tabindex="-1"></canvas>
+
+  <!-- Fixed Full-Viewport App Shell -->
+  <div id="prototype-app" class="prototype-app">
+
+    <!-- Layer 3: Strict One-Row Mobile Header & Display-Mode Selector -->
+    <header class="proto-header" id="proto-header">
+      <nav class="proto-nav" aria-label="Workstation controls and return navigation">
+        <a href="/" class="ctrl-btn ctrl-btn--return" aria-label="Return to Professional Portfolio">
+          <span class="lbl-full">◂ Professional Portfolio</span>
+          <span class="lbl-compact" aria-hidden="true">◂ Portfolio</span>
+        </a>
+
+        <fieldset class="display-mode-fieldset" id="display-mode-group" data-initializing="true">
+          <legend class="display-mode-legend">DISPLAY MODE</legend>
+          <label class="mode-option" for="mode-radio-3d">
+            <input type="radio" name="display-mode" id="mode-radio-3d" value="3d" class="mode-radio sr-only" aria-label="3D Workstation" />
+            <span class="mode-pill">3D</span>
+          </label>
+          <label class="mode-option" for="mode-radio-2d">
+            <input type="radio" name="display-mode" id="mode-radio-2d" value="2d" class="mode-radio sr-only" aria-label="2D Pixel Workstation" />
+            <span class="mode-pill">2D</span>
+          </label>
+        </fieldset>
+
+        <div id="debug-controls" class="ctrl-group ctrl-group--debug" role="group" aria-label="Debug inspection controls" hidden>
+          <label for="quality-select" class="sr-only">3D graphics quality tier</label>
+          <select id="quality-select" class="ctrl-btn ctrl-select" aria-label="3D graphics quality tier">
+            <option value="auto">3D TIER: AUTO</option>
+            <option value="high">3D TIER: HIGH</option>
+            <option value="medium">3D TIER: MEDIUM</option>
+          </select>
+          <label for="pixel-mode-select" class="sr-only">Pixel 3D comparison mode</label>
+          <select id="pixel-mode-select" class="ctrl-btn ctrl-select" aria-label="Pixel 3D comparison mode">
+            <option value="smooth">3D: SMOOTH RETRO</option>
+            <option value="quantized">3D: QUANTIZED + FACETED</option>
+            <option value="lowres75">3D: PIXEL 0.75× SCALE</option>
+            <option value="lowres50">3D: PIXEL 0.50× SCALE</option>
+          </select>
+          <button type="button" id="toggle-webgl-btn" class="ctrl-btn" aria-pressed="false">SIMULATE NO-WEBGL: OFF</button>
+          <button type="button" id="reset-pref-btn" class="ctrl-btn">RESET PREF</button>
+        </div>
+      </nav>
+    </header>
+
+    <main id="proto-main" class="proto-main">
+      <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+      <!-- Intentional CRT Calibration Initialization Gate (placed first so Chunk 1 paints immediately on slow links) -->
+      <section id="workstation-init" class="workstation-init" role="status" aria-live="polite" aria-label="Workstation initialization">
+        <div class="workstation-init__card">
+          <span class="init-corners" aria-hidden="true"></span>
+          <div class="init-top">
+            <span class="init-led" aria-hidden="true"></span>
+            <span class="init-brand">ENUHRI SYSTEM</span>
+          </div>
+          <p id="init-title" class="init-title">INITIALIZING WORKSTATION&hellip;</p>
+          <p id="init-stage" class="init-stage">
+            <span class="init-cue" aria-hidden="true">&#x25AA;</span>
+            <span id="init-stage-text">LOADING INTERFACE</span>
+          </p>
+          <div class="init-foot">
+            <p id="init-hint" class="init-hint">Preparing workstation display</p>
+            <div id="init-actions" class="init-actions" hidden>
+              <button type="button" id="init-switch-2d-btn" class="ctrl-btn init-action-btn">OPEN IN PIXEL 2D &#x25B8;</button>
+              <a href="/" class="ctrl-btn ctrl-btn--return init-action-btn" aria-label="Return to Professional Portfolio">
+                <span class="lbl-full">◂ Professional Portfolio</span>
+                <span class="lbl-compact" aria-hidden="true">◂ Portfolio</span>
+              </a>
+            </div>
+            <noscript>
+              <div class="init-noscript">
+                <p class="init-hint">JavaScript is required for the interactive workstation.</p>
+                <a href="/" class="ctrl-btn ctrl-btn--return init-action-btn">◂ Return to Professional Portfolio</a>
+              </div>
+            </noscript>
+          </div>
+        </div>
+      </section>
+
+      <!-- Seamless full-bleed desk/wall bands matched to projected Pixel 2D coordinates -->
+      <div id="pixel2d-room-bands" class="pixel2d-room-bands" aria-hidden="true">
+        <div class="px-band-dado"></div>
+        <div class="px-band-desk"></div>
+        <div class="px-band-desk-lip"></div>
+        <div class="px-band-fascia"></div>
       </div>
-    </nav>
-  </header>
 
+      <!-- Fixed 4:3 Logical Pixel 2D Workstation Stage (480x360 integer grid, scaled/translated uniformly per scene pose) -->
+      <div id="pixel2d-world" class="pixel2d-world" aria-hidden="true">
+        <canvas id="pixel2d-env-canvas" width="320" height="180" class="pixel2d-env-canvas" tabindex="-1"></canvas>
 
-  <!-- ============================================= -->
-  <!-- PHASE 1: LANDING SCREEN                        -->
-  <!-- ============================================= -->
-  <main id="landing-screen" class="phase active-phase">
-    <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+        <svg id="pixel2d-scene-svg" class="pixel2d-scene-svg" viewBox="0 0 480 360" shape-rendering="crispEdges">
+          <!-- ===== WALLS SURROUNDING ANIMATED CITY WINDOW (transparent aperture x:80..392, y:20..162) ===== -->
+          <rect x="0" y="0" width="480" height="20" fill="#070a10" />
+          <rect x="0" y="20" width="80" height="142" fill="#070a10" />
+          <rect x="392" y="20" width="88" height="142" fill="#070a10" />
+          <rect x="0" y="162" width="480" height="92" fill="#0c131f" />
 
-    <div class="hub-layout">
+          <!-- Dado trim & subtle wall routing panel on right upper wall -->
+          <rect x="0" y="162" width="480" height="2" fill="#26282b" />
+          <rect x="0" y="164" width="480" height="2" fill="#181a1d" />
+          <rect x="0" y="166" width="480" height="1" fill="#0c0e11" />
+          <rect x="410" y="68" width="52" height="4" fill="#26282b" />
+          <rect x="410" y="72" width="52" height="2" fill="#181a1d" />
+          <rect x="416" y="42" width="16" height="26" fill="#223044" />
+          <rect x="418" y="44" width="12" height="22" fill="#17253b" />
+          <rect x="420" y="47" width="8" height="2" fill="#1f5e70" />
+          <rect x="420" y="51" width="6" height="1" fill="#3c5068" />
+          <rect x="436" y="54" width="18" height="14" fill="#594014" />
+          <rect x="438" y="56" width="14" height="3" fill="#c49010" />
 
-      <!-- Left panel: title + description -->
-      <section class="side-panel side-panel--left" aria-label="Explore Hub introduction">
-        <h1 class="hub-title">ENUHRI<br />PORTFOLIO HUB</h1>
-        <p class="hub-description">
-          A collection of projects, ideas, and creations.
-          Explore my work through an interactive retro computer experience.
+          <!-- Stepped 3-Pane Studio Window Molding & Mullions -->
+          <rect x="76" y="16" width="320" height="4" fill="#181a1d" />
+          <rect x="76" y="16" width="4" height="146" fill="#181a1d" />
+          <rect x="392" y="16" width="4" height="146" fill="#181a1d" />
+          <rect x="79" y="19" width="314" height="1" fill="#26282b" />
+          <rect x="79" y="19" width="1" height="143" fill="#26282b" />
+          <rect x="183" y="20" width="3" height="142" fill="#181a1d" />
+          <rect x="287" y="20" width="3" height="142" fill="#181a1d" />
+          <rect x="80" y="92" width="312" height="3" fill="#181a1d" />
+          <rect x="72" y="160" width="328" height="4" fill="#343840" />
+          <rect x="72" y="164" width="328" height="2" fill="#181a1d" />
+
+          <!-- ===== DESK PLANE, BEVEL & CONTACT SHADOWS ===== -->
+          <rect x="0" y="254" width="480" height="92" fill="#131822" />
+          <rect x="0" y="254" width="480" height="2" fill="#242c3a" />
+          <rect x="0" y="256" width="480" height="1" fill="#181a1d" />
+          <rect x="0" y="344" width="480" height="4" fill="#26282b" />
+          <rect x="0" y="348" width="480" height="12" fill="#0c0e11" />
+          <!-- Sparse surface detail clusters -->
+          <rect x="36" y="316" width="10" height="1" fill="#1d2d45" />
+          <rect x="82" y="328" width="6" height="1" fill="#18273e" />
+          <rect x="386" y="318" width="12" height="1" fill="#1d2d45" />
+          <rect x="424" y="330" width="8" height="1" fill="#18273e" />
+
+          <!-- Desk contact shadows -->
+          <rect x="4" y="282" width="96" height="7" fill="#070a10" />
+          <rect x="166" y="264" width="148" height="8" fill="#070a10" />
+          <rect x="380" y="274" width="38" height="7" fill="#070a10" />
+          <rect x="430" y="280" width="46" height="6" fill="#070a10" />
+
+          <!-- ===== LEFT STUDIO EQUIPMENT: DUAL DECK / TAPE STACK & CABLES ===== -->
+          <rect x="92" y="264" width="18" height="3" fill="#0c0e11" />
+          <rect x="106" y="258" width="12" height="3" fill="#181a1d" />
+          <rect x="94" y="264" width="12" height="1" fill="#343840" />
+          <rect x="6" y="240" width="88" height="44" fill="#0c0e11" />
+          <rect x="8" y="242" width="84" height="8" fill="#343840" />
+          <rect x="8" y="250" width="84" height="32" fill="#26282b" />
+          <rect x="8" y="250" width="84" height="1" fill="#464b54" />
+          <rect x="12" y="254" width="48" height="22" fill="#181a1d" />
+          <rect x="16" y="258" width="40" height="14" fill="#133642" />
+          <rect x="20" y="261" width="10" height="8" fill="#0c0e11" />
+          <rect x="22" y="263" width="6" height="4" fill="#464b54" />
+          <rect x="38" y="261" width="10" height="8" fill="#0c0e11" />
+          <rect x="40" y="263" width="6" height="4" fill="#464b54" />
+          <rect x="64" y="256" width="22" height="8" fill="#181a1d" />
+          <rect x="66" y="258" width="10" height="4" fill="#c49010" />
+          <rect x="78" y="258" width="6" height="4" fill="#1f5e70" />
+          <rect x="66" y="270" width="4" height="4" fill="#a83232" />
+          <rect x="74" y="270" width="4" height="4" fill="#39ff14" />
+          <rect x="82" y="270" width="4" height="4" fill="#464b54" />
+          <rect x="10" y="198" width="80" height="42" fill="#0c0e11" />
+          <rect x="12" y="200" width="76" height="7" fill="#464b54" />
+          <rect x="12" y="207" width="76" height="31" fill="#26282b" />
+          <rect x="12" y="207" width="76" height="1" fill="#68737d" />
+          <rect x="16" y="212" width="32" height="18" fill="#181a1d" />
+          <rect x="20" y="217" width="24" height="3" fill="#0c0e11" />
+          <rect x="24" y="224" width="16" height="2" fill="#464b54" />
+          <rect x="54" y="212" width="28" height="20" fill="#181a1d" />
+          <rect x="57" y="215" width="22" height="14" fill="#131822" />
+          <rect x="63" y="218" width="10" height="8" fill="#26282b" />
+          <rect x="66" y="220" width="4" height="4" fill="#c49010" />
+          <rect x="96" y="246" width="9" height="18" fill="#0c0e11" />
+          <rect x="97" y="247" width="7" height="16" fill="#223044" />
+          <rect x="98" y="248" width="5" height="6" fill="#9ea8b4" />
+          <rect x="98" y="257" width="5" height="2" fill="#00a8be" />
+
+          <!-- ===== RIGHT STUDIO PROPS: CERAMIC POT PLANT + ARTICULATED LAMP ===== -->
+          <rect x="383" y="243" width="32" height="34" fill="#0c0e11" />
+          <rect x="380" y="240" width="38" height="8" fill="#0c0e11" />
+          <rect x="382" y="242" width="34" height="5" fill="#7a5518" />
+          <rect x="382" y="242" width="14" height="2" fill="#c49010" opacity="0.45" />
+          <rect x="385" y="248" width="28" height="27" fill="#594014" />
+          <rect x="385" y="248" width="8" height="27" fill="#7a5518" />
+          <rect x="385" y="248" width="28" height="2" fill="#3b2b10" />
+          <rect x="394" y="226" width="10" height="15" fill="#133324" />
+          <rect x="386" y="222" width="10" height="18" fill="#133324" />
+          <rect x="402" y="220" width="12" height="20" fill="#133324" />
+          <rect x="378" y="210" width="14" height="12" fill="#226e45" />
+          <rect x="374" y="206" width="10" height="7" fill="#358f58" />
+          <rect x="388" y="196" width="10" height="26" fill="#226e45" />
+          <rect x="390" y="190" width="6" height="12" fill="#358f58" />
+          <rect x="398" y="204" width="14" height="18" fill="#226e45" />
+          <rect x="402" y="198" width="8" height="8" fill="#358f58" />
+          <rect x="408" y="214" width="14" height="12" fill="#226e45" />
+          <rect x="414" y="210" width="8" height="6" fill="#358f58" />
+          <rect x="394" y="226" width="8" height="12" fill="#226e45" />
+
+          <polygon points="416,204 442,204 446,246 402,246" fill="#7a5518" opacity="0.16" />
+          <rect x="430" y="264" width="44" height="18" fill="#0c0e11" />
+          <rect x="432" y="266" width="40" height="5" fill="#464b54" />
+          <rect x="432" y="271" width="40" height="9" fill="#26282b" />
+          <rect x="442" y="267" width="6" height="3" fill="#c49010" />
+          <rect x="456" y="164" width="8" height="102" fill="#0c0e11" />
+          <rect x="458" y="166" width="4" height="98" fill="#343840" />
+          <rect x="458" y="166" width="2" height="98" fill="#464b54" />
+          <rect x="432" y="158" width="32" height="8" fill="#0c0e11" />
+          <rect x="434" y="160" width="28" height="4" fill="#464b54" />
+          <rect x="456" y="162" width="6" height="6" fill="#68737d" />
+          <rect x="424" y="166" width="18" height="8" fill="#0c0e11" />
+          <rect x="414" y="172" width="28" height="34" fill="#0c0e11" />
+          <rect x="416" y="174" width="24" height="28" fill="#343840" />
+          <rect x="416" y="174" width="6" height="28" fill="#464b54" />
+          <rect x="418" y="200" width="20" height="4" fill="#c49010" />
+
+          <!-- ===== ARTICULATED CRT MONITOR SWIVEL STAND ===== -->
+          <rect x="192" y="242" width="96" height="11" fill="#0c0e11" />
+          <rect x="196" y="243" width="88" height="9" fill="#26282b" />
+          <rect x="200" y="246" width="80" height="2" fill="#343840" />
+          <rect x="172" y="252" width="136" height="16" fill="#0c0e11" />
+          <rect x="174" y="253" width="132" height="3" fill="#d8cfc0" />
+          <rect x="174" y="256" width="132" height="6" fill="#c8bfb0" />
+          <rect x="176" y="262" width="128" height="4" fill="#857c6d" />
+          <rect x="180" y="266" width="120" height="1" fill="#595246" />
+
+          <!-- ===== 4:3 CRT MONITOR CASING (centered x:112..368 [w:256], y:26..244 [h:218]) ===== -->
+          <rect x="118" y="26" width="244" height="218" fill="#0c0e11" />
+          <rect x="114" y="28" width="252" height="214" fill="#0c0e11" />
+          <rect x="112" y="32" width="256" height="206" fill="#0c0e11" />
+
+          <!-- Stepped Top Roof Plane & 3 Recessed Cooling Vent Groups -->
+          <rect x="119" y="28" width="242" height="10" fill="#ebe3d4" />
+          <rect x="116" y="30" width="248" height="8" fill="#d8cfc0" />
+          <g fill="#26282b">
+            <rect x="128" y="30" width="2" height="5" /><rect x="132" y="30" width="2" height="5" />
+            <rect x="136" y="30" width="2" height="5" /><rect x="140" y="30" width="2" height="5" />
+            <rect x="144" y="30" width="2" height="5" /><rect x="148" y="30" width="2" height="5" />
+            <rect x="202" y="30" width="2" height="5" /><rect x="206" y="30" width="2" height="5" />
+            <rect x="210" y="30" width="2" height="5" /><rect x="214" y="30" width="2" height="5" />
+            <rect x="218" y="30" width="2" height="5" /><rect x="222" y="30" width="2" height="5" />
+            <rect x="226" y="30" width="2" height="5" /><rect x="230" y="30" width="2" height="5" />
+            <rect x="234" y="30" width="2" height="5" /><rect x="238" y="30" width="2" height="5" />
+            <rect x="242" y="30" width="2" height="5" /><rect x="246" y="30" width="2" height="5" />
+            <rect x="250" y="30" width="2" height="5" /><rect x="254" y="30" width="2" height="5" />
+            <rect x="258" y="30" width="2" height="5" /><rect x="262" y="30" width="2" height="5" />
+            <rect x="266" y="30" width="2" height="5" /><rect x="270" y="30" width="2" height="5" />
+            <rect x="274" y="30" width="2" height="5" /><rect x="278" y="30" width="2" height="5" />
+            <rect x="330" y="30" width="2" height="5" /><rect x="334" y="30" width="2" height="5" />
+            <rect x="338" y="30" width="2" height="5" /><rect x="342" y="30" width="2" height="5" />
+            <rect x="346" y="30" width="2" height="5" /><rect x="350" y="30" width="2" height="5" />
+          </g>
+
+          <!-- Main Front Face & Side Depth Cheeks -->
+          <rect x="114" y="36" width="252" height="202" fill="#c8bfb0" />
+          <rect x="118" y="36" width="244" height="206" fill="#c8bfb0" />
+          <rect x="114" y="36" width="6" height="202" fill="#d8cfc0" />
+          <rect x="114" y="36" width="2" height="200" fill="#ebe3d4" />
+          <rect x="358" y="36" width="8" height="202" fill="#857c6d" />
+          <rect x="363" y="36" width="3" height="200" fill="#595246" />
+          <rect x="116" y="236" width="248" height="6" fill="#857c6d" />
+          <rect x="118" y="240" width="244" height="2" fill="#595246" />
+          <rect x="120" y="36" width="238" height="2" fill="#ebe3d4" />
+          <rect x="120" y="38" width="238" height="2" fill="#d8cfc0" />
+          <rect x="120" y="208" width="238" height="1" fill="#857c6d" />
+          <rect x="120" y="209" width="238" height="1" fill="#d8cfc0" />
+          <rect x="116" y="172" width="2" height="28" fill="#595246" />
+          <rect x="360" y="172" width="2" height="28" fill="#26282b" />
+          <rect x="123" y="40" width="3" height="3" fill="#595246" />
+          <rect x="352" y="40" width="3" height="3" fill="#595246" />
+          <rect x="123" y="202" width="3" height="3" fill="#595246" />
+          <rect x="352" y="202" width="3" height="3" fill="#595246" />
+
+          <!-- Concentric 3-Layer Charcoal Front Bezel around Exact 4:3 Glass Aperture (x:136, y:48, w:208, h:156) -->
+          <rect x="127" y="40" width="226" height="169" fill="#595246" />
+          <rect x="128" y="41" width="224" height="167" fill="#343840" />
+          <rect x="129" y="42" width="222" height="1" fill="#464b54" />
+          <rect x="129" y="43" width="1" height="164" fill="#464b54" />
+          <rect x="131" y="44" width="218" height="163" fill="#26282b" />
+          <rect x="133" y="46" width="214" height="160" fill="#181a1d" />
+          <rect x="135" y="47" width="210" height="158" fill="#0c0e11" />
+          <rect id="px2d-screen-glass" x="136" y="48" width="208" height="156" fill="#061015" />
+
+          <!-- Bezel utility micro-badge & dual monitor calibration preset buttons -->
+          <rect x="132" y="209" width="44" height="5" fill="#181a1d" />
+          <rect x="134" y="211" width="18" height="1" fill="#9ea8b4" />
+          <rect x="155" y="211" width="10" height="1" fill="#00a8be" />
+          <rect x="312" y="209" width="12" height="5" fill="#181a1d" />
+          <rect x="313" y="210" width="10" height="3" fill="#343840" />
+          <rect x="328" y="209" width="12" height="5" fill="#181a1d" />
+          <rect x="329" y="210" width="10" height="3" fill="#343840" />
+
+          <!-- ===== LOWER HARDWARE CHIN (y:214..238) ===== -->
+          <rect x="126" y="217" width="54" height="18" fill="#ada393" />
+          <g fill="#181a1d">
+            <rect x="128" y="219" width="2" height="14" /><rect x="132" y="219" width="2" height="14" />
+            <rect x="136" y="219" width="2" height="14" /><rect x="140" y="219" width="2" height="14" />
+            <rect x="144" y="219" width="2" height="14" /><rect x="148" y="219" width="2" height="14" />
+            <rect x="152" y="219" width="2" height="14" /><rect x="156" y="219" width="2" height="14" />
+            <rect x="160" y="219" width="2" height="14" /><rect x="164" y="219" width="2" height="14" />
+            <rect x="168" y="219" width="2" height="14" /><rect x="172" y="219" width="2" height="14" />
+            <rect x="176" y="219" width="2" height="14" />
+          </g>
+
+          <!-- Centered 3.5" Recessed Floppy Bay (center x=240, bounds 204..276) -->
+          <rect x="204" y="217" width="72" height="18" fill="#595246" />
+          <rect x="205" y="218" width="70" height="16" fill="#26282b" />
+          <rect x="206" y="219" width="68" height="1" fill="#464b54" />
+          <rect x="210" y="222" width="54" height="5" fill="#0c0e11" />
+          <rect x="229" y="227" width="16" height="3" fill="#181a1d" />
+          <rect x="231" y="227" width="12" height="1" fill="#464b54" />
+          <rect x="266" y="223" width="6" height="4" fill="#0c0e11" />
+          <rect id="px2d-drive-led" class="px2d-drive-led" x="267" y="224" width="4" height="2" fill="#133642" />
+          <g id="px2d-disk-sprite" class="px2d-disk-sprite">
+            <rect x="214" y="223" width="46" height="5" fill="#1d2d45" />
+            <rect x="214" y="223" width="46" height="1" fill="#3c5068" />
+            <rect x="227" y="223" width="18" height="4" fill="#9ea8b4" />
+            <rect x="238" y="224" width="4" height="2" fill="#464b54" />
+            <rect x="218" y="226" width="32" height="2" fill="#00a8be" />
+            <rect x="218" y="227" width="18" height="1" fill="#c49010" />
+          </g>
+
+          <!-- Lower-Right Power Status LED & Tactile Physical Power Button -->
+          <rect x="303" y="222" width="8" height="8" fill="#181a1d" />
+          <rect id="px2d-pwr-led" class="px2d-pwr-led" x="305" y="224" width="4" height="4" fill="#5c6b34" />
+          <rect id="px2d-pwr-switch" x="318" y="218" width="26" height="16" fill="#0c0e11" />
+          <rect x="319" y="219" width="24" height="14" fill="#26282b" />
+          <rect x="319" y="219" width="24" height="2" fill="#464b54" />
+          <rect x="319" y="219" width="2" height="14" fill="#343840" />
+          <rect x="325" y="224" width="12" height="4" fill="#181a1d" />
+          <rect x="329" y="225" width="4" height="2" fill="#857c6d" />
+
+          <!-- ===== 5-ROW PERSPECTIVE-TAPERED TWO-TONE KEYBOARD WITH CHAMFERED CORNERS (y:268..345) ===== -->
+          <rect x="334" y="256" width="4" height="13" fill="#0c0e11" />
+          <rect x="335" y="257" width="2" height="11" fill="#343840" />
+          <rect x="334" y="254" width="16" height="3" fill="#0c0e11" />
+
+          <g id="px2d-keyboard">
+            <rect x="108" y="336" width="264" height="6" fill="#070a10" />
+            <rect x="111" y="342" width="258" height="3" fill="#070a10" />
+            <rect x="116" y="345" width="248" height="2" fill="#070a10" />
+
+            <rect class="px2d-kbd-shell-step" x="128" y="268" width="224" height="7" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="126" y="275" width="228" height="7" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="124" y="282" width="232" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="121" y="290" width="238" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="119" y="298" width="242" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="116" y="306" width="248" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="114" y="314" width="252" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="112" y="322" width="256" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-shell-step" x="110" y="330" width="260" height="8" fill="#0c0e11" />
+            <rect class="px2d-kbd-chamfer" x="112" y="338" width="256" height="2" fill="#0c0e11" />
+            <rect class="px2d-kbd-chamfer" x="115" y="340" width="250" height="2" fill="#0c0e11" />
+            <rect class="px2d-kbd-chamfer" x="119" y="342" width="242" height="2" fill="#0c0e11" />
+
+            <rect x="130" y="270" width="220" height="5" fill="#c8bfb0" />
+            <rect x="128" y="275" width="224" height="7" fill="#c8bfb0" />
+            <rect x="126" y="282" width="228" height="8" fill="#c8bfb0" />
+            <rect x="123" y="290" width="234" height="8" fill="#c8bfb0" />
+            <rect x="121" y="298" width="238" height="8" fill="#c8bfb0" />
+            <rect x="118" y="306" width="244" height="8" fill="#c8bfb0" />
+            <rect x="116" y="314" width="248" height="8" fill="#c8bfb0" />
+            <rect x="114" y="322" width="252" height="8" fill="#c8bfb0" />
+            <rect x="112" y="330" width="256" height="7" fill="#c8bfb0" />
+
+            <rect x="130" y="270" width="2" height="5" fill="#ebe3d4" />
+            <rect x="128" y="275" width="2" height="7" fill="#d8cfc0" />
+            <rect x="126" y="282" width="2" height="8" fill="#d8cfc0" />
+            <rect x="123" y="290" width="2" height="8" fill="#d8cfc0" />
+            <rect x="121" y="298" width="2" height="8" fill="#d8cfc0" />
+            <rect x="118" y="306" width="2" height="8" fill="#d8cfc0" />
+            <rect x="116" y="314" width="2" height="8" fill="#d8cfc0" />
+            <rect x="114" y="322" width="2" height="8" fill="#d8cfc0" />
+            <rect x="112" y="330" width="2" height="5" fill="#d8cfc0" />
+
+            <rect x="348" y="270" width="2" height="5" fill="#857c6d" />
+            <rect x="350" y="275" width="2" height="7" fill="#857c6d" />
+            <rect x="352" y="282" width="2" height="8" fill="#857c6d" />
+            <rect x="355" y="290" width="2" height="8" fill="#857c6d" />
+            <rect x="357" y="298" width="2" height="8" fill="#857c6d" />
+            <rect x="360" y="306" width="2" height="8" fill="#857c6d" />
+            <rect x="362" y="314" width="2" height="8" fill="#857c6d" />
+            <rect x="364" y="322" width="2" height="8" fill="#857c6d" />
+            <rect x="366" y="330" width="2" height="5" fill="#857c6d" />
+
+            <rect x="130" y="270" width="220" height="2" fill="#ebe3d4" />
+            <rect x="130" y="272" width="220" height="6" fill="#d8cfc0" />
+            <rect x="135" y="274" width="166" height="2" fill="#ada393" />
+            <rect x="135" y="274" width="166" height="1" fill="#857c6d" />
+            <rect x="309" y="273" width="35" height="4" fill="#181a1d" />
+            <rect class="px2d-kbd-led" x="313" y="274" width="4" height="2" fill="#39ff14" />
+            <rect x="323" y="274" width="4" height="2" fill="#00a8be" />
+            <rect x="333" y="274" width="4" height="2" fill="#133642" />
+
+            <rect x="114" y="333" width="252" height="2" fill="#d8cfc0" />
+            <rect x="112" y="335" width="256" height="2" fill="#ada393" />
+            <rect x="113" y="337" width="254" height="2" fill="#857c6d" />
+            <rect x="117" y="339" width="246" height="3" fill="#595246" />
+
+            <rect x="131" y="278" width="218" height="2" fill="#181a1d" />
+            <rect x="130" y="279" width="220" height="8" fill="#262420" />
+            <rect x="127" y="287" width="226" height="10" fill="#262420" />
+            <rect x="124" y="297" width="232" height="10" fill="#262420" />
+            <rect x="121" y="307" width="238" height="10" fill="#262420" />
+            <rect x="117" y="317" width="246" height="15" fill="#262420" />
+
+            <g class="px2d-kbd-row">
+              <rect x="131" y="280" width="12" height="7" fill="#595246" /><rect x="131" y="280" width="12" height="4" fill="#857c6d" /><rect x="132" y="280" width="10" height="1" fill="#ada393" />
+              <rect x="148" y="280" width="11" height="7" fill="#857c6d" /><rect x="148" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="149" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="161" y="280" width="11" height="7" fill="#857c6d" /><rect x="161" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="162" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="174" y="280" width="11" height="7" fill="#857c6d" /><rect x="174" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="175" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="187" y="280" width="11" height="7" fill="#857c6d" /><rect x="187" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="188" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="203" y="280" width="11" height="7" fill="#595246" /><rect x="203" y="280" width="11" height="4" fill="#ada393" /><rect x="204" y="280" width="9" height="1" fill="#d8cfc0" />
+              <rect x="216" y="280" width="11" height="7" fill="#595246" /><rect x="216" y="280" width="11" height="4" fill="#ada393" /><rect x="217" y="280" width="9" height="1" fill="#d8cfc0" />
+              <rect x="229" y="280" width="11" height="7" fill="#595246" /><rect x="229" y="280" width="11" height="4" fill="#ada393" /><rect x="230" y="280" width="9" height="1" fill="#d8cfc0" />
+              <rect x="242" y="280" width="11" height="7" fill="#595246" /><rect x="242" y="280" width="11" height="4" fill="#ada393" /><rect x="243" y="280" width="9" height="1" fill="#d8cfc0" />
+              <rect x="258" y="280" width="11" height="7" fill="#857c6d" /><rect x="258" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="259" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="271" y="280" width="11" height="7" fill="#857c6d" /><rect x="271" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="272" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="284" y="280" width="11" height="7" fill="#857c6d" /><rect x="284" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="285" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="297" y="280" width="11" height="7" fill="#857c6d" /><rect x="297" y="280" width="11" height="4" fill="#d8cfc0" /><rect x="298" y="280" width="9" height="1" fill="#ebe3d4" />
+              <rect x="313" y="280" width="16" height="7" fill="#595246" /><rect x="313" y="280" width="16" height="4" fill="#857c6d" /><rect x="314" y="280" width="14" height="1" fill="#ada393" />
+              <rect x="331" y="280" width="18" height="7" fill="#595246" /><rect x="331" y="280" width="18" height="4" fill="#857c6d" /><rect x="332" y="280" width="16" height="1" fill="#ada393" />
+            </g>
+
+            <g class="px2d-kbd-row">
+              <rect x="128" y="289" width="12" height="8" fill="#595246" /><rect x="128" y="289" width="12" height="5" fill="#857c6d" /><rect x="129" y="289" width="10" height="1" fill="#ada393" />
+              <rect x="142" y="289" width="14" height="8" fill="#857c6d" /><rect x="142" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="143" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="158" y="289" width="14" height="8" fill="#857c6d" /><rect x="158" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="159" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="174" y="289" width="14" height="8" fill="#857c6d" /><rect x="174" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="175" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="190" y="289" width="14" height="8" fill="#857c6d" /><rect x="190" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="191" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="206" y="289" width="14" height="8" fill="#857c6d" /><rect x="206" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="207" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="222" y="289" width="14" height="8" fill="#857c6d" /><rect x="222" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="223" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="238" y="289" width="14" height="8" fill="#857c6d" /><rect x="238" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="239" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="254" y="289" width="14" height="8" fill="#857c6d" /><rect x="254" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="255" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="270" y="289" width="14" height="8" fill="#857c6d" /><rect x="270" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="271" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="286" y="289" width="14" height="8" fill="#857c6d" /><rect x="286" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="287" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="302" y="289" width="14" height="8" fill="#857c6d" /><rect x="302" y="289" width="14" height="5" fill="#d8cfc0" /><rect x="303" y="289" width="12" height="1" fill="#ebe3d4" />
+              <rect x="318" y="289" width="12" height="8" fill="#857c6d" /><rect x="318" y="289" width="12" height="5" fill="#d8cfc0" /><rect x="319" y="289" width="10" height="1" fill="#ebe3d4" />
+              <rect x="332" y="289" width="20" height="8" fill="#595246" /><rect x="332" y="289" width="20" height="5" fill="#857c6d" /><rect x="333" y="289" width="18" height="1" fill="#ada393" />
+            </g>
+
+            <g class="px2d-kbd-row">
+              <rect x="125" y="299" width="19" height="8" fill="#595246" /><rect x="125" y="299" width="19" height="5" fill="#857c6d" /><rect x="126" y="299" width="17" height="1" fill="#ada393" />
+              <rect x="146" y="299" width="14" height="8" fill="#857c6d" /><rect x="146" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="147" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="162" y="299" width="14" height="8" fill="#857c6d" /><rect x="162" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="163" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="178" y="299" width="14" height="8" fill="#857c6d" /><rect x="178" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="179" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="194" y="299" width="14" height="8" fill="#857c6d" /><rect x="194" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="195" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="210" y="299" width="14" height="8" fill="#857c6d" /><rect x="210" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="211" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="226" y="299" width="14" height="8" fill="#857c6d" /><rect x="226" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="227" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="242" y="299" width="14" height="8" fill="#857c6d" /><rect x="242" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="243" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="258" y="299" width="14" height="8" fill="#857c6d" /><rect x="258" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="259" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="274" y="299" width="14" height="8" fill="#857c6d" /><rect x="274" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="275" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="290" y="299" width="14" height="8" fill="#857c6d" /><rect x="290" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="291" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="306" y="299" width="14" height="8" fill="#857c6d" /><rect x="306" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="307" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="322" y="299" width="14" height="8" fill="#857c6d" /><rect x="322" y="299" width="14" height="5" fill="#d8cfc0" /><rect x="323" y="299" width="12" height="1" fill="#ebe3d4" />
+              <rect x="338" y="299" width="17" height="8" fill="#595246" /><rect x="338" y="299" width="17" height="5" fill="#857c6d" /><rect x="339" y="299" width="15" height="1" fill="#ada393" />
+            </g>
+
+            <g class="px2d-kbd-row">
+              <rect x="122" y="309" width="23" height="8" fill="#595246" /><rect x="122" y="309" width="23" height="5" fill="#857c6d" /><rect x="123" y="309" width="21" height="1" fill="#ada393" />
+              <rect x="147" y="309" width="14" height="8" fill="#857c6d" /><rect x="147" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="148" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="163" y="309" width="14" height="8" fill="#857c6d" /><rect x="163" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="164" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="179" y="309" width="14" height="8" fill="#857c6d" /><rect x="179" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="180" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="195" y="309" width="14" height="8" fill="#857c6d" /><rect x="195" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="196" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="211" y="309" width="14" height="8" fill="#857c6d" /><rect x="211" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="212" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="227" y="309" width="14" height="8" fill="#857c6d" /><rect x="227" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="228" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="243" y="309" width="14" height="8" fill="#857c6d" /><rect x="243" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="244" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="259" y="309" width="14" height="8" fill="#857c6d" /><rect x="259" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="260" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="275" y="309" width="14" height="8" fill="#857c6d" /><rect x="275" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="276" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="291" y="309" width="14" height="8" fill="#857c6d" /><rect x="291" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="292" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="307" y="309" width="14" height="8" fill="#857c6d" /><rect x="307" y="309" width="14" height="5" fill="#d8cfc0" /><rect x="308" y="309" width="12" height="1" fill="#ebe3d4" />
+              <rect x="323" y="309" width="35" height="8" fill="#262420" /><rect x="323" y="309" width="35" height="5" fill="#595246" /><rect x="324" y="309" width="33" height="1" fill="#857c6d" />
+            </g>
+
+            <g class="px2d-kbd-row">
+              <rect x="118" y="319" width="24" height="11" fill="#595246" /><rect x="118" y="319" width="24" height="8" fill="#857c6d" /><rect x="119" y="319" width="22" height="1" fill="#ada393" />
+              <rect x="144" y="319" width="16" height="11" fill="#595246" /><rect x="144" y="319" width="16" height="8" fill="#857c6d" /><rect x="145" y="319" width="14" height="1" fill="#ada393" />
+              <rect x="162" y="319" width="16" height="11" fill="#595246" /><rect x="162" y="319" width="16" height="8" fill="#857c6d" /><rect x="163" y="319" width="14" height="1" fill="#ada393" />
+              <rect x="180" y="319" width="106" height="11" fill="#857c6d" /><rect x="180" y="319" width="106" height="8" fill="#d8cfc0" /><rect x="181" y="319" width="104" height="1" fill="#ebe3d4" />
+              <rect x="288" y="319" width="16" height="11" fill="#595246" /><rect x="288" y="319" width="16" height="8" fill="#857c6d" /><rect x="289" y="319" width="14" height="1" fill="#ada393" />
+              <rect x="306" y="319" width="15" height="11" fill="#595246" /><rect x="306" y="319" width="15" height="8" fill="#857c6d" /><rect x="307" y="319" width="13" height="1" fill="#ada393" />
+              <rect x="324" y="319" width="12" height="11" fill="#857c6d" /><rect x="324" y="319" width="12" height="8" fill="#d8cfc0" /><rect x="325" y="319" width="10" height="1" fill="#ebe3d4" />
+              <rect x="337" y="319" width="12" height="11" fill="#857c6d" /><rect x="337" y="319" width="12" height="8" fill="#d8cfc0" /><rect x="338" y="319" width="10" height="1" fill="#ebe3d4" />
+              <rect x="350" y="319" width="12" height="11" fill="#857c6d" /><rect x="350" y="319" width="12" height="8" fill="#d8cfc0" /><rect x="351" y="319" width="10" height="1" fill="#ebe3d4" />
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <section class="proto-intro" aria-label="Explore workstation introduction">
+        <span class="proto-badge">ENUHRI PORTFOLIO HUB</span>
+        <h1 class="proto-title">ENUHRI WORKSTATION</h1>
+        <p class="proto-desc">
+          Interactive retro CRT workstation — explore live projects, case-study dossiers, and experiments in 3D or Pixel 2D.
         </p>
       </section>
 
-      <!-- Center: the CRT computer composition -->
-      <section class="crt-stage" aria-label="Interactive CRT terminal">
-
-        <div class="crt-composition">
-
-          <!-- Supplied desk sprite provides the physical setting for the computer. -->
-          <img class="desk-sprite" src="../assets/sprites/desk.png" alt="" aria-hidden="true" />
-
-          <!-- The monitor itself -->
-          <div class="crt-monitor">
-            <img class="monitor-casing" src="../assets/sprites/monitor.png" alt="" aria-hidden="true" />
-
-            <!-- Positioned to sit exactly inside the glass, per the sprite manifest -->
-            <div class="screen-overlay">
-              <div class="screen-scanlines" aria-hidden="true"></div>
-
-              <!-- Phase-specific screen content lives here. -->
-              <div id="screen-content" class="screen-content">
-                <div class="landing-screen-body">
-                  <p class="boot-label">SYSTEM READY</p>
-                  <button id="play-btn" type="button" class="play-btn">
-                    <span class="play-icon" aria-hidden="true">▶</span>
-                    <span>PLAY</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              id="power-button-hotspot"
-              class="power-button-hotspot"
-              type="button"
-              aria-label="Turn off retro computer power and return to landing screen"
-              title="Turn off power and return to landing screen">
-            </button>
-          </div>
-
-          <!-- Keyboard + mouse, decorative -->
-          <div class="accessories" aria-hidden="true">
-            <img class="keyboard-sprite" src="../assets/sprites/keyboard.png" alt="" aria-hidden="true" />
-          </div>
-
+      <!-- Layer 3 Projected Semantic CRT Screen Aperture + Hardware Chin Hit Targets (Shared by 3D & Pixel 2D) -->
+      <section id="crt-chassis" class="crt-chassis" aria-label="CRT workstation display">
+        <div class="screen-overlay">
+          <div class="screen-glass-corners" aria-hidden="true"></div>
+          <div class="screen-scanlines" aria-hidden="true"></div>
+          <div id="screen-content" class="screen-content"></div>
         </div>
 
+        <div class="hw-controls" role="group" aria-label="Monitor bezel hardware controls">
+          <button type="button" id="hw-disk-btn" class="hw-ctrl hw-disk-btn" aria-label="Open hidden Sandbox diskette bay" aria-expanded="false" data-drive-state="closed" data-pixel-frame="0">
+            <span class="hw-disk-glow" aria-hidden="true"></span>
+            <span class="hw-disk-badge" aria-hidden="true">DISK · SANDBOX.SYS</span>
+          </button>
+
+          <button type="button" id="hw-power-btn" class="hw-ctrl hw-power-btn" aria-label="Restart Explore workstation">
+            <span class="hw-power-indicator" aria-hidden="true"></span>
+          </button>
+        </div>
       </section>
+    </main>
 
-    </div>
+  </div>
 
-  </main>
+  <!-- Development Performance HUD (hidden unless ?debug=1) -->
+  <aside id="perf-hud" class="perf-hud" hidden aria-label="Performance metrics"></aside>
 
-  <script src="script.js?v=2.1"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

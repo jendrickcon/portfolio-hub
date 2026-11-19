@@ -39,7 +39,14 @@
     const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const finePointerMq = window.matchMedia('(pointer: fine)');
     const focusables = [primaryBtn, exploreLink];
-    let parallaxRaf = 0;
+    const svgEl = gate.querySelector('.entry-signal-svg');
+    const haloCircle = document.getElementById('pointer-halo-circle');
+    let pointerRaf = 0;
+    let pointerClientX = 0;
+    let pointerClientY = 0;
+    let pointerNormX = 0.5;
+    let pointerInPanel = false;
+    let pointerActive = false;
     let targetDx = 0;
     let targetDy = 0;
 
@@ -51,34 +58,85 @@
       });
     }
 
-    function applyParallax() {
-      parallaxRaf = 0;
+    function hideHalo() {
+      if (!pointerActive) return;
+      pointerActive = false;
+      gate.style.setProperty('--entry-halo-opacity', '0');
+      delete gate.dataset.haloZone;
+    }
+
+    function clearPointerEffects() {
+      if (pointerRaf) {
+        window.cancelAnimationFrame(pointerRaf);
+        pointerRaf = 0;
+      }
+      pointerActive = false;
+      gate.style.removeProperty('--signal-dx');
+      gate.style.removeProperty('--signal-dy');
+      gate.style.removeProperty('--entry-pointer-x');
+      gate.style.removeProperty('--entry-pointer-y');
+      gate.style.removeProperty('--entry-halo-opacity');
+      delete gate.dataset.haloZone;
+    }
+
+    function updateHaloPosition() {
+      gate.style.setProperty('--entry-pointer-x', `${pointerClientX.toFixed(1)}px`);
+      gate.style.setProperty('--entry-pointer-y', `${pointerClientY.toFixed(1)}px`);
+      gate.dataset.haloZone = pointerNormX < 0.44 ? 'pro' : (pointerNormX > 0.56 ? 'exp' : 'center');
+      gate.style.setProperty('--entry-halo-opacity', '1');
+      pointerActive = true;
+
+      if (!svgEl || !haloCircle || typeof svgEl.createSVGPoint !== 'function') return;
+      const ctm = svgEl.getScreenCTM();
+      if (!ctm) return;
+      try {
+        const pt = svgEl.createSVGPoint();
+        pt.x = pointerClientX;
+        pt.y = pointerClientY;
+        const svgPt = pt.matrixTransform(ctm.inverse());
+        haloCircle.setAttribute('cx', svgPt.x.toFixed(1));
+        haloCircle.setAttribute('cy', svgPt.y.toFixed(1));
+      } catch {
+        // Ignore non-invertible CTM during layout transition.
+      }
+    }
+
+    function applyPointerEffects() {
+      pointerRaf = 0;
       if (motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) {
-        gate.style.removeProperty('--signal-dx');
-        gate.style.removeProperty('--signal-dy');
+        clearPointerEffects();
         return;
       }
       gate.style.setProperty('--signal-dx', targetDx.toFixed(4));
       gate.style.setProperty('--signal-dy', targetDy.toFixed(4));
+      if (pointerInPanel) hideHalo();
+      else updateHaloPosition();
     }
 
     function onPointerMove(event) {
-      if (motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) return;
+      if (event.pointerType === 'touch' || motionMq.matches || !finePointerMq.matches || gate.hidden || document.hidden) return;
       const w = Math.max(window.innerWidth, 1);
       const h = Math.max(window.innerHeight, 1);
-      targetDx = ((event.clientX / w) - 0.5) * 2;
-      targetDy = ((event.clientY / h) - 0.5) * 2;
-      if (!parallaxRaf) parallaxRaf = window.requestAnimationFrame(applyParallax);
+      pointerClientX = event.clientX;
+      pointerClientY = event.clientY;
+      pointerNormX = pointerClientX / w;
+      pointerInPanel = Boolean(event.target && typeof event.target.closest === 'function' && event.target.closest('.entry-panel'));
+      targetDx = (pointerNormX - 0.5) * 2;
+      targetDy = ((pointerClientY / h) - 0.5) * 2;
+      if (!pointerRaf) pointerRaf = window.requestAnimationFrame(applyPointerEffects);
+    }
+
+    function onPointerLeave() {
+      if (pointerRaf) {
+        window.cancelAnimationFrame(pointerRaf);
+        pointerRaf = 0;
+      }
+      hideHalo();
     }
 
     function onMotionOrPointerChange() {
       if (motionMq.matches || !finePointerMq.matches) {
-        if (parallaxRaf) {
-          window.cancelAnimationFrame(parallaxRaf);
-          parallaxRaf = 0;
-        }
-        gate.style.removeProperty('--signal-dx');
-        gate.style.removeProperty('--signal-dy');
+        clearPointerEffects();
       }
     }
 
@@ -111,12 +169,10 @@
     function dismissGate() {
       if (gate.hidden) return;
       markSeen();
-      if (parallaxRaf) {
-        window.cancelAnimationFrame(parallaxRaf);
-        parallaxRaf = 0;
-      }
+      clearPointerEffects();
       document.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('pointermove', onPointerMove);
+      gate.removeEventListener('pointerleave', onPointerLeave);
       motionMq.removeEventListener('change', onMotionOrPointerChange);
       finePointerMq.removeEventListener('change', onMotionOrPointerChange);
 
@@ -139,6 +195,7 @@
     exploreLink.addEventListener('click', markSeen);
     document.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('pointermove', onPointerMove, { passive: true });
+    gate.addEventListener('pointerleave', onPointerLeave, { passive: true });
     motionMq.addEventListener('change', onMotionOrPointerChange);
     finePointerMq.addEventListener('change', onMotionOrPointerChange);
 

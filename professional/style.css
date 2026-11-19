@@ -397,15 +397,17 @@ footer{padding:22px 0;border-top:1px solid var(--line-i);color:var(--mute-i)}
 .media-feature figure{width:min(100%,190px)}.media-feature .audiary-image-link{display:block;width:100%;aspect-ratio:1;overflow:hidden;background:#1b2221}.media-feature .audiary-image-link img{display:block;width:100%;height:100%;max-height:none;object-fit:cover;object-position:top;transition:transform .2s ease}.audiary-image-link:hover img,.audiary-image-link:focus-visible img{transform:scale(1.04)}.audiary-image-link:focus-visible{outline:3px solid #a6c3ff;outline-offset:3px}
 .media-lightbox{max-width:min(94vw,800px);max-height:94vh;padding:12px;background:#121a25;color:#f5f1e9;border:1px solid #546983;border-radius:5px;box-shadow:0 16px 50px #0009}.media-lightbox::backdrop{background:rgba(3,7,12,.83)}.media-lightbox-bar{display:flex;justify-content:space-between;align-items:center;gap:20px;font:13px var(--sans)}.media-lightbox-bar button{min-height:44px;padding:8px 12px;background:transparent;color:#d9e7ff;border:1px solid #546983;cursor:pointer}.media-lightbox-bar button:focus-visible{outline:3px solid #a6c3ff;outline-offset:2px}.media-lightbox img{display:block;width:auto;height:auto;max-width:100%;max-height:calc(94vh - 80px);object-fit:contain;margin:8px auto 0}
 @media(max-width:540px){.media-feature figure{width:min(100%,340px)}}
-@media(prefers-reduced-motion:reduce){.media-feature .audiary-image-link img,.cyberdefender-image-link img{transition:none}}
+@media(prefers-reduced-motion:reduce){.media-feature .audiary-image-link img,.cyberdefender-image-link img,.sandbox-image-link img{transition:none}}
 /* Supporting media restored from project recordings: give the capture enough
    height to stay legible and letterbox it rather than cropping the interface. */
 .media-gallery img,.media-entry.has-shot img{height:auto;aspect-ratio:16/7.95;object-fit:contain;object-position:center;background:#1b2430}
 .media-entry.has-shot{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
-.cyberdefender-image-link{display:block;overflow:hidden;background:#1b2430;text-decoration:none}
-.cyberdefender-image-link img{transition:transform .2s ease}
-.cyberdefender-image-link:hover img,.cyberdefender-image-link:focus-visible img{transform:scale(1.04)}
-.cyberdefender-image-link:focus-visible{outline:3px solid #a6c3ff;outline-offset:3px}
+.cyberdefender-image-link,.sandbox-image-link{display:block;overflow:hidden;background:#1b2430;text-decoration:none}
+.cyberdefender-image-link img,.sandbox-image-link img{transition:transform .2s ease}
+.cyberdefender-image-link:hover img,.cyberdefender-image-link:focus-visible img,.sandbox-image-link:hover img,.sandbox-image-link:focus-visible img{transform:scale(1.04)}
+.cyberdefender-image-link:focus-visible,.sandbox-image-link:focus-visible{outline:3px solid #a6c3ff;outline-offset:3px}
+.media-actions{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px}
+.media-primary-link{display:inline-flex;align-items:center;gap:5px}
 @media(max-width:540px){.media-gallery img,.media-entry.has-shot img{max-height:250px;aspect-ratio:auto;object-position:center}}
 
 /* Identity foundation: navigation and status use sans; sequence numbers use mono. */
@@ -442,7 +444,7 @@ html[data-active-section="contact"] .page-field{opacity:.35}
 .work-island{border-radius:var(--radius-island)}
 .frow{border-radius:var(--radius-control)}
 .snippet-frame,.chapter-preview{border-radius:var(--radius-panel)}
-.media-entry img,.audiary-image-link{border-radius:12px}
+.media-entry img,.audiary-image-link,.cyberdefender-image-link,.sandbox-image-link{border-radius:12px}
 .media-lightbox{border-radius:var(--radius-panel)}
 
 /* One clear action group and in-place case-study states. */

@@ -97,6 +97,30 @@ if (DEBUG_MODE) {
 }
 pixelModeSelect.value = pixelMode;
 
+const INTERACTIVE_PREVIEW_CONFIG = {
+  'udm-radar': {
+    title: 'UDM-RADAR interactive project reconstruction',
+    embedUrl: '/?embed=project&project=udm-radar',
+    fallbackEmbedUrl: '/professional/index.html?embed=project&project=udm-radar',
+    caseStudyHref: '/#udm-radar',
+    posterAlt: 'UDM-RADAR analytics dashboard and GWA performance trend screenshot',
+  },
+  'studyquest': {
+    title: 'StudyQuest interactive project reconstruction',
+    embedUrl: '/?embed=project&project=studyquest',
+    fallbackEmbedUrl: '/professional/index.html?embed=project&project=studyquest',
+    caseStudyHref: '/#studyquest',
+    posterAlt: 'StudyQuest course dashboard and learning path screenshot',
+  },
+};
+
+const PREVIEW_ALLOWED_MESSAGES = new Set([
+  'project-embed-ready',
+  'project-embed-height',
+  'project-embed-close-request',
+  'project-embed-open-full-case-study',
+]);
+
 // Six visible catalog slots (DevPath occupies Slot 06; Sandbox launches from centered floppy bay)
 const CATALOG_SLOTS = [
   {
@@ -227,6 +251,27 @@ let isRestarting = false;
 let modeSwitchTimer = null;
 let activeEmbedState = null;
 let lastEmbedReloadCount = 0;
+let activeDossierPreview = null;
+
+function teardownDossierPreview() {
+  if (!activeDossierPreview) return;
+  const preview = activeDossierPreview;
+  activeDossierPreview = null;
+  if (preview.timeoutId) {
+    clearTimeout(preview.timeoutId);
+    preview.timeoutId = null;
+  }
+  if (typeof preview.onMessage === 'function') {
+    window.removeEventListener('message', preview.onMessage);
+  }
+  if (preview.iframe) {
+    try {
+      preview.iframe.src = 'about:blank';
+    } catch {}
+    preview.iframe.remove();
+  }
+  document.body.classList.remove('is-dossier-preview-active');
+}
 
 // Floppy bay state machine + 6-frame Pixel 2D stepper
 let drivePhase = 'closed'; // 'closed' | 'intent' | 'opening' | 'open'
@@ -1016,6 +1061,7 @@ function applyNoWebglUI() {
 // ---- Shared Screen States (Layer 3) ----
 function renderStandby({ restoreFocus = false, updateHistory = true } = {}) {
   clearActiveTimers();
+  teardownDossierPreview();
   teardownProfessionalEmbed();
   screenContentEl.classList.remove('is-embed-active');
   if (webglScene) webglScene.setEmbedMode(false);
@@ -1063,6 +1109,7 @@ function startWorkstation() {
 
 function renderBoot() {
   clearActiveTimers();
+  teardownDossierPreview();
   teardownProfessionalEmbed();
   screenContentEl.classList.remove('is-embed-active');
   if (webglScene) webglScene.setEmbedMode(false);
@@ -1151,6 +1198,7 @@ function getGridRows(gridItems) {
 
 function renderMenu({ shouldFocus = false, focusAppId = null, updateHistory = false, immediatePose = false } = {}) {
   clearActiveTimers();
+  teardownDossierPreview();
   teardownProfessionalEmbed();
   screenContentEl.classList.remove('is-embed-active');
   if (webglScene) webglScene.setEmbedMode(false);
@@ -1435,6 +1483,7 @@ function bindEmbeddedDocumentBridges(state) {
 
 function renderProfessionalEmbed({ updateHistory = true, immediatePose = false } = {}) {
   clearActiveTimers();
+  teardownDossierPreview();
   teardownProfessionalEmbed();
   lastTriggerAppId = 'professional';
   currentView = 'embed';
@@ -1666,6 +1715,7 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
 
 function renderDossier(appId, { updateHistory = true, immediatePose = false } = {}) {
   clearActiveTimers();
+  teardownDossierPreview();
   teardownProfessionalEmbed();
   screenContentEl.classList.remove('is-embed-active');
   if (webglScene) webglScene.setEmbedMode(false);
@@ -1693,13 +1743,36 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
 
   setScreenLightState(entry.id === 'devpath' ? 'paused' : 'menu');
 
-  const mediaHtml = entry.image
-    ? `
+  const previewCfg = INTERACTIVE_PREVIEW_CONFIG[entry.id] || null;
+  let mediaHtml = '';
+  if (previewCfg) {
+    mediaHtml = `
+      <div id="dossier-media-shell" class="dossier-media-shell" data-preview-state="poster">
+        <div id="dossier-poster-view" class="dossier-poster-view">
+          <div class="dossier-screenshot-frame">
+            <img id="dossier-poster-img" class="dossier-screenshot" src="${entry.image}" alt="${previewCfg.posterAlt}" />
+            <p id="dossier-poster-missing" class="dossier-poster-missing" hidden>${entry.name} preview image unavailable.</p>
+          </div>
+        </div>
+        <div id="dossier-preview-loading" class="dossier-preview-loading" role="status" hidden>
+          <p class="dossier-preview-loading-text">LOADING INTERACTIVE RECONSTRUCTION ...</p>
+        </div>
+        <div id="dossier-preview-active" class="dossier-preview-active" hidden>
+          <div class="dossier-preview-toolbar">
+            <p id="dossier-preview-notice" class="dossier-preview-notice" tabindex="-1">Interactive reconstruction from the Professional Portfolio</p>
+          </div>
+          <div id="dossier-preview-mount" class="dossier-preview-mount"></div>
+        </div>
+        <p id="dossier-preview-error" class="dossier-preview-error" role="alert" hidden>Interactive preview unavailable. Open the full case study instead.</p>
+      </div>
+    `;
+  } else if (entry.image) {
+    mediaHtml = `
       <div class="dossier-screenshot-frame">
         <img class="dossier-screenshot" src="${entry.image}" alt="${entry.name} preview" />
       </div>
-    `
-    : '';
+    `;
+  }
 
   const actionsList = Array.isArray(entry.actions) ? entry.actions : [];
   const primaryActions = actionsList.filter((a) => a.primary);
@@ -1712,9 +1785,16 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
     return `<a class="${cls}" href="${action.href}"${relAttr}>${action.label}${srExt}</a>`;
   };
 
-  const primaryActionsHtml = primaryActions.length
-    ? `<div class="dossier-actions">${primaryActions.map((a) => renderActionLink(a, true)).join('')}</div>`
-    : '';
+  const primaryActionsHtml = previewCfg
+    ? `
+      <div class="dossier-actions dossier-actions--preview">
+        <button type="button" id="dossier-preview-toggle-btn" class="dossier-play-btn dossier-preview-toggle-btn" aria-expanded="false">TRY INTERACTIVE PREVIEW</button>
+        <a id="dossier-open-case-link" class="dossier-link-btn dossier-case-btn" href="${previewCfg.caseStudyHref}">OPEN FULL CASE STUDY ▸</a>
+      </div>
+    `
+    : (primaryActions.length
+      ? `<div class="dossier-actions">${primaryActions.map((a) => renderActionLink(a, true)).join('')}</div>`
+      : '');
 
   const secondaryActionsHtml = secondaryActions.length
     ? `<div class="dossier-actions">${secondaryActions.map((a) => renderActionLink(a, false)).join('')}</div>`
@@ -1763,7 +1843,206 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
   `;
   screenContentEl.scrollTop = 0;
 
+  let closeInteractivePreview = null;
+  if (previewCfg) {
+    const mediaShell = document.getElementById('dossier-media-shell');
+    const posterView = document.getElementById('dossier-poster-view');
+    const posterImg = document.getElementById('dossier-poster-img');
+    const posterMissing = document.getElementById('dossier-poster-missing');
+    const loadingView = document.getElementById('dossier-preview-loading');
+    const activeView = document.getElementById('dossier-preview-active');
+    const noticeEl = document.getElementById('dossier-preview-notice');
+    const mountEl = document.getElementById('dossier-preview-mount');
+    const errorEl = document.getElementById('dossier-preview-error');
+    const toggleBtn = document.getElementById('dossier-preview-toggle-btn');
+
+    if (posterImg && posterMissing) {
+      posterImg.addEventListener('error', () => {
+        posterImg.hidden = true;
+        posterMissing.hidden = false;
+      });
+    }
+
+    const syncUiToClosed = () => {
+      mediaShell.dataset.previewState = 'poster';
+      posterView.hidden = false;
+      loadingView.hidden = true;
+      activeView.hidden = true;
+      mountEl.style.height = '';
+      toggleBtn.textContent = 'TRY INTERACTIVE PREVIEW';
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      setScreenLightState('menu');
+    };
+
+    const applyMountHeight = (h) => {
+      const numeric = Number(h);
+      if (!Number.isFinite(numeric) || numeric <= 0) return;
+      const isCompact = window.innerWidth <= 639;
+      const clamped = isCompact
+        ? Math.max(150, Math.min(260, Math.ceil(numeric)))
+        : Math.max(180, Math.min(410, Math.ceil(numeric)));
+      mountEl.style.height = `${clamped}px`;
+    };
+
+    const failInteractivePreview = () => {
+      teardownDossierPreview();
+      syncUiToClosed();
+      errorEl.hidden = false;
+      announce('Interactive preview unavailable. Open the full case study instead.');
+    };
+
+    closeInteractivePreview = ({ restoreFocus = true } = {}) => {
+      const preservedScroll = screenContentEl.scrollTop;
+      teardownDossierPreview();
+      syncUiToClosed();
+      errorEl.hidden = true;
+      screenContentEl.scrollTop = preservedScroll;
+      announce(`${entry.name} interactive preview closed.`);
+      if (restoreFocus) focusSafely(toggleBtn);
+    };
+
+    const activateLoadedPreview = (state) => {
+      if (activeDossierPreview !== state || state.ready) return;
+      state.ready = true;
+      if (state.timeoutId) {
+        clearTimeout(state.timeoutId);
+        state.timeoutId = null;
+      }
+      mediaShell.dataset.previewState = 'active';
+      posterView.hidden = true;
+      loadingView.hidden = true;
+      errorEl.hidden = true;
+      activeView.hidden = false;
+      document.body.classList.add('is-dossier-preview-active');
+      setScreenLightState('live');
+      announce(`${entry.name} interactive reconstruction loaded.`);
+      focusSafely(noticeEl);
+    };
+
+    const openInteractivePreview = () => {
+      teardownDossierPreview();
+      const customOverride = typeof window.__EXPLORE_PREVIEW_URL_OVERRIDE === 'string' && window.__EXPLORE_PREVIEW_URL_OVERRIDE
+        ? window.__EXPLORE_PREVIEW_URL_OVERRIDE
+        : null;
+      const initialSrc = customOverride || previewCfg.embedUrl;
+
+      mediaShell.dataset.previewState = 'loading';
+      posterView.hidden = false;
+      errorEl.hidden = true;
+      activeView.hidden = true;
+      loadingView.hidden = false;
+      toggleBtn.textContent = 'CLOSE INTERACTIVE PREVIEW';
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      announce(`Loading ${entry.name} interactive reconstruction.`);
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'dossier-project-iframe';
+      iframe.className = 'dossier-project-iframe';
+      iframe.title = previewCfg.title;
+      iframe.setAttribute('allow', '');
+
+      const state = {
+        projectId: entry.id,
+        iframe,
+        currentSrc: initialSrc,
+        fallbackTried: Boolean(customOverride),
+        ready: false,
+        timeoutId: null,
+        onMessage: null,
+      };
+      activeDossierPreview = state;
+
+      state.onMessage = (event) => {
+        if (activeDossierPreview !== state) return;
+        if (event.origin !== window.location.origin) return;
+        if (!state.iframe || event.source !== state.iframe.contentWindow) return;
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+        if (data.source !== 'enuhri-project-embed') return;
+        if (data.project !== entry.id) return;
+        if (!PREVIEW_ALLOWED_MESSAGES.has(data.type)) return;
+
+        if (data.type === 'project-embed-ready') {
+          activateLoadedPreview(state);
+          applyMountHeight(data.height);
+        } else if (data.type === 'project-embed-height') {
+          applyMountHeight(data.height);
+        } else if (data.type === 'project-embed-close-request') {
+          closeInteractivePreview({ restoreFocus: true });
+        } else if (data.type === 'project-embed-open-full-case-study') {
+          window.location.assign(previewCfg.caseStudyHref);
+        }
+      };
+      window.addEventListener('message', state.onMessage);
+
+      const armTimeout = () => {
+        if (state.timeoutId) clearTimeout(state.timeoutId);
+        const ms = Number(window.__EXPLORE_PREVIEW_TIMEOUT_MS) > 0
+          ? Number(window.__EXPLORE_PREVIEW_TIMEOUT_MS)
+          : 7000;
+        state.timeoutId = setTimeout(() => {
+          if (activeDossierPreview === state && !state.ready) {
+            failInteractivePreview();
+          }
+        }, ms);
+      };
+
+      iframe.addEventListener('load', () => {
+        if (activeDossierPreview !== state || state.iframe !== iframe) return;
+        let doc = null;
+        try {
+          doc = iframe.contentDocument;
+        } catch {
+          failInteractivePreview();
+          return;
+        }
+        const rootDataset = doc && doc.documentElement ? doc.documentElement.dataset : null;
+        const isScopedDoc = Boolean(rootDataset && rootDataset.embedProject === entry.id);
+        const isFailedDoc = Boolean(rootDataset && rootDataset.embedFailed === '1');
+        const hasReadyDemo = Boolean(doc && doc.querySelector('[data-demo-project][data-demo-ready="1"]'));
+
+        if (!isScopedDoc || isFailedDoc || !hasReadyDemo) {
+          if (!state.fallbackTried && state.currentSrc === previewCfg.embedUrl && !isFailedDoc) {
+            state.fallbackTried = true;
+            state.currentSrc = previewCfg.fallbackEmbedUrl;
+            armTimeout();
+            iframe.src = previewCfg.fallbackEmbedUrl;
+            return;
+          }
+          failInteractivePreview();
+          return;
+        }
+        activateLoadedPreview(state);
+      });
+
+      iframe.addEventListener('error', () => {
+        if (activeDossierPreview !== state || state.iframe !== iframe) return;
+        if (!state.fallbackTried && state.currentSrc === previewCfg.embedUrl) {
+          state.fallbackTried = true;
+          state.currentSrc = previewCfg.fallbackEmbedUrl;
+          armTimeout();
+          iframe.src = previewCfg.fallbackEmbedUrl;
+          return;
+        }
+        failInteractivePreview();
+      });
+
+      armTimeout();
+      iframe.src = initialSrc;
+      mountEl.appendChild(iframe);
+    };
+
+    toggleBtn.addEventListener('click', () => {
+      if (activeDossierPreview) {
+        closeInteractivePreview({ restoreFocus: true });
+      } else {
+        openInteractivePreview();
+      }
+    });
+  }
+
   const backOut = () => {
+    teardownDossierPreview();
     renderMenu({ shouldFocus: true, focusAppId: entry.id, updateHistory: true });
     announce('Returned to catalog menu.');
   };
@@ -1773,6 +2052,11 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
   document.getElementById('dossier-view').addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
+      if (activeDossierPreview && typeof closeInteractivePreview === 'function') {
+        closeInteractivePreview({ restoreFocus: true });
+        return;
+      }
       backOut();
     }
   });
@@ -1791,6 +2075,7 @@ function triggerRestart() {
   }
 
   clearActiveTimers();
+  teardownDossierPreview();
   teardownProfessionalEmbed();
   screenContentEl.classList.remove('is-embed-active');
   if (webglScene) webglScene.setEmbedMode(false);

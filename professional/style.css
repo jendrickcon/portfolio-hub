@@ -1811,3 +1811,145 @@ html[data-entry-gate="open"] .entry-gate[hidden]{
     transform:none;
   }
 }
+
+/* ===== Scoped Project Embed Mode (?embed=project&project=udm-radar|studyquest) ===== */
+html[data-embed-project],
+html[data-embed-project] body{
+  background:#040b10;
+  color:var(--text);
+  margin:0;
+  padding:0;
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+}
+html[data-embed-project] #page-field,
+html[data-embed-project] .skip,
+html[data-embed-project] #entry-gate,
+html[data-embed-project] #hdr,
+html[data-embed-project] #about,
+html[data-embed-project] #profile,
+html[data-embed-project] #capabilities,
+html[data-embed-project] #journey,
+html[data-embed-project] #contact,
+html[data-embed-project] footer,
+html[data-embed-project] dialog,
+html[data-embed-project] #work-island-wrap,
+html[data-embed-project] .work-ruler-rail,
+html[data-embed-project] .panel[data-panel],
+html[data-embed-project] .feature-head,
+html[data-embed-project] .case{
+  display:none !important;
+}
+html[data-embed-project="udm-radar"] #udm-radar,
+html[data-embed-project="studyquest"] #studyquest{
+  display:block !important;
+}
+html[data-embed-project] #work,
+html[data-embed-project] .story,
+html[data-embed-project] .stage,
+html[data-embed-project] .track,
+html[data-embed-project] .panel[data-panel],
+html[data-embed-project] .feature-layout,
+html[data-embed-project] .feature-body,
+html[data-embed-project] .scoped-project-main{
+  display:block !important;
+  position:static !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  overflow:visible !important;
+  transform:none !important;
+}
+html[data-embed-project] .chapter-preview{
+  margin:0;
+  padding:8px 10px 10px;
+  border:0;
+  border-radius:0;
+  background:#040b10;
+}
+html[data-embed-project] .chapter-preview figcaption{
+  display:none;
+}
+html[data-embed-project] .demo-study,
+html[data-embed-project] .demo-shell,
+html[data-embed-project] .chapter-preview .project-demo{
+  min-height:0;
+}
+html[data-embed-project] .demo-nav button,
+html[data-embed-project] .demo-tabs button{
+  min-height:44px;
+  min-width:44px;
+  padding:8px 10px;
+  font-size:11px;
+}
+html[data-embed-project] .demo-nav,
+html[data-embed-project] .demo-tabs{
+  gap:4px;
+}
+html[data-embed-project] .demo-tabs{
+  padding:6px 8px;
+}
+@media(max-width:440px){
+  html[data-embed-project] .chapter-preview{
+    padding:4px 6px 6px;
+  }
+  html[data-embed-project] .demo-shell{
+    grid-template-columns:1fr;
+    min-height:0;
+  }
+  html[data-embed-project] .demo-sidebar{
+    display:flex;
+    flex-direction:row;
+    flex-wrap:nowrap;
+    align-items:center;
+    gap:4px 6px;
+    padding:4px 6px;
+    overflow-x:auto;
+  }
+  html[data-embed-project] .demo-logo{
+    width:26px;
+    height:26px;
+    flex:0 0 26px;
+  }
+  html[data-embed-project] .demo-sidebar>small{
+    display:none;
+  }
+  html[data-embed-project] .demo-nav{
+    flex-direction:row;
+    flex-wrap:nowrap;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  html[data-embed-project] .demo-tabs{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding:4px 6px;
+  }
+  html[data-embed-project] .demo-nav button,
+  html[data-embed-project] .demo-tabs button{
+    flex:0 0 auto;
+    white-space:nowrap;
+    padding:6px 8px;
+    font-size:10.5px;
+  }
+  html[data-embed-project] .demo-main,
+  html[data-embed-project] .demo-study-body{
+    padding:7px;
+  }
+  html[data-embed-project] .demo-metrics{
+    grid-template-columns:repeat(auto-fit, minmax(82px, 1fr));
+  }
+  html[data-embed-project] .study-dashboard-grid{
+    grid-template-columns:1fr;
+  }
+  html[data-embed-project] .demo-heading{
+    flex-wrap:wrap;
+  }
+}

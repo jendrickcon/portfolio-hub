@@ -18,10 +18,10 @@
 
     function shouldOpenGate() {
       try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1' || params.get('embed') === 'project' || params.get('entry') === '0' || root.dataset.embedProject) return false;
         const inIframe = window.self !== window.top || Boolean(window.frameElement);
         if (inIframe) return false;
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('embed') === '1' || params.get('entry') === '0') return false;
         if (window.location.hash && window.location.hash.length > 1) return false;
         if (params.get('entry') === '1') return true;
         return window.sessionStorage.getItem(STORAGE_KEY) !== '1';
@@ -205,7 +205,123 @@
   })();
 
   const $$ = s => [...document.querySelectorAll(s)];
-  const html = document.documentElement, hdr = document.getElementById('hdr');
+  const html = document.documentElement;
+
+  /* Scoped Project Reconstruction Embed (?embed=project&project=udm-radar|studyquest) */
+  const scopedProjectId = html.dataset.embedProject;
+  if (scopedProjectId === 'udm-radar' || scopedProjectId === 'studyquest') {
+    const query = new URLSearchParams(window.location.search);
+    document.querySelectorAll('#page-field, #entry-gate, #hdr, footer, dialog, .skip').forEach(el => el.remove());
+
+    const postEmbedMessage = (type, extra = {}) => {
+      if (!window.parent || window.parent === window) return;
+      try {
+        window.parent.postMessage({
+          source: 'enuhri-project-embed',
+          type,
+          project: scopedProjectId,
+          ...extra,
+        }, window.location.origin);
+      } catch (_) {}
+    };
+
+    const panel = document.getElementById(scopedProjectId);
+    const figure = panel ? panel.querySelector('.chapter-preview') : null;
+    const mainEl = document.getElementById('main');
+    if (query.get('simulateError') === '1' || !figure || !mainEl) {
+      html.dataset.embedFailed = '1';
+      return;
+    }
+
+    mainEl.innerHTML = '';
+    mainEl.className = 'scoped-project-main';
+    mainEl.appendChild(figure);
+
+    const demo = figure.querySelector('[data-demo-project]');
+    const nav = demo ? demo.querySelector('.demo-nav, .demo-tabs') : null;
+    const fallback = demo ? demo.querySelector('.demo-nav-static, .demo-study-nav-static, .demo-pcs-nav-static') : null;
+    if (!demo || !nav || !fallback) {
+      html.dataset.embedFailed = '1';
+      return;
+    }
+
+    const measureEmbedHeight = () => Math.ceil(figure.getBoundingClientRect().height);
+    const notifyHeight = () => postEmbedMessage('project-embed-height', { height: measureEmbedHeight() });
+
+    nav.hidden = false;
+    fallback.hidden = true;
+    const buttons = [...nav.querySelectorAll('[data-demo-target]')];
+    const pages = [...demo.querySelectorAll('[data-demo-view]')];
+    let pointerRevision = 0;
+    let pointerPosition = null;
+    let hoverTimer;
+    let hoverCandidate;
+    let lastSelectionRevision = -1;
+
+    const trackScopedPointer = event => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      if (!pointerPosition || event.clientX !== pointerPosition.x || event.clientY !== pointerPosition.y) {
+        pointerRevision++;
+        pointerPosition = { x: event.clientX, y: event.clientY };
+      }
+    };
+    document.addEventListener('pointermove', trackScopedPointer, true);
+    document.addEventListener('pointerdown', trackScopedPointer, true);
+
+    const cancelHover = () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+      hoverCandidate = null;
+    };
+    const select = button => {
+      cancelHover();
+      if (button.getAttribute('aria-pressed') === 'true') return;
+      lastSelectionRevision = pointerRevision;
+      buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      pages.forEach(page => { page.hidden = page.dataset.demoView !== button.dataset.demoTarget; });
+      notifyHeight();
+    };
+    const scheduleHover = (button, event) => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      if (button.getAttribute('aria-pressed') === 'true') { cancelHover(); return; }
+      if (lastSelectionRevision === pointerRevision || hoverCandidate === button) return;
+      cancelHover();
+      hoverCandidate = button;
+      hoverTimer = setTimeout(() => {
+        if (button.matches(':hover')) select(button);
+        else cancelHover();
+      }, 200);
+    };
+    buttons.forEach(button => {
+      button.addEventListener('pointerenter', event => scheduleHover(button, event));
+      button.addEventListener('pointermove', event => scheduleHover(button, event));
+      button.addEventListener('pointerleave', () => { if (hoverCandidate === button) cancelHover(); });
+      button.addEventListener('focus', () => select(button));
+      button.addEventListener('click', () => select(button));
+    });
+
+    window.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        postEmbedMessage('project-embed-close-request');
+      }
+    });
+
+    if (typeof ResizeObserver === 'function') {
+      new ResizeObserver(() => notifyHeight()).observe(figure);
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(notifyHeight).catch(() => {});
+    }
+
+    demo.dataset.demoReady = '1';
+    window.requestAnimationFrame(() => {
+      postEmbedMessage('project-embed-ready', { height: measureEmbedHeight() });
+    });
+    return;
+  }
+
+  const hdr = document.getElementById('hdr');
   const run = document.getElementById('story'), track = run.querySelector('.track');
   const stage = run.querySelector('.stage');
   const footer = document.querySelector('footer');

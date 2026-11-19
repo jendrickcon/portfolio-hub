@@ -1,11 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-workstation-state="initializing">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Enuhri | Explore Workstation</title>
   <meta name="description" content="Enuhri interactive retro CRT workstation — explore live projects, case-study dossiers, and experiments in 3D or Pixel 2D." />
   <link rel="icon" href="data:," />
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    [hidden]{display:none!important}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    html,body{width:100%;height:100vh;height:100dvh;max-height:100dvh;background:#0a0c10;color:#e8e4d8;font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;overflow:hidden}
+    .prototype-app{position:fixed;inset:0;width:100%;height:100%;z-index:10;display:flex;flex-direction:column;overflow:hidden}
+    .proto-header{flex-shrink:0;position:relative;z-index:220;padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left))}
+    .proto-nav{display:flex;flex-wrap:nowrap;align-items:center;gap:8px}
+    .ctrl-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px 12px;font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.4px;white-space:nowrap;color:#b6b0a2;background:rgba(10,12,16,.92);border:1px solid rgba(232,228,216,.42);border-radius:3px;text-decoration:none}
+    .ctrl-btn--return{color:#00e5ff;border-color:rgba(0,229,255,.55)}
+    .display-mode-fieldset{display:inline-flex;align-items:center;gap:4px;padding:2px 4px;border:1px solid rgba(232,228,216,.35);border-radius:3px;background:rgba(10,12,16,.92);flex-shrink:0}
+    .display-mode-legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+    .mode-option{display:inline-flex;cursor:pointer}
+    .mode-pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:6px 11px;font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:12px;color:#b6b0a2;border:1px solid transparent;border-radius:2px}
+    .lbl-compact{display:none}
+    @media(max-width:639px){
+      .proto-header{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}
+      .proto-nav{justify-content:space-between;gap:6px}
+      .ctrl-btn{padding:6px 9px;font-size:11.5px}
+      .lbl-full{display:none}.lbl-compact{display:inline}
+      .mode-pill{padding:6px 10px;font-size:11.5px}
+    }
+    html[data-workstation-state="initializing"] .crt-canvas,
+    html[data-workstation-state="initializing"] .pixel2d-room-bands,
+    html[data-workstation-state="initializing"] .pixel2d-world,
+    html[data-workstation-state="initializing"] .proto-intro,
+    html[data-workstation-state="initializing"] .crt-chassis,
+    html[data-workstation-state="initializing"] .hw-controls,
+    html[data-workstation-state="error"] .crt-canvas,
+    html[data-workstation-state="error"] .pixel2d-room-bands,
+    html[data-workstation-state="error"] .pixel2d-world,
+    html[data-workstation-state="error"] .proto-intro,
+    html[data-workstation-state="error"] .crt-chassis,
+    html[data-workstation-state="error"] .hw-controls{
+      opacity:0;visibility:hidden;pointer-events:none
+    }
+    .proto-main{flex:1 1 auto;min-height:0;width:100%;position:relative;overflow:hidden}
+    .workstation-init{position:fixed;inset:0;z-index:180;display:flex;align-items:center;justify-content:center;padding:max(64px,calc(env(safe-area-inset-top) + 60px)) 16px 24px;background:radial-gradient(ellipse at 50% 48%,rgba(16,30,40,.46) 0%,#0a0c10 72%)}
+    .workstation-init__card{position:relative;width:min(100%,400px);padding:20px 22px;background:#061015;border:1px solid rgba(57,255,20,.34);border-radius:4px;box-shadow:0 0 0 1px #26282b,0 18px 48px rgba(0,0,0,.72),inset 0 0 28px rgba(0,0,0,.78)}
+    .init-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .init-led{width:6px;height:6px;background:#ffbf00;box-shadow:0 0 6px rgba(255,191,0,.6);flex:none}
+    .init-brand{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:1.4px;color:#e8e4d8}
+    .init-title{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:clamp(14px,2.2vw,16.5px);letter-spacing:.9px;color:#39ff14;line-height:1.35;margin-bottom:8px}
+    .init-stage{display:flex;align-items:center;gap:8px;font-size:12.5px;letter-spacing:.5px;color:#b6b0a2;margin-bottom:14px}
+    .init-cue{color:#00e5ff;line-height:1}
+    .init-foot{border-top:1px solid rgba(232,228,216,.14);padding-top:10px;display:flex;flex-direction:column;gap:10px}
+    .init-hint{font-size:11.5px;line-height:1.45;color:#b6b0a2}
+  </style>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -24,7 +72,7 @@
           <span class="lbl-compact" aria-hidden="true">◂ Portfolio</span>
         </a>
 
-        <fieldset class="display-mode-fieldset" id="display-mode-group">
+        <fieldset class="display-mode-fieldset" id="display-mode-group" data-initializing="true">
           <legend class="display-mode-legend">DISPLAY MODE</legend>
           <label class="mode-option" for="mode-radio-3d">
             <input type="radio" name="display-mode" id="mode-radio-3d" value="3d" class="mode-radio sr-only" aria-label="3D Workstation" />
@@ -58,6 +106,38 @@
 
     <main id="proto-main" class="proto-main">
       <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+      <!-- Intentional CRT Calibration Initialization Gate (placed first so Chunk 1 paints immediately on slow links) -->
+      <section id="workstation-init" class="workstation-init" role="status" aria-live="polite" aria-label="Workstation initialization">
+        <div class="workstation-init__card">
+          <span class="init-corners" aria-hidden="true"></span>
+          <div class="init-top">
+            <span class="init-led" aria-hidden="true"></span>
+            <span class="init-brand">ENUHRI SYSTEM</span>
+          </div>
+          <p id="init-title" class="init-title">INITIALIZING WORKSTATION&hellip;</p>
+          <p id="init-stage" class="init-stage">
+            <span class="init-cue" aria-hidden="true">&#x25AA;</span>
+            <span id="init-stage-text">LOADING INTERFACE</span>
+          </p>
+          <div class="init-foot">
+            <p id="init-hint" class="init-hint">Preparing workstation display</p>
+            <div id="init-actions" class="init-actions" hidden>
+              <button type="button" id="init-switch-2d-btn" class="ctrl-btn init-action-btn">OPEN IN PIXEL 2D &#x25B8;</button>
+              <a href="/" class="ctrl-btn ctrl-btn--return init-action-btn" aria-label="Return to Professional Portfolio">
+                <span class="lbl-full">◂ Professional Portfolio</span>
+                <span class="lbl-compact" aria-hidden="true">◂ Portfolio</span>
+              </a>
+            </div>
+            <noscript>
+              <div class="init-noscript">
+                <p class="init-hint">JavaScript is required for the interactive workstation.</p>
+                <a href="/" class="ctrl-btn ctrl-btn--return init-action-btn">◂ Return to Professional Portfolio</a>
+              </div>
+            </noscript>
+          </div>
+        </div>
+      </section>
 
       <!-- Seamless full-bleed desk/wall bands matched to projected Pixel 2D coordinates -->
       <div id="pixel2d-room-bands" class="pixel2d-room-bands" aria-hidden="true">

@@ -739,7 +739,7 @@ export async function createCrtScene({
     goalLookAt.set(...pose.target);
     goalFov = pose.fov;
 
-    if (isReduced || quality === 'low') {
+    if (isReduced || quality === 'low' || durationOverrideMs === 0) {
       curCamPos.copy(goalCamPos);
       curLookAt.copy(goalLookAt);
       curFov = goalFov;

@@ -47,7 +47,24 @@ let simulatedNoWebgl = INITIAL_NO_WEBGL;
 let webglFailed = false;
 let webglScene = null;
 let webglStatusText = INITIAL_NO_WEBGL ? 'simulated-off' : 'inactive';
-let displayMode = '3d'; // '3d' | '2d'
+let displayMode = null; // null until first renderer projects & commits ('3d' | '2d')
+
+const initStartMs = performance.now();
+let initComplete = false;
+let initRevealing = false;
+let modeRequestToken = 0;
+let slowInitTimer = null;
+let fatalInitTimer = null;
+let initFadeTimer = null;
+
+const rootEl = document.documentElement;
+const modeGroupEl = document.getElementById('display-mode-group');
+const initOverlayEl = document.getElementById('workstation-init');
+const initTitleEl = document.getElementById('init-title');
+const initStageTextEl = document.getElementById('init-stage-text');
+const initHintEl = document.getElementById('init-hint');
+const initActionsEl = document.getElementById('init-actions');
+const initSwitch2dBtn = document.getElementById('init-switch-2d-btn');
 
 const canvasEl = document.getElementById('crt-scene-canvas');
 const pixelMainEl = document.getElementById('proto-main');
@@ -333,6 +350,7 @@ function announce(text) {
 }
 
 function focusSafely(el) {
+  if (!initComplete) return;
   if (el && typeof el.focus === 'function') {
     el.focus({ preventScroll: true });
   }
@@ -655,6 +673,7 @@ function renderDebugHud(sceneMetrics = null) {
   const effQuality = displayMode === '2d' ? 'low' : resolve3dQualityTier();
   const vpDebug = readViewportMetrics();
   window.__explore3dMetrics = {
+    workstationState: rootEl.dataset.workstationState || 'initializing',
     displayMode,
     effectiveQuality: effQuality,
     storedPreference: storedManualMode,
@@ -745,8 +764,112 @@ async function ensureWebGL() {
   }
 }
 
+function clearInitTimers() {
+  if (slowInitTimer) { clearTimeout(slowInitTimer); slowInitTimer = null; }
+  if (fatalInitTimer) { clearTimeout(fatalInitTimer); fatalInitTimer = null; }
+}
+
+function setInitStatus(stageText, hintText) {
+  if (initComplete) return;
+  if (initStageTextEl && stageText) initStageTextEl.textContent = stageText;
+  if (initHintEl && hintText) initHintEl.textContent = hintText;
+}
+
+function showFatalInitError(message) {
+  clearInitTimers();
+  rootEl.dataset.workstationState = 'error';
+  if (initOverlayEl) {
+    initOverlayEl.hidden = false;
+    initOverlayEl.removeAttribute('aria-hidden');
+  }
+  if (initTitleEl) initTitleEl.textContent = 'WORKSTATION UNAVAILABLE';
+  if (initStageTextEl) initStageTextEl.textContent = 'INITIALIZATION FAILED';
+  if (initHintEl) initHintEl.textContent = message || 'Unable to initialize workstation display.';
+  if (initSwitch2dBtn) initSwitch2dBtn.hidden = true;
+  if (initActionsEl) initActionsEl.hidden = false;
+}
+
+function armSlow3dFallback(reqToken) {
+  clearInitTimers();
+  slowInitTimer = setTimeout(() => {
+    slowInitTimer = null;
+    if (initComplete || reqToken !== modeRequestToken) return;
+    setInitStatus('3D DISPLAY LOADING SLOWLY', 'Taking longer than expected — switch to Pixel 2D or return to portfolio');
+    if (initActionsEl) initActionsEl.hidden = false;
+  }, 4500);
+  fatalInitTimer = setTimeout(() => {
+    fatalInitTimer = null;
+    if (initComplete || reqToken !== modeRequestToken) return;
+    webglFailed = true;
+    webglStatusText = 'init-timeout -> Pixel 2D';
+    applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true });
+  }, 10000);
+}
+
+function nextAnimationFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+async function completeInitialReveal(finalMode, { announceFallback = false } = {}) {
+  if (initComplete || initRevealing) return;
+  initRevealing = true;
+
+  await nextAnimationFrame();
+
+  const elapsed = performance.now() - initStartMs;
+  if (!reducedMotion && elapsed >= 120 && elapsed < 280) {
+    await new Promise((resolve) => setTimeout(resolve, Math.round(280 - elapsed)));
+  }
+
+  clearInitTimers();
+  initComplete = true;
+  initRevealing = false;
+  if (modeGroupEl) modeGroupEl.removeAttribute('data-initializing');
+  rootEl.dataset.workstationState = 'ready';
+
+  const hideInitOverlay = () => {
+    if (!initOverlayEl) return;
+    initOverlayEl.hidden = true;
+    initOverlayEl.setAttribute('aria-hidden', 'true');
+  };
+
+  if (initOverlayEl) {
+    if (reducedMotion) {
+      hideInitOverlay();
+    } else {
+      const onFadeEnd = (ev) => {
+        if (ev.target === initOverlayEl && ev.propertyName === 'opacity') {
+          initOverlayEl.removeEventListener('transitionend', onFadeEnd);
+          if (initFadeTimer) { clearTimeout(initFadeTimer); initFadeTimer = null; }
+          hideInitOverlay();
+        }
+      };
+      initOverlayEl.addEventListener('transitionend', onFadeEnd);
+      initFadeTimer = setTimeout(() => {
+        initOverlayEl.removeEventListener('transitionend', onFadeEnd);
+        initFadeTimer = null;
+        hideInitOverlay();
+      }, 240);
+    }
+  }
+
+  if (currentView === 'dossier') {
+    focusSafely(document.getElementById('dossier-title'));
+  } else if (currentView === 'embed' && activeEmbedState?.returnBtn) {
+    focusSafely(activeEmbedState.returnBtn);
+  }
+
+  renderDebugHud();
+  announce(announceFallback && finalMode === '2d'
+    ? '3D display unavailable. Loaded 2D Pixel workstation.'
+    : 'Explore workstation ready.');
+}
+
 async function applyDisplayMode(targetMode, { manual = false, announceChange = false, immediate = false } = {}) {
   const prevFocus = document.activeElement;
+  const wasInitializing = !initComplete;
+  const reqToken = ++modeRequestToken;
+
   if (manual) {
     storedManualMode = targetMode;
     try {
@@ -760,16 +883,12 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
   }
 
   const changed = displayMode !== nextMode;
-  displayMode = nextMode;
-
-  modeRadio3d.checked = displayMode === '3d';
-  modeRadio2d.checked = displayMode === '2d';
 
   if (modeSwitchTimer) {
     clearTimeout(modeSwitchTimer);
     modeSwitchTimer = null;
   }
-  if (changed && !immediate && !reducedMotion) {
+  if (!wasInitializing && changed && !immediate && !reducedMotion) {
     document.body.classList.add('mode-switching');
     modeSwitchTimer = setTimeout(() => {
       document.body.classList.remove('mode-switching');
@@ -791,12 +910,19 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
         ? 'standby'
         : 'menu';
 
-  if (displayMode === '2d') {
+  const hasInitialHash = Boolean(window.location.hash && window.location.hash !== '#');
+
+  if (nextMode === '2d') {
+    clearInitTimers();
+    if (wasInitializing) {
+      setInitStatus(hasInitialHash ? 'RESTORING SESSION' : 'CALIBRATING DISPLAY', 'Preparing Pixel 2D display');
+    }
     if (webglScene) {
       webglScene.setEmbedMode(false);
       webglScene.setActive(false);
       webglScene.setQuality('low');
     }
+    displayMode = '2d';
     document.body.classList.remove('mode-3d');
     document.body.classList.add('mode-pixel-2d');
     canvasEl.setAttribute('data-active', 'false');
@@ -805,14 +931,30 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     if (currentView === 'embed') {
       updateEmbedViewportMode();
     }
+    modeRadio3d.checked = false;
+    modeRadio2d.checked = true;
+    if (modeGroupEl) modeGroupEl.removeAttribute('data-initializing');
     startOrResumePixel2dLoop();
-  } else {
-    stopPixel2dLoop('inactive (3D mode)');
-    const ok = await ensureWebGL();
-    if (!ok || displayMode !== '3d') {
-      applyDisplayMode('2d', { manual: false, announceChange: false, immediate: true });
+
+    if (wasInitializing) {
+      await completeInitialReveal('2d', { announceFallback: webglFailed && !simulatedNoWebgl });
       return;
     }
+  } else {
+    stopPixel2dLoop('inactive (3D mode)');
+    if (wasInitializing) {
+      setInitStatus(hasInitialHash ? 'RESTORING SESSION' : 'CALIBRATING DISPLAY', 'Preparing 3D display — switch to 2D anytime');
+      armSlow3dFallback(reqToken);
+    }
+
+    const ok = await ensureWebGL();
+    if (reqToken !== modeRequestToken) return;
+    if (!ok) {
+      return applyDisplayMode('2d', { manual: false, announceChange: !wasInitializing, immediate: true });
+    }
+
+    clearInitTimers();
+    displayMode = '3d';
     document.body.classList.remove('mode-pixel-2d');
     document.body.classList.add('mode-3d');
     canvasEl.setAttribute('data-active', 'true');
@@ -830,6 +972,14 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     webglScene.renderSingleFrame();
     if (currentView === 'embed') {
       updateEmbedViewportMode();
+    }
+    modeRadio3d.checked = true;
+    modeRadio2d.checked = false;
+    if (modeGroupEl) modeGroupEl.removeAttribute('data-initializing');
+
+    if (wasInitializing) {
+      await completeInitialReveal('3d');
+      return;
     }
   }
 
@@ -1899,7 +2049,7 @@ function syncAppViewportHeight(force = false) {
   if (!isScaled && visualScale <= 1.01 && (window.scrollY !== 0 || window.scrollX !== 0)) {
     window.scrollTo(0, 0);
   }
-  if (!storedManualMode) {
+  if (initComplete && !storedManualMode) {
     const autoMode = resolveDisplayMode();
     if (autoMode !== displayMode) {
       applyDisplayMode(autoMode, { manual: false, announceChange: false, immediate: true });
@@ -1950,13 +2100,33 @@ document.addEventListener('visibilitychange', () => {
   window.addEventListener(evName, recordUserActivity, { passive: true });
 });
 
-// ---- Initialize Production Explore Workstation ----
-syncAppViewportHeight(true);
-applyMotionPreference();
-applyNoWebglUI();
-if (window.location.hash && window.location.hash !== '#') {
-  syncFromLocation({ immediate: true, isInitialLoad: true });
-} else {
-  renderStandby({ restoreFocus: false, updateHistory: false });
+if (initSwitch2dBtn) {
+  initSwitch2dBtn.addEventListener('click', () => {
+    applyDisplayMode('2d', { manual: true, announceChange: true, immediate: true });
+  });
 }
-applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
+
+// ---- Initialize Production Explore Workstation ----
+try {
+  syncAppViewportHeight(true);
+  applyMotionPreference();
+  applyNoWebglUI();
+  if (window.location.hash && window.location.hash !== '#') {
+    syncFromLocation({ immediate: true, isInitialLoad: true });
+  } else {
+    renderStandby({ restoreFocus: false, updateHistory: false });
+  }
+  applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true }).catch((err) => {
+    if (!webglFailed) {
+      webglFailed = true;
+      webglStatusText = 'init-error: ' + (err?.message || 'error');
+      applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true }).catch((fallbackErr) => {
+        showFatalInitError(fallbackErr?.message);
+      });
+    } else {
+      showFatalInitError(err?.message);
+    }
+  });
+} catch (err) {
+  showFatalInitError(err?.message);
+}

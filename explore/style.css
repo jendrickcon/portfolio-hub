@@ -2385,6 +2385,14 @@ html[data-workstation-state="error"] .init-title {
 
 .init-action-btn {
   flex: 1 1 auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-workstation-state="error"] .workstation-init,
+.workstation-init:has(.init-noscript) {
+  align-items: safe center;
+  overflow-y: auto;
 }
 
 @media (max-height: 400px) {

@@ -1,5 +1,11 @@
 import { PixelEnvironment, computePixelSceneFrame } from './pixel-env.js';
 
+// The HTML recovery panel owns this visit after a controller-load timeout.
+// Reject the guarded import before registering controls or starting a renderer.
+if (document.documentElement.dataset.workstationState === 'error') {
+  throw new Error('Workstation startup expired');
+}
+
 // Normalize explicit /index.html visits to canonical /explore/
 if (window.location.pathname.endsWith('/index.html') || window.location.pathname.endsWith('index.html')) {
   const cleanPath = (window.location.pathname.replace(/\/index\.html$/, '/') || '/') + window.location.search + window.location.hash;
@@ -60,7 +66,6 @@ let initFadeTimer = null;
 const rootEl = document.documentElement;
 const modeGroupEl = document.getElementById('display-mode-group');
 const initOverlayEl = document.getElementById('workstation-init');
-const initTitleEl = document.getElementById('init-title');
 const initStageTextEl = document.getElementById('init-stage-text');
 const initHintEl = document.getElementById('init-hint');
 const initActionsEl = document.getElementById('init-actions');
@@ -898,22 +903,23 @@ function recordUserActivity() {
 
 // ---- HUD / Metrics ----
 function renderDebugHud(sceneMetrics = null) {
+  const tickMs = Number.isFinite(pixelEnv.lastTickMs) ? +pixelEnv.lastTickMs.toFixed(2) : null;
   const m = displayMode === '3d' && webglScene
-    ? (sceneMetrics || webglScene.getMetrics())
-    : {
+    ? (sceneMetrics || webglScene.getMetrics() || {})
+    : displayMode === '2d' ? {
         fps: pixel2dStateText.startsWith('pixel2d-active') ? (pixel2dUploadTimestamps.length || 14) : 0,
-        avgFrameMs: +pixelEnv.lastTickMs.toFixed(2),
-        maxFrameMs: +pixelEnv.lastTickMs.toFixed(2),
+        avgFrameMs: tickMs,
+        maxFrameMs: tickMs,
         drawCalls: 0,
         triangles: 0,
         dpr: 1,
         renderScale: 1,
         pixelMode: 'pixel-2d',
         cameraPose: `pixel-${pixelPoseTarget}`,
-        pixelTickMs: +pixelEnv.lastTickMs.toFixed(2),
+        pixelTickMs: tickMs,
         pixelUploadsPerSec: pixel2dUploadTimestamps.length,
         loopState: pixel2dStateText,
-      };
+      } : {};
 
   const effQuality = displayMode === '2d' ? 'low' : resolve3dQualityTier();
   const vpDebug = readViewportMetrics();
@@ -946,15 +952,24 @@ function renderDebugHud(sceneMetrics = null) {
     ...m,
   };
 
-  if (!DEBUG_MODE || perfHudEl.hidden) return;
-  perfHudEl.innerHTML = [
-    `<div><strong>MODE:</strong> ${displayMode.toUpperCase()} (${storedManualMode ? 'manual' : 'auto'}) | <strong>RM:</strong> ${reducedMotion ? 'ON' : 'OFF'}</div>`,
-    `<div><strong>FPS:</strong> ${m.fps} | <strong>LOOP:</strong> ${m.loopState}</div>`,
-    `<div><strong>FRAME:</strong> avg ${m.avgFrameMs}ms / max ${m.maxFrameMs}ms</div>`,
-    `<div><strong>GPU:</strong> ${m.drawCalls} calls | ${m.triangles} tris | DPR ${m.dpr}</div>`,
-    `<div><strong>PIXEL 320×180:</strong> ${m.pixelTickMs}ms | ${m.pixelUploadsPerSec} up/s | <strong>DISK:</strong> ${drivePhase}</div>`,
-    `<div><strong>WEBGL:</strong> ${webglStatusText}</div>`,
-  ].join('');
+  if (!DEBUG_MODE || !perfHudEl || perfHudEl.hidden) return;
+  const mode = displayMode?.toUpperCase() ?? 'INITIALIZING';
+  const ms = value => Number.isFinite(value) ? `${value}ms` : '—';
+  const rows = [
+    ['MODE', `${mode} (${storedManualMode ? 'manual' : 'auto'}) | RM: ${reducedMotion ? 'ON' : 'OFF'}`],
+    ['FPS', `${m.fps ?? '—'} | LOOP: ${m.loopState ?? '—'}`],
+    ['FRAME', `avg ${ms(m.avgFrameMs)} / max ${ms(m.maxFrameMs)}`],
+    ['GPU', `${m.drawCalls ?? '—'} calls | ${m.triangles ?? '—'} tris | DPR ${m.dpr ?? '—'}`],
+    ['PIXEL 320×180', `${ms(m.pixelTickMs)} | ${m.pixelUploadsPerSec ?? '—'} up/s | DISK: ${drivePhase}`],
+    ['WEBGL', webglStatusText],
+  ];
+  perfHudEl.replaceChildren(...rows.map(([label, value]) => {
+    const row = document.createElement('div');
+    const heading = document.createElement('strong');
+    heading.textContent = label + ':';
+    row.append(heading, ' ' + value);
+    return row;
+  }));
 }
 
 async function ensureWebGL() {
@@ -1003,7 +1018,7 @@ async function ensureWebGL() {
     return true;
   } catch (err) {
     webglFailed = true;
-    webglStatusText = 'failed: ' + (err?.message || 'load error');
+    webglStatusText = '3D unavailable';
     webglScene = null;
     return false;
   }
@@ -1020,18 +1035,9 @@ function setInitStatus(stageText, hintText) {
   if (initHintEl && hintText) initHintEl.textContent = hintText;
 }
 
-function showFatalInitError(message) {
+function showFatalInitError() {
   clearInitTimers();
-  rootEl.dataset.workstationState = 'error';
-  if (initOverlayEl) {
-    initOverlayEl.hidden = false;
-    initOverlayEl.removeAttribute('aria-hidden');
-  }
-  if (initTitleEl) initTitleEl.textContent = 'WORKSTATION UNAVAILABLE';
-  if (initStageTextEl) initStageTextEl.textContent = 'INITIALIZATION FAILED';
-  if (initHintEl) initHintEl.textContent = message || 'Unable to initialize workstation display.';
-  if (initSwitch2dBtn) initSwitch2dBtn.hidden = true;
-  if (initActionsEl) initActionsEl.hidden = false;
+  window.dispatchEvent(new Event('workstation-startup-failed'));
 }
 
 function armSlow3dFallback(reqToken) {
@@ -2737,6 +2743,7 @@ if (initSwitch2dBtn) {
 }
 
 // ---- Initialize Production Explore Workstation ----
+window.dispatchEvent(new Event('workstation-controller-ready'));
 try {
   syncAppViewportHeight(true);
   applyMotionPreference();
@@ -2749,14 +2756,12 @@ try {
   applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true }).catch((err) => {
     if (!webglFailed) {
       webglFailed = true;
-      webglStatusText = 'init-error: ' + (err?.message || 'error');
-      applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true }).catch((fallbackErr) => {
-        showFatalInitError(fallbackErr?.message);
-      });
+      webglStatusText = 'initialization failed';
+      applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true }).catch(showFatalInitError);
     } else {
-      showFatalInitError(err?.message);
+      showFatalInitError();
     }
   });
-} catch (err) {
-  showFatalInitError(err?.message);
+} catch {
+  showFatalInitError();
 }

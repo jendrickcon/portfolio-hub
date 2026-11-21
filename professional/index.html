@@ -8,7 +8,15 @@
 <link rel="icon" href="data:,">
 <script>
 (()=>{const k='portfolio-theme',el=document.documentElement;const q=new URLSearchParams(location.search);const em=q.get('embed');const proj=q.get('project');const isScoped=(em==='project'||em==='1')&&(proj==='udm-radar'||proj==='studyquest');if(isScoped){el.dataset.embedProject=proj;}let saved=null;try{saved=localStorage.getItem(k);if(saved==='system'){saved='dark';localStorage.setItem(k,'dark');}}catch(_){}const qTheme=q.get('theme');const theme=(qTheme==='light'||qTheme==='dark')?qTheme:(isScoped?'dark':((saved==='light'||saved==='dark')?saved:'dark'));el.setAttribute('data-theme',theme);el.style.colorScheme=theme;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=theme==='dark'?'#11151b':'#f4f6f5';})();
-(()=>{try{const inIframe=window.self!==window.top||Boolean(window.frameElement);const q=new URLSearchParams(location.search);const force=q.get('entry')==='1';const skip=q.get('embed')==='1'||q.get('embed')==='project'||q.get('entry')==='0'||Boolean(document.documentElement.dataset.embedProject)||(location.hash&&location.hash.length>1)||(!force&&sessionStorage.getItem('enuhri_entry_choice_seen')==='1');if(!inIframe&&(!skip||force)){document.documentElement.dataset.entryGate='open';}}catch(_){}})();
+(() => {
+  const root = document.documentElement;
+  const query = new URLSearchParams(location.search);
+  const bypass = window.self !== window.top || location.hash.length > 1 ||
+    ['1', 'project'].includes(query.get('embed')) || query.get('entry') === '0';
+  let seen = true;
+  try { seen = sessionStorage.getItem('enuhri_entry_choice_seen') === '1'; } catch {}
+  root.dataset.entryGate = bypass || (seen && query.get('entry') !== '1') ? 'bypassed' : 'pending';
+})();
 </script>
 <title>Jendrick Coniconde | Professional Portfolio</title>
 <style>html[data-embed-project] #page-field,html[data-embed-project] #entry-gate,html[data-embed-project] #hdr,html[data-embed-project] #about,html[data-embed-project] #profile,html[data-embed-project] #capabilities,html[data-embed-project] #journey,html[data-embed-project] #contact,html[data-embed-project] footer,html[data-embed-project] dialog,html[data-embed-project] .panel[data-panel],html[data-embed-project] .feature-head,html[data-embed-project] .case{display:none!important}html[data-embed-project="udm-radar"] #udm-radar,html[data-embed-project="studyquest"] #studyquest{display:block!important}</style>
@@ -227,7 +235,7 @@
  </div>
 </div></header>
 
-<main id="main">
+<main id="main" tabindex="-1">
 <!-- ==============================================
      ABOUT SECTION (Full viewport, no Work bleed)
      ============================================== -->
@@ -918,7 +926,71 @@
  </div>
 </dialog>
 
-<script src="script.js" defer></script>
+<script id="professional-controller" src="script.js" defer></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  if (root.dataset.entryGate !== 'pending') return;
+  const gate = document.getElementById('entry-gate');
+  const controller = document.getElementById('professional-controller');
+  const listeners = new AbortController();
+  const options = { signal: listeners.signal };
+  const timeout = setTimeout(recover, 2500);
+
+  function finish() {
+    clearTimeout(timeout);
+    listeners.abort();
+  }
+
+  function recover() {
+    if (root.dataset.entryGate !== 'pending') return;
+    finish();
+    root.dataset.entryGate = 'controller-failed';
+    window.dispatchEvent(new Event('entry-controller-failed'));
+    gate.hidden = true;
+    if (document.activeElement === document.body || gate.contains(document.activeElement)) {
+      document.getElementById('main').focus({ preventScroll: true });
+    }
+  }
+
+  window.addEventListener('entry-controller-ready', finish, options);
+  controller.addEventListener('error', recover, options);
+  // A syntax error or an incomplete initialization can still fire load.
+  controller.addEventListener('load', recover, options);
+
+  // Both choices work while the deferred controller is still downloading.
+  const primary = document.getElementById('entry-primary-btn');
+  const explore = document.getElementById('entry-explore-link');
+  function rememberChoice() {
+    try { sessionStorage.setItem('enuhri_entry_choice_seen', '1'); } catch {}
+  }
+  function continueToPortfolio() {
+    finish();
+    rememberChoice();
+    root.dataset.entryGate = 'dismissed';
+    gate.hidden = true;
+    document.getElementById('main').focus({ preventScroll: true });
+  }
+  primary.addEventListener('click', continueToPortfolio, options);
+  explore.addEventListener('click', rememberChoice, options);
+  window.addEventListener('hashchange', () => {
+    if (location.hash.length <= 1) return;
+    finish();
+    root.dataset.entryGate = 'bypassed';
+    gate.hidden = true;
+  }, options);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') continueToPortfolio();
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      const focusExplore = document.activeElement === primary ||
+        (event.shiftKey && !gate.contains(document.activeElement));
+      (focusExplore ? explore : primary).focus({ preventScroll: true });
+    }
+  }, options);
+  gate.hidden = false;
+})();
+</script>
 <script src="about-field.js" defer></script>
 </body>
 </html>

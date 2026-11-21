@@ -2457,4 +2457,6 @@ body.reduce-motion * {
   animation: none !important;
 }
 
-.hw-ctrl[hidden] { display: none; }
+html:not([data-workstation-state="ready"]) #toolbar-power { display: none; }
+.screen-content[inert] { visibility: hidden; }
+@media (max-width: 300px) { .proto-nav { flex-wrap: wrap; } }

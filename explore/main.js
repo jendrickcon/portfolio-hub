@@ -52,6 +52,7 @@ let pixelMode = INITIAL_PIXEL_MODE;
 let simulatedNoWebgl = INITIAL_NO_WEBGL;
 let webglFailed = false;
 let webglScene = null;
+let webglLoading = null;
 let webglStatusText = INITIAL_NO_WEBGL ? 'simulated-off' : 'inactive';
 let displayMode = null; // null until first renderer projects & commits ('3d' | '2d')
 
@@ -93,6 +94,7 @@ const webglBtn = document.getElementById('toggle-webgl-btn');
 const resetPrefBtn = document.getElementById('reset-pref-btn');
 
 const hwDiskBtn = document.getElementById('hw-disk-btn');
+const toolbarPower = document.getElementById('toolbar-power');
 const hwPowerBtn = document.getElementById('hw-power-btn');
 
 if (DEBUG_MODE) {
@@ -392,7 +394,15 @@ let settledViewport;
 let geometryGeneration = 0;
 let resizeFrame = 0;
 
-function publishProjection(screen, disk, power) {
+function publishProjection(screen, disk, power, moving = false) {
+  const fitting = currentView === 'dossier' && Boolean(settledViewport.dossierFit) && moving;
+  const wasFitting = screenContentEl.inert;
+  if (wasFitting !== fitting) {
+    screenContentEl.inert = fitting;
+    if (!fitting && currentView === 'dossier' && document.activeElement === document.body) {
+      focusSafely(document.getElementById('dossier-title'));
+    }
+  }
   const { left, right, top, bottom } = settledViewport.visible;
   const inside = r => r.x >= left && r.y >= top && r.x + r.w <= right && r.y + r.h <= bottom;
   const hardwareOverlaps = disk.x < power.x + power.w && power.x < disk.x + disk.w
@@ -402,12 +412,17 @@ function publishProjection(screen, disk, power) {
       chassisEl.style.setProperty(`--${prefix}-${key}`, `${rect[key].toFixed(2)}px`);
     }
   }
-  hwPowerBtn.hidden = !inside(power);
-  hwDiskBtn.hidden = !inside(disk) || (hardwareOverlaps && !hwPowerBtn.hidden);
+  const focused = document.activeElement;
+  hwPowerBtn.toggleAttribute('hidden', !inside(power));
+  hwDiskBtn.toggleAttribute('hidden', !inside(disk) || (hardwareOverlaps && !hwPowerBtn.hidden));
+  toolbarPower.toggleAttribute('hidden', currentView !== 'dossier' || !hwPowerBtn.hidden);
+  if (focused === hwPowerBtn && hwPowerBtn.hidden && !toolbarPower.hidden) focusSafely(toolbarPower);
+  if (focused === toolbarPower && toolbarPower.hidden && !hwPowerBtn.hidden) focusSafely(hwPowerBtn);
+  if (focused === hwDiskBtn && hwDiskBtn.hidden) focusSafely(document.querySelector('.ctrl-btn--return'));
   if (currentView === 'embed' && activeEmbedState) updateEmbedViewportMode(screen);
 }
 
-function applyPixelSceneProjection(frame) {
+function applyPixelSceneProjection(frame, moving = false) {
   if (!frame || displayMode !== '2d') return;
   if (pixelWorldEl) {
     pixelWorldEl.style.transform = `translate3d(${frame.tx.toFixed(2)}px, ${frame.ty.toFixed(2)}px, 0) scale(${frame.scale.toFixed(4)})`;
@@ -418,7 +433,7 @@ function applyPixelSceneProjection(frame) {
     pixelRoomBandsEl.style.setProperty('--px-desk-lip-y', `${frame.deskLipY}px`);
   }
   const cs = chassisEl.style;
-  publishProjection(frame.screenRect, frame.diskRect, frame.powerRect);
+  publishProjection(frame.screenRect, frame.diskRect, frame.powerRect, moving);
   if (frame.powerVis) {
     cs.setProperty('--power-vis-w', `${frame.powerVis.w.toFixed(2)}px`);
     cs.setProperty('--power-vis-h', `${frame.powerVis.h.toFixed(2)}px`);
@@ -430,7 +445,7 @@ function setPixelScenePose(poseName, immediate = false) {
   if (displayMode !== '2d') return;
 
   const { w, h, top } = settledViewport.stage;
-  const targetFrame = computePixelSceneFrame(w, h, pixelPoseTarget, top);
+  const targetFrame = computePixelSceneFrame(w, h, pixelPoseTarget, top, settledViewport.dossierFit);
 
   if (immediate || reducedMotion || !pixelCamCurrent) {
     pixelCamTween = null;
@@ -824,7 +839,7 @@ function tickPixel2dLoop(now) {
         h: lerpNum(from.powerVis.h, to.powerVis.h, e),
       },
     };
-    applyPixelSceneProjection(pixelCamCurrent);
+    applyPixelSceneProjection(pixelCamCurrent, rawT < 1);
     if (rawT >= 1) {
       pixelCamCurrent = to;
       pixelCamTween = null;
@@ -962,8 +977,14 @@ function renderDebugHud(sceneMetrics = null) {
 }
 
 async function ensureWebGL() {
-  if (webglScene || simulatedNoWebgl || webglFailed) return Boolean(webglScene);
+  if (simulatedNoWebgl || webglFailed) return false;
+  if (webglScene) return true;
+  // Rapid mode changes share one renderer. Only the latest request activates it.
+  if (!webglLoading) webglLoading = createWebGLScene().finally(() => { webglLoading = null; });
+  return webglLoading;
+}
 
+async function createWebGLScene() {
   try {
     const mod = await import('./crt-scene.js');
     webglScene = await mod.createCrtScene({
@@ -997,8 +1018,8 @@ async function ensureWebGL() {
         }
       },
       metricsCb: renderDebugHud,
-      projectionCb(screen, disk, power) {
-        if (displayMode === '3d') publishProjection(screen, disk, power);
+      projectionCb(screen, disk, power, moving) {
+        if (displayMode === '3d') publishProjection(screen, disk, power, moving);
       },
     });
     return true;
@@ -1103,7 +1124,7 @@ async function completeInitialReveal(finalMode, { announceFallback = false } = {
 }
 
 function currentPose() {
-  if (currentView === 'embed' || currentView === 'boot') return currentView;
+  if (currentView === 'embed' || currentView === 'boot' || currentView === 'dossier') return currentView;
   if (currentView === 'standby' || currentView === 'restarting') return 'standby';
   return 'menu';
 }
@@ -1195,6 +1216,7 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     document.body.classList.add('mode-3d');
     captureViewport();
     canvasEl.setAttribute('data-active', 'true');
+    webglScene.setCoarsePointer(coarsePointer);
     webglScene.setActive(true);
     webglScene.setReducedMotion(reducedMotion);
     webglScene.setQuality(resolve3dQualityTier());
@@ -1232,9 +1254,13 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
 
 function applyMotionPreference() {
   document.body.classList.toggle('reduce-motion', reducedMotion);
-  if (webglScene) webglScene.setReducedMotion(reducedMotion);
+  if (webglScene) {
+    webglScene.setReducedMotion(reducedMotion);
+    if (reducedMotion && displayMode === '3d') webglScene.setCameraState(currentPose(), 0);
+  }
   if (displayMode === '2d') {
     if (reducedMotion) {
+      if (pixelCamTween) setPixelScenePose(currentPose(), true);
       pixelEnv.renderStatic();
       stopPixel2dLoop('reduced-motion (0 FPS)');
     } else {
@@ -1395,6 +1421,8 @@ function renderMenu({ shouldFocus = false, focusAppId = null, updateHistory = fa
   screenContentEl.classList.remove('is-embed-active');
   if (webglScene) webglScene.setEmbedMode(false);
   currentView = 'menu';
+  screenContentEl.inert = false;
+  toolbarPower.hidden = true;
   isRestarting = false;
   hwPowerBtn.disabled = false;
   document.body.classList.remove('is-restarting');
@@ -1939,10 +1967,11 @@ function renderDossier(appId, { updateHistory = true, immediatePose = false } = 
   document.body.classList.add('is-powered');
   if (updateHistory) setUrlHash(`#app=${entry.id}`);
 
+  screenContentEl.inert = Boolean(settledViewport.dossierFit && displayMode && !immediatePose && !reducedMotion);
   if (displayMode === '3d' && webglScene) {
-    webglScene.setCameraState('menu', immediatePose ? 0 : undefined);
+    webglScene.setCameraState('dossier', immediatePose ? 0 : undefined);
   } else {
-    setPixelScenePose('menu', immediatePose);
+    setPixelScenePose('dossier', immediatePose);
   }
 
   setScreenLightState(entry.id === 'devpath' ? 'paused' : 'menu');
@@ -2420,6 +2449,8 @@ function triggerRestart() {
   isRestarting = true;
   hwPowerBtn.disabled = true;
   currentView = 'restarting';
+  screenContentEl.inert = false;
+  toolbarPower.hidden = true;
   document.body.classList.add('is-restarting');
   announce('Restarting Explore workstation.');
 
@@ -2514,6 +2545,7 @@ function syncFromLocation({ immediate = true, isInitialLoad = false } = {}) {
 
 // ---- Hardware Controls & Floppy Interaction ----
 hwPowerBtn.addEventListener('click', triggerRestart);
+toolbarPower.addEventListener('click', triggerRestart);
 
 hwDiskBtn.addEventListener('pointerdown', (e) => {
   lastDiskPointerType = e.pointerType || 'mouse';
@@ -2632,12 +2664,8 @@ if (motionQuery && typeof motionQuery.addEventListener === 'function') {
 if (coarseQuery && typeof coarseQuery.addEventListener === 'function') {
   coarseQuery.addEventListener('change', (e) => {
     coarsePointer = e.matches;
+    scheduleViewportSettlement();
     if (webglScene) webglScene.setCoarsePointer(coarsePointer);
-    if (!storedManualMode) {
-      applyDisplayMode(resolveDisplayMode(), { manual: false, announceChange: false, immediate: true });
-    } else if (displayMode === '3d' && webglScene) {
-      webglScene.setQuality(resolve3dQualityTier());
-    }
   });
 }
 
@@ -2650,8 +2678,20 @@ function captureViewport() {
   const inset = edge => parseFloat(style.getPropertyValue('--safe-' + edge)) || 0;
   const left = inset('left'), right = vp.w - inset('right');
   const top = Math.max(stage.top, inset('top')), bottom = vp.h - inset('bottom');
+  const width = right - left, height = bottom - top;
+  const compact = width <= 639 || (coarsePointer && vp.w <= 950 && height <= 460);
+  // Fit the glass, leaving the casing, keyboard and room free to crop.
+  const fitWidth = Math.max(1, Math.min(width * 0.98, width - 8));
+  const fitHeight = Math.max(1, height - 12);
   settledViewport = {
     ...vp,
+    coarsePointer,
+    dossierFit: compact ? {
+      width: fitWidth,
+      height: fitHeight,
+      cx: (left + right) / 2,
+      cy: top + Math.max(height * 0.43, Math.min(fitHeight, fitWidth * 0.75) / 2 + 6),
+    } : null,
     stage: { w: stage.width, h: stage.height, top: stage.top },
     safe: { left, right, top, bottom },
     visible: {
@@ -2667,7 +2707,8 @@ function settleViewport() {
   const previous = settledViewport;
   const vp = captureViewport();
   if (previous && previous.w === vp.w && previous.h === vp.h
-      && previous.visualScale === vp.visualScale && previous.stage.top === vp.stage.top
+      && previous.coarsePointer === vp.coarsePointer && previous.visualScale === vp.visualScale
+      && previous.stage.top === vp.stage.top
       && ['left', 'top', 'right', 'bottom'].every(k => previous.visible[k] === vp.visible[k]
         && previous.safe[k] === vp.safe[k])) return;
   if (!vp.isScaled && (window.scrollY || window.scrollX)) window.scrollTo(0, 0);

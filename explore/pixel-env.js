@@ -55,10 +55,9 @@ export const PIXEL_SCENE_POSES = {
   },
 };
 
-export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', stageTop = 0) {
+function workstationTransform(stageW, stageH, pose) {
   const safeW = Math.max(80, stageW);
   const safeH = Math.max(60, stageH);
-  const pose = PIXEL_SCENE_POSES[poseName] || PIXEL_SCENE_POSES.standby;
   const isEmbed = pose.name === 'embed';
   const isShort = safeH <= 360;
   const isNarrow = safeW <= 440;
@@ -83,7 +82,7 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
   const scale = Math.max(0.20, Math.min(rawScale, maxScaleW, maxScaleH));
 
   const cx = safeW * 0.5;
-  const centerBias = poseName === 'standby' && safeW < 760 && safeH >= 620 ? 0.54 : 0.50;
+  const centerBias = pose.name === 'standby' && safeW < 760 && safeH >= 620 ? 0.54 : 0.50;
   const cy = safeH * centerBias;
 
   const tx = cx - 240 * scale;
@@ -99,6 +98,25 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
   } else {
     ty = (minTy + maxTy) * 0.5;
   }
+
+  return { scale, tx, ty };
+}
+
+export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', stageTop = 0, dossierFit = null) {
+  const pose = PIXEL_SCENE_POSES[poseName === 'dossier' ? 'menu' : poseName] || PIXEL_SCENE_POSES.standby;
+  let transform;
+  if (poseName === 'dossier' && dossierFit) {
+    const glass = PIXEL_WORLD.screenBounds;
+    const scale = Math.min(dossierFit.width / glass.w, dossierFit.height / glass.h);
+    transform = {
+      scale,
+      tx: dossierFit.cx - (glass.x + glass.w / 2) * scale,
+      ty: dossierFit.cy - stageTop - (glass.y + glass.h / 2) * scale,
+    };
+  } else {
+    transform = workstationTransform(stageW, stageH, pose);
+  }
+  const { scale, tx, ty } = transform;
 
   const toViewportRect = (b, minW = 0, minH = 0) => {
     const rawW = b.w * scale;
@@ -125,8 +143,8 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
   const powerRect = toViewportRect(PIXEL_WORLD.powerBounds, 44, 44);
 
   return {
-    pose: pose.name,
-    durationMs: pose.durationMs,
+    pose: poseName,
+    durationMs: poseName === 'dossier' && dossierFit ? 450 : pose.durationMs,
     scale,
     tx,
     ty,

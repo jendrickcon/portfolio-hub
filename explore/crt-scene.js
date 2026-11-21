@@ -105,7 +105,6 @@ function createQuantizedGradientTexture(THREE) {
 
 export async function createCrtScene({
   canvas,
-  overlayContainer,
   pixelEnv,
   initialQuality,
   initialPixelMode = 'smooth',
@@ -622,8 +621,8 @@ export async function createCrtScene({
   }
 
   function projectBox(tlObj, brObj, minW = 0, minH = 0, pad = 0) {
-    const vw = Math.max(1, (canvas && canvas.clientWidth > 10 ? canvas.clientWidth : lastViewportW));
-    const vh = Math.max(1, (canvas && canvas.clientHeight > 10 ? canvas.clientHeight : lastViewportH));
+    const vw = lastViewportW;
+    const vh = lastViewportH;
     const midY = (tlObj.position.y + brObj.position.y) * 0.5;
     const midZ = (tlObj.position.z + brObj.position.z) * 0.5;
     const pMidL = new THREE.Vector3(tlObj.position.x, midY, midZ);
@@ -647,37 +646,23 @@ export async function createCrtScene({
 
     const cx = (x1 + x2) * 0.5;
     const cy = (y1 + y2) * 0.5;
-    const w = Math.max(minW, Math.round(Math.abs(x2 - x1) + pad));
-    const h = Math.max(minH, Math.round(Math.abs(y2 - y1) + pad));
+    const w = Math.max(minW, Math.abs(x2 - x1) + pad);
+    const h = Math.max(minH, Math.abs(y2 - y1) + pad);
     return {
-      x: Math.round(cx - w / 2),
-      y: Math.round(cy - h / 2),
+      x: cx - w / 2,
+      y: cy - h / 2,
       w,
       h,
     };
   }
 
   function updateAllProjections() {
-    if (!overlayContainer || !isActive || quality === 'low') return;
-    const scr = projectBox(cornerTL, cornerBR, 0, 0, 0);
-    overlayContainer.style.setProperty('--screen-x', `${scr.x}px`);
-    overlayContainer.style.setProperty('--screen-y', `${scr.y}px`);
-    overlayContainer.style.setProperty('--screen-w', `${scr.w}px`);
-    overlayContainer.style.setProperty('--screen-h', `${scr.h}px`);
-
-    const pwr = projectBox(powerTL, powerBR, 44, 44, 14);
-    overlayContainer.style.setProperty('--power-hit-x', `${pwr.x}px`);
-    overlayContainer.style.setProperty('--power-hit-y', `${pwr.y}px`);
-    overlayContainer.style.setProperty('--power-hit-w', `${pwr.w}px`);
-    overlayContainer.style.setProperty('--power-hit-h', `${pwr.h}px`);
-
-    const disk = projectBox(diskTL, diskBR, 44, 44, 10);
-    overlayContainer.style.setProperty('--disk-hit-x', `${disk.x}px`);
-    overlayContainer.style.setProperty('--disk-hit-y', `${disk.y}px`);
-    overlayContainer.style.setProperty('--disk-hit-w', `${disk.w}px`);
-    overlayContainer.style.setProperty('--disk-hit-h', `${disk.h}px`);
-
-    if (onProjection) onProjection(scr);
+    if (!onProjection || !isActive || quality === 'low') return;
+    onProjection(
+      projectBox(cornerTL, cornerBR),
+      projectBox(diskTL, diskBR, 44, 44, 10),
+      projectBox(powerTL, powerBR, 44, 44, 14)
+    );
   }
 
   function applyFloppyPose(progress) {
@@ -994,9 +979,10 @@ export async function createCrtScene({
     setQuality(nextQ) {
       applyQualitySettings(nextQ);
     },
-    resizeViewport(w, h) {
-      applyQualitySettings(quality, w, h);
-      if (isActive && quality !== 'low') renderSingleFrame();
+    resizeViewport(w, h, nextQuality) {
+      cameraTweening = false;
+      applyQualitySettings(nextQuality, w, h);
+      if (!isReduced && isActive && quality !== 'low') renderSingleFrame();
     },
     setCoarsePointer(val) {
       isCoarse = Boolean(val);

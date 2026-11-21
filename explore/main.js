@@ -387,18 +387,24 @@ function setUrlHash(hashValue, { replace = false } = {}) {
   else window.history.pushState(null, '', nextUrl);
 }
 
-function readPixelStageBox() {
-  if (!pixelMainEl) {
-    const vp = readViewportMetrics();
-    return { w: vp.w, h: vp.h, top: 0 };
+// A frame uses one viewport sample for the physical scene and all of its controls.
+let settledViewport;
+let geometryGeneration = 0;
+let resizeFrame = 0;
+
+function publishProjection(screen, disk, power) {
+  const { left, right, top, bottom } = settledViewport.visible;
+  const inside = r => r.x >= left && r.y >= top && r.x + r.w <= right && r.y + r.h <= bottom;
+  const hardwareOverlaps = disk.x < power.x + power.w && power.x < disk.x + disk.w
+    && disk.y < power.y + power.h && power.y < disk.y + disk.h;
+  for (const [prefix, rect] of [['screen', screen], ['disk-hit', disk], ['power-hit', power]]) {
+    for (const key of ['x', 'y', 'w', 'h']) {
+      chassisEl.style.setProperty(`--${prefix}-${key}`, `${rect[key].toFixed(2)}px`);
+    }
   }
-  const rect = pixelMainEl.getBoundingClientRect();
-  const vp = readViewportMetrics();
-  return {
-    w: rect.width > 10 ? rect.width : vp.w,
-    h: rect.height > 10 ? rect.height : Math.max(120, vp.h - 62),
-    top: rect.top || 0,
-  };
+  hwPowerBtn.hidden = !inside(power);
+  hwDiskBtn.hidden = !inside(disk) || (hardwareOverlaps && !hwPowerBtn.hidden);
+  if (currentView === 'embed' && activeEmbedState) updateEmbedViewportMode(screen);
 }
 
 function applyPixelSceneProjection(frame) {
@@ -412,27 +418,10 @@ function applyPixelSceneProjection(frame) {
     pixelRoomBandsEl.style.setProperty('--px-desk-lip-y', `${frame.deskLipY}px`);
   }
   const cs = chassisEl.style;
-  cs.setProperty('--screen-x', `${frame.screenRect.x.toFixed(2)}px`);
-  cs.setProperty('--screen-y', `${frame.screenRect.y.toFixed(2)}px`);
-  cs.setProperty('--screen-w', `${frame.screenRect.w.toFixed(2)}px`);
-  cs.setProperty('--screen-h', `${frame.screenRect.h.toFixed(2)}px`);
-
-  cs.setProperty('--disk-hit-x', `${frame.diskRect.x.toFixed(2)}px`);
-  cs.setProperty('--disk-hit-y', `${frame.diskRect.y.toFixed(2)}px`);
-  cs.setProperty('--disk-hit-w', `${frame.diskRect.w.toFixed(2)}px`);
-  cs.setProperty('--disk-hit-h', `${frame.diskRect.h.toFixed(2)}px`);
-
-  cs.setProperty('--power-hit-x', `${frame.powerRect.x.toFixed(2)}px`);
-  cs.setProperty('--power-hit-y', `${frame.powerRect.y.toFixed(2)}px`);
-  cs.setProperty('--power-hit-w', `${frame.powerRect.w.toFixed(2)}px`);
-  cs.setProperty('--power-hit-h', `${frame.powerRect.h.toFixed(2)}px`);
-
+  publishProjection(frame.screenRect, frame.diskRect, frame.powerRect);
   if (frame.powerVis) {
     cs.setProperty('--power-vis-w', `${frame.powerVis.w.toFixed(2)}px`);
     cs.setProperty('--power-vis-h', `${frame.powerVis.h.toFixed(2)}px`);
-  }
-  if (currentView === 'embed' && activeEmbedState) {
-    updateEmbedViewportMode(frame.screenRect);
   }
 }
 
@@ -440,7 +429,7 @@ function setPixelScenePose(poseName, immediate = false) {
   pixelPoseTarget = poseName || 'standby';
   if (displayMode !== '2d') return;
 
-  const { w, h, top } = readPixelStageBox();
+  const { w, h, top } = settledViewport.stage;
   const targetFrame = computePixelSceneFrame(w, h, pixelPoseTarget, top);
 
   if (immediate || reducedMotion || !pixelCamCurrent) {
@@ -516,7 +505,7 @@ function readViewportMetrics() {
 }
 
 function isCompactViewport() {
-  const { w, h } = readViewportMetrics();
+  const { w, h } = settledViewport;
   return w <= 639 || h <= 560;
 }
 
@@ -922,7 +911,7 @@ function renderDebugHud(sceneMetrics = null) {
       } : {};
 
   const effQuality = displayMode === '2d' ? 'low' : resolve3dQualityTier();
-  const vpDebug = readViewportMetrics();
+  const vpDebug = settledViewport;
   window.__explore3dMetrics = {
     workstationState: rootEl.dataset.workstationState || 'initializing',
     displayMode,
@@ -979,13 +968,12 @@ async function ensureWebGL() {
     const mod = await import('./crt-scene.js');
     webglScene = await mod.createCrtScene({
       canvas: canvasEl,
-      overlayContainer: chassisEl,
       pixelEnv,
       initialQuality: resolve3dQualityTier() === 'low' ? 'high' : resolve3dQualityTier(),
       initialPixelMode: pixelMode,
       reducedMotion,
       coarsePointer,
-      getViewportSize: readViewportMetrics,
+      getViewportSize: () => settledViewport,
       onFatalFallback(reason) {
         webglFailed = true;
         webglStatusText = 'failed: ' + reason;
@@ -1009,10 +997,8 @@ async function ensureWebGL() {
         }
       },
       metricsCb: renderDebugHud,
-      projectionCb(scr) {
-        if (displayMode === '3d' && currentView === 'embed' && activeEmbedState) {
-          updateEmbedViewportMode(scr);
-        }
+      projectionCb(screen, disk, power) {
+        if (displayMode === '3d') publishProjection(screen, disk, power);
       },
     });
     return true;
@@ -1116,6 +1102,12 @@ async function completeInitialReveal(finalMode, { announceFallback = false } = {
     : 'Explore workstation ready.');
 }
 
+function currentPose() {
+  if (currentView === 'embed' || currentView === 'boot') return currentView;
+  if (currentView === 'standby' || currentView === 'restarting') return 'standby';
+  return 'menu';
+}
+
 async function applyDisplayMode(targetMode, { manual = false, announceChange = false, immediate = false } = {}) {
   const prevFocus = document.activeElement;
   const wasInitializing = !initComplete;
@@ -1153,14 +1145,6 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     closeFloppyTray(true);
   }
 
-  const poseName = currentView === 'embed'
-    ? 'embed'
-    : currentView === 'boot'
-      ? 'boot'
-      : currentView === 'standby' || currentView === 'restarting'
-        ? 'standby'
-        : 'menu';
-
   const hasInitialHash = Boolean(window.location.hash && window.location.hash !== '#');
 
   if (nextMode === '2d') {
@@ -1176,9 +1160,10 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     displayMode = '2d';
     document.body.classList.remove('mode-3d');
     document.body.classList.add('mode-pixel-2d');
+    captureViewport();
     canvasEl.setAttribute('data-active', 'false');
     pixelEnv.renderStatic();
-    setPixelScenePose(poseName, true);
+    setPixelScenePose(currentPose(), true);
     if (currentView === 'embed') {
       updateEmbedViewportMode();
     }
@@ -1208,12 +1193,13 @@ async function applyDisplayMode(targetMode, { manual = false, announceChange = f
     displayMode = '3d';
     document.body.classList.remove('mode-pixel-2d');
     document.body.classList.add('mode-3d');
+    captureViewport();
     canvasEl.setAttribute('data-active', 'true');
     webglScene.setActive(true);
     webglScene.setReducedMotion(reducedMotion);
     webglScene.setQuality(resolve3dQualityTier());
     webglScene.setEmbedMode(currentView === 'embed');
-    webglScene.syncBeforeShow(poseName);
+    webglScene.syncBeforeShow(currentPose());
     let targetLight = 'menu';
     if (currentView === 'standby') targetLight = 'standby';
     else if (currentView === 'restarting') targetLight = 'paused';
@@ -2655,72 +2641,60 @@ if (coarseQuery && typeof coarseQuery.addEventListener === 'function') {
   });
 }
 
-let lastAppliedVpW = 0;
-let lastAppliedVpH = 0;
-let lastAppliedScale = 1;
-let vpDebounceTimer = null;
-let settledProjRafId = null;
+function captureViewport() {
+  const vp = readViewportMetrics();
+  rootEl.style.setProperty('--app-height', `${vp.h}px`);
+  rootEl.style.setProperty('--app-width', `${vp.w}px`);
+  const stage = pixelMainEl.getBoundingClientRect();
+  const style = getComputedStyle(rootEl);
+  const inset = edge => parseFloat(style.getPropertyValue('--safe-' + edge)) || 0;
+  const left = inset('left'), right = vp.w - inset('right');
+  const top = Math.max(stage.top, inset('top')), bottom = vp.h - inset('bottom');
+  settledViewport = {
+    ...vp,
+    stage: { w: stage.width, h: stage.height, top: stage.top },
+    safe: { left, right, top, bottom },
+    visible: {
+      left: Math.max(left, vp.visualOffsetLeft), top: Math.max(top, vp.visualOffsetTop),
+      right: Math.min(right, vp.visualOffsetLeft + vp.visualW),
+      bottom: Math.min(bottom, vp.visualOffsetTop + vp.visualH),
+    },
+  };
+  return settledViewport;
+}
 
-function applySettledProjection(w, h) {
+function settleViewport() {
+  const previous = settledViewport;
+  const vp = captureViewport();
+  if (previous && previous.w === vp.w && previous.h === vp.h
+      && previous.visualScale === vp.visualScale && previous.stage.top === vp.stage.top
+      && ['left', 'top', 'right', 'bottom'].every(k => previous.visible[k] === vp.visible[k]
+        && previous.safe[k] === vp.safe[k])) return;
+  if (!vp.isScaled && (window.scrollY || window.scrollX)) window.scrollTo(0, 0);
   if (displayMode === '3d' && webglScene) {
-    webglScene.setQuality(resolve3dQualityTier());
-    webglScene.resizeViewport(w, h);
+    webglScene.resizeViewport(vp.w, vp.h, resolve3dQualityTier());
   } else if (displayMode === '2d') {
-    setPixelScenePose(pixelPoseTarget, true);
+    setPixelScenePose(currentPose(), true);
+  }
+  if (initComplete && !storedManualMode && resolveDisplayMode() !== displayMode) {
+    applyDisplayMode(resolveDisplayMode(), { manual: false, immediate: true });
   }
 }
 
-function syncAppViewportHeight(force = false) {
-  const vp = readViewportMetrics();
-  const { w, h, layoutH, visualScale, isScaled } = vp;
-  const appH = isScaled ? layoutH : h;
-  const dW = Math.abs(w - lastAppliedVpW);
-  const dH = Math.abs(appH - lastAppliedVpH);
-  const dScale = Math.abs(visualScale - lastAppliedScale);
-  if (!force && dW < 2 && dH < 2 && dScale < 0.02) return;
-  lastAppliedVpW = w;
-  lastAppliedVpH = appH;
-  lastAppliedScale = visualScale;
-  document.documentElement.style.setProperty('--app-height', `${appH}px`);
-  if (!isScaled && visualScale <= 1.01 && (window.scrollY !== 0 || window.scrollX !== 0)) {
-    window.scrollTo(0, 0);
-  }
-  if (initComplete && !storedManualMode) {
-    const autoMode = resolveDisplayMode();
-    if (autoMode !== displayMode) {
-      applyDisplayMode(autoMode, { manual: false, announceChange: false, immediate: true });
-      return;
-    }
-  }
-  if (force) {
-    applySettledProjection(w, h);
-    return;
-  }
-  if (settledProjRafId) cancelAnimationFrame(settledProjRafId);
-  settledProjRafId = requestAnimationFrame(() => {
-    settledProjRafId = null;
-    const settled = readViewportMetrics();
-    applySettledProjection(settled.w, settled.h);
+function scheduleViewportSettlement() {
+  const generation = ++geometryGeneration;
+  if (resizeFrame) cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(() => {
+    if (generation !== geometryGeneration) return;
+    resizeFrame = 0;
+    settleViewport();
   });
 }
 
-function onViewportChangedDebounced() {
-  if (vpDebounceTimer) clearTimeout(vpDebounceTimer);
-  vpDebounceTimer = setTimeout(() => {
-    vpDebounceTimer = null;
-    syncAppViewportHeight(false);
-  }, 110);
-}
-
-window.addEventListener('resize', onViewportChangedDebounced, { passive: true });
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', onViewportChangedDebounced, { passive: true });
-  window.visualViewport.addEventListener('scroll', () => {
-    const vv = window.visualViewport;
-    if (vv && (vv.scale || 1) > 1.01) return;
-    if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
-  }, { passive: true });
-}
+window.addEventListener('resize', scheduleViewportSettlement, { passive: true });
+window.visualViewport?.addEventListener('resize', scheduleViewportSettlement, { passive: true });
+window.visualViewport?.addEventListener('scroll', scheduleViewportSettlement, { passive: true });
+if (window.ResizeObserver) new ResizeObserver(scheduleViewportSettlement).observe(document.getElementById('proto-header'));
 
 window.addEventListener('popstate', () => syncFromLocation({ immediate: true, isInitialLoad: false }));
 window.addEventListener('hashchange', () => syncFromLocation({ immediate: true, isInitialLoad: false }));
@@ -2745,7 +2719,7 @@ if (initSwitch2dBtn) {
 // ---- Initialize Production Explore Workstation ----
 window.dispatchEvent(new Event('workstation-controller-ready'));
 try {
-  syncAppViewportHeight(true);
+  settleViewport();
   applyMotionPreference();
   applyNoWebglUI();
   if (window.location.hash && window.location.hash !== '#') {

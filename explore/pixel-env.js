@@ -124,12 +124,6 @@ export function computePixelSceneFrame(stageW, stageH, poseName = 'standby', sta
   const diskRect = toViewportRect(PIXEL_WORLD.floppyBounds, 44, 44);
   const powerRect = toViewportRect(PIXEL_WORLD.powerBounds, 44, 44);
 
-  // Prevent Disk & Power hitboxes colliding at extreme low zoom while keeping Power centered on its switch
-  const overlap = (diskRect.x + diskRect.w + 4) - powerRect.x;
-  if (overlap > 0) {
-    diskRect.x -= overlap;
-  }
-
   return {
     pose: pose.name,
     durationMs: pose.durationMs,

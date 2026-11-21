@@ -1,5 +1,11 @@
 import { PixelEnvironment, computePixelSceneFrame } from './pixel-env.js';
 
+// The HTML recovery panel owns this visit after a controller-load timeout.
+// Reject the guarded import before registering controls or starting a renderer.
+if (document.documentElement.dataset.workstationState === 'error') {
+  throw new Error('Workstation startup expired');
+}
+
 // Normalize explicit /index.html visits to canonical /explore/
 if (window.location.pathname.endsWith('/index.html') || window.location.pathname.endsWith('index.html')) {
   const cleanPath = (window.location.pathname.replace(/\/index\.html$/, '/') || '/') + window.location.search + window.location.hash;
@@ -60,7 +66,6 @@ let initFadeTimer = null;
 const rootEl = document.documentElement;
 const modeGroupEl = document.getElementById('display-mode-group');
 const initOverlayEl = document.getElementById('workstation-init');
-const initTitleEl = document.getElementById('init-title');
 const initStageTextEl = document.getElementById('init-stage-text');
 const initHintEl = document.getElementById('init-hint');
 const initActionsEl = document.getElementById('init-actions');
@@ -1020,18 +1025,9 @@ function setInitStatus(stageText, hintText) {
   if (initHintEl && hintText) initHintEl.textContent = hintText;
 }
 
-function showFatalInitError(message) {
+function showFatalInitError() {
   clearInitTimers();
-  rootEl.dataset.workstationState = 'error';
-  if (initOverlayEl) {
-    initOverlayEl.hidden = false;
-    initOverlayEl.removeAttribute('aria-hidden');
-  }
-  if (initTitleEl) initTitleEl.textContent = 'WORKSTATION UNAVAILABLE';
-  if (initStageTextEl) initStageTextEl.textContent = 'INITIALIZATION FAILED';
-  if (initHintEl) initHintEl.textContent = message || 'Unable to initialize workstation display.';
-  if (initSwitch2dBtn) initSwitch2dBtn.hidden = true;
-  if (initActionsEl) initActionsEl.hidden = false;
+  window.dispatchEvent(new Event('workstation-startup-failed'));
 }
 
 function armSlow3dFallback(reqToken) {
@@ -2737,6 +2733,7 @@ if (initSwitch2dBtn) {
 }
 
 // ---- Initialize Production Explore Workstation ----
+window.dispatchEvent(new Event('workstation-controller-ready'));
 try {
   syncAppViewportHeight(true);
   applyMotionPreference();
@@ -2750,13 +2747,11 @@ try {
     if (!webglFailed) {
       webglFailed = true;
       webglStatusText = 'init-error: ' + (err?.message || 'error');
-      applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true }).catch((fallbackErr) => {
-        showFatalInitError(fallbackErr?.message);
-      });
+      applyDisplayMode('2d', { manual: false, announceChange: true, immediate: true }).catch(showFatalInitError);
     } else {
-      showFatalInitError(err?.message);
+      showFatalInitError();
     }
   });
-} catch (err) {
-  showFatalInitError(err?.message);
+} catch {
+  showFatalInitError();
 }

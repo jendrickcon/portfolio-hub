@@ -48,13 +48,16 @@
     .init-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
     .init-led{width:6px;height:6px;background:#ffbf00;box-shadow:0 0 6px rgba(255,191,0,.6);flex:none}
     .init-brand{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:1.4px;color:#e8e4d8}
-    .init-title{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:clamp(14px,2.2vw,16.5px);letter-spacing:.9px;color:#39ff14;line-height:1.35;margin-bottom:8px}
+    .init-title{font-family:'Departure Mono','IBM Plex Mono',ui-monospace,monospace;font-size:clamp(14px,2.2vw,16.5px);font-weight:400;letter-spacing:.9px;color:#39ff14;line-height:1.35;margin-bottom:8px}
     .init-stage{display:flex;align-items:center;gap:8px;font-size:12.5px;letter-spacing:.5px;color:#b6b0a2;margin-bottom:14px}
     .init-cue{color:#00e5ff;line-height:1}
     .init-foot{border-top:1px solid rgba(232,228,216,.14);padding-top:10px;display:flex;flex-direction:column;gap:10px}
     .init-hint{font-size:11.5px;line-height:1.45;color:#b6b0a2}
   </style>
   <link rel="stylesheet" href="style.css" />
+  <noscript><style>
+    #init-title,#init-stage,#init-hint,#display-mode-group{display:none}
+  </style></noscript>
 </head>
 <body>
 
@@ -115,7 +118,7 @@
             <span class="init-led" aria-hidden="true"></span>
             <span class="init-brand">ENUHRI SYSTEM</span>
           </div>
-          <p id="init-title" class="init-title">INITIALIZING WORKSTATION&hellip;</p>
+          <h1 id="init-title" class="init-title">INITIALIZING WORKSTATION&hellip;</h1>
           <p id="init-stage" class="init-stage">
             <span class="init-cue" aria-hidden="true">&#x25AA;</span>
             <span id="init-stage-text">LOADING INTERFACE</span>
@@ -123,6 +126,7 @@
           <div class="init-foot">
             <p id="init-hint" class="init-hint">Preparing workstation display</p>
             <div id="init-actions" class="init-actions" hidden>
+              <button type="button" id="init-reload-btn" class="ctrl-btn init-action-btn" hidden>RELOAD WORKSTATION</button>
               <button type="button" id="init-switch-2d-btn" class="ctrl-btn init-action-btn">OPEN IN PIXEL 2D &#x25B8;</button>
               <a href="/" class="ctrl-btn ctrl-btn--return init-action-btn" aria-label="Return to Professional Portfolio">
                 <span class="lbl-full">◂ Professional Portfolio</span>
@@ -130,6 +134,7 @@
               </a>
             </div>
             <noscript>
+              <h1 class="init-title">WORKSTATION UNAVAILABLE</h1>
               <div class="init-noscript">
                 <p class="init-hint">JavaScript is required for the interactive workstation.</p>
                 <a href="/" class="ctrl-btn ctrl-btn--return init-action-btn">◂ Return to Professional Portfolio</a>
@@ -582,6 +587,32 @@
   <!-- Development Performance HUD (hidden unless ?debug=1) -->
   <aside id="perf-hud" class="perf-hud" hidden aria-label="Performance metrics"></aside>
 
-  <script type="module" src="main.js"></script>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const reload = document.getElementById('init-reload-btn');
+      const watchdog = setTimeout(showRecovery, 5000);
+
+      function showRecovery() {
+        if (root.dataset.workstationState !== 'initializing') return;
+        clearTimeout(watchdog);
+        root.dataset.workstationState = 'error';
+        document.getElementById('display-mode-group').hidden = true;
+        document.getElementById('debug-controls').hidden = true;
+        document.getElementById('perf-hud').hidden = true;
+        document.getElementById('init-title').textContent = 'WORKSTATION UNAVAILABLE';
+        document.getElementById('init-stage').hidden = true;
+        document.getElementById('init-hint').textContent = 'The workstation interface could not be initialized.';
+        document.getElementById('init-switch-2d-btn').hidden = true;
+        reload.hidden = false;
+        document.getElementById('init-actions').hidden = false;
+      }
+
+      reload.addEventListener('click', () => location.reload());
+      window.addEventListener('workstation-controller-ready', () => clearTimeout(watchdog), { once: true });
+      window.addEventListener('workstation-startup-failed', showRecovery, { once: true });
+      import('./main.js').catch(showRecovery);
+    })();
+  </script>
 </body>
 </html>

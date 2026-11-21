@@ -1377,8 +1377,8 @@ html:not(.enh) .frow-brief{display:block;margin:4px 0 0;font:400 13.5px/1.45 var
 }
 
 /* ===== Portfolio Entry Gate (Session-Scoped Root Selector) ===== */
-html[data-entry-gate="open"],
-html[data-entry-gate="open"] body{
+html[data-entry-gate="active"],
+html[data-entry-gate="active"] body{
   overflow:hidden;
 }
 .entry-gate{
@@ -1479,9 +1479,6 @@ html[data-entry-gate="open"] body{
 }
 .entry-gate[hidden]{
   display:none;
-}
-html[data-entry-gate="open"] .entry-gate[hidden]{
-  display:flex;
 }
 .entry-signal-svg{
   position:fixed;

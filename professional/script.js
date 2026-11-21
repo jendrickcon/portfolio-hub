@@ -7,7 +7,7 @@
     const gate = document.getElementById('entry-gate');
     const primaryBtn = document.getElementById('entry-primary-btn');
     const exploreLink = document.getElementById('entry-explore-link');
-    if (!gate || !primaryBtn || !exploreLink) return;
+    if (root.dataset.entryGate !== 'pending' || !gate || !primaryBtn || !exploreLink) return;
 
     const bgRegions = [
       document.querySelector('.skip'),
@@ -15,26 +15,6 @@
       document.getElementById('main'),
       document.querySelector('footer'),
     ].filter(Boolean);
-
-    function shouldOpenGate() {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('embed') === '1' || params.get('embed') === 'project' || params.get('entry') === '0' || root.dataset.embedProject) return false;
-        const inIframe = window.self !== window.top || Boolean(window.frameElement);
-        if (inIframe) return false;
-        if (window.location.hash && window.location.hash.length > 1) return false;
-        if (params.get('entry') === '1') return true;
-        return window.sessionStorage.getItem(STORAGE_KEY) !== '1';
-      } catch (_) {
-        return root.dataset.entryGate === 'open';
-      }
-    }
-
-    if (!shouldOpenGate()) {
-      delete root.dataset.entryGate;
-      gate.hidden = true;
-      return;
-    }
 
     const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const finePointerMq = window.matchMedia('(pointer: fine)');
@@ -50,12 +30,19 @@
     let targetDx = 0;
     let targetDy = 0;
 
-    function setBackgroundInert(isInert) {
-      bgRegions.forEach((el) => {
-        el.inert = isInert;
-        if (isInert) el.setAttribute('aria-hidden', 'true');
-        else el.removeAttribute('aria-hidden');
-      });
+    const listeners = new AbortController();
+    const options = { signal: listeners.signal };
+    const previous = bgRegions.map(el => ({ el, inert: el.inert, hidden: el.getAttribute('aria-hidden') }));
+
+    function releaseGate() {
+      listeners.abort();
+      clearPointerEffects();
+      gate.hidden = true;
+      for (const { el, inert, hidden } of previous) {
+        el.inert = inert;
+        if (hidden === null) el.removeAttribute('aria-hidden');
+        else el.setAttribute('aria-hidden', hidden);
+      }
     }
 
     function hideHalo() {
@@ -169,39 +156,31 @@
     function dismissGate() {
       if (gate.hidden) return;
       markSeen();
-      clearPointerEffects();
-      document.removeEventListener('keydown', onKeyDown, true);
-      window.removeEventListener('pointermove', onPointerMove);
-      gate.removeEventListener('pointerleave', onPointerLeave);
-      motionMq.removeEventListener('change', onMotionOrPointerChange);
-      finePointerMq.removeEventListener('change', onMotionOrPointerChange);
-
-      gate.hidden = true;
-      delete root.dataset.entryGate;
-      setBackgroundInert(false);
-
-      const mainEl = document.getElementById('main');
-      if (mainEl) {
-        if (!mainEl.hasAttribute('tabindex')) mainEl.setAttribute('tabindex', '-1');
-        mainEl.focus({ preventScroll: true });
-      }
+      root.dataset.entryGate = 'dismissed';
+      releaseGate();
+      document.getElementById('main')?.focus({ preventScroll: true });
     }
 
-    root.dataset.entryGate = 'open';
-    gate.hidden = false;
-    setBackgroundInert(true);
+    window.addEventListener('entry-controller-failed', releaseGate, options);
+    primaryBtn.addEventListener('click', dismissGate, options);
+    exploreLink.addEventListener('click', markSeen, options);
+    document.addEventListener('keydown', onKeyDown, { ...options, capture: true });
+    window.addEventListener('pointermove', onPointerMove, { ...options, passive: true });
+    gate.addEventListener('pointerleave', onPointerLeave, options);
+    motionMq.addEventListener('change', onMotionOrPointerChange, options);
+    finePointerMq.addEventListener('change', onMotionOrPointerChange, options);
 
-    primaryBtn.addEventListener('click', dismissGate);
-    exploreLink.addEventListener('click', markSeen);
-    document.addEventListener('keydown', onKeyDown, true);
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    gate.addEventListener('pointerleave', onPointerLeave, { passive: true });
-    motionMq.addEventListener('change', onMotionOrPointerChange);
-    finePointerMq.addEventListener('change', onMotionOrPointerChange);
+    for (const el of bgRegions) {
+      el.inert = true;
+      el.setAttribute('aria-hidden', 'true');
+    }
+    gate.hidden = false;
 
     window.requestAnimationFrame(() => {
       if (!gate.hidden) primaryBtn.focus({ preventScroll: true });
     });
+    root.dataset.entryGate = 'active';
+    window.dispatchEvent(new Event('entry-controller-ready'));
   })();
 
   const $$ = s => [...document.querySelectorAll(s)];

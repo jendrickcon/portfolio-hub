@@ -481,33 +481,22 @@
 
       // Build takeover skeleton
       takeover.innerHTML = `
-        <button type="button" class="tool-takeover-head" aria-label="Collapse tool details">
+        <button type="button" class="tool-takeover-head" aria-controls="${takeoverId}-body" aria-label="Collapse tool details">
           <span class="tool-takeover-main">
             <span class="tool-takeover-title"></span>
           </span>
           <span class="tool-takeover-chev" aria-hidden="true"></span>
         </button>
-        <div class="tool-takeover-body" role="region" aria-labelledby="${takeoverId}-head">
+        <div id="${takeoverId}-body" class="tool-takeover-body" role="region" aria-labelledby="${takeoverId}-head">
           <p class="tool-takeover-desc"></p>
-          <div class="tool-takeover-footer">
-            <span class="tool-takeover-proof mono"></span>
-            <button type="button" class="tool-takeover-close-btn mono">
-              <svg class="tool-takeover-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              <span>Close details</span>
-            </button>
-          </div>
+          <span class="tool-takeover-proof mono"></span>
         </div>
       `;
 
       const takeoverHead = takeover.querySelector('.tool-takeover-head');
       takeoverHead.id = `${takeoverId}-head`;
-      const takeoverClose = takeover.querySelector('.tool-takeover-close-btn');
 
       takeoverHead.addEventListener('click', () => closeActive(true));
-      takeoverClose.addEventListener('click', e => {
-        e.stopPropagation();
-        closeActive(true);
-      });
 
       const cards = [...grid.querySelectorAll(':scope > .tool-card')];
       cards.forEach((card, ci) => {
@@ -600,7 +589,6 @@
       takeover.querySelector('.tool-takeover-title').textContent = d.name;
       takeover.querySelector('.tool-takeover-desc').textContent = d.desc;
       takeover.querySelector('.tool-takeover-proof').innerHTML = '<span class="tool-takeover-proof-label">Evidence:</span> ' + d.refs;
-      takeover.querySelector('.tool-takeover-close-btn').setAttribute('aria-label', `Close ${d.name} details`);
       takeover.querySelector('.tool-takeover-head').setAttribute('aria-expanded', 'true');
 
       // Step 4: Measure required expanded height in DOM
@@ -662,6 +650,7 @@
       }
 
       d.btn.setAttribute('aria-expanded', 'true');
+      if (document.activeElement === d.btn) takeover.querySelector('.tool-takeover-head').focus({ preventScroll: true });
       activeEntry = {
         card,
         stage,
@@ -781,22 +770,13 @@
       const p = document.createElement('p');
       p.className = 'tool-inline-desc';
       p.textContent = d.desc;
-      const foot = document.createElement('div');
-      foot.className = 'tool-inline-foot';
       const proof = document.createElement('span');
       proof.className = 'tool-takeover-proof mono';
       const label = document.createElement('span');
       label.className = 'tool-takeover-proof-label';
       label.textContent = 'Evidence:';
       proof.append(label, ' ' + d.refs);
-      const close = document.createElement('button');
-      close.type = 'button';
-      close.className = 'tool-takeover-close-btn mono';
-      close.innerHTML = '<svg class="tool-takeover-close-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Close details</span>';
-      close.setAttribute('aria-label', 'Close ' + d.name + ' details');
-      close.addEventListener('click', () => closeInline(true));
-      foot.append(proof, close);
-      body.append(p, foot);
+      body.append(p, proof);
       panel.append(body);
       card.append(panel);
       d.inline = panel;
@@ -851,7 +831,6 @@
       clearTimeout(inlineTimer);
       const d = e.card._toolData;
       d.btn.setAttribute('aria-expanded', 'false');
-      d.btn.setAttribute('aria-controls', d.takeover.id);
       e.card.classList.remove('is-inline-open');
 
       const done = () => {
@@ -902,28 +881,33 @@
         const cur = inlineEntry || inlineClosing;
         if (modeOf(cur.card._toolData.grid) !== 'inline') {
           closeInline(false, true);
-          shelves.forEach(s => {
-            s.querySelectorAll('.tool-card').forEach(c => {
-              if (c._toolData) {
-                c._toolData.btn.setAttribute('aria-controls', c._toolData.takeover.id);
-                c.classList.remove('is-inline-open');
-                if (c._toolData.inline) {
-                  c._toolData.inline.hidden = true;
-                  clearInlineStyles(c._toolData.inline);
-                }
-              }
-            });
-          });
         }
       }
-      if (activeEntry && !isTransitioning && modeOf(activeEntry.grid) === 'inline') {
+      if (activeEntry && modeOf(activeEntry.grid) === 'inline') {
+        const { takeover, trigger } = activeEntry;
+        const restoreFocus = takeover.contains(document.activeElement);
         cancelActiveCleanly();
+        if (restoreFocus) trigger.focus({ preventScroll: true });
+      }
+      for (const shelf of shelves) {
+        const grid = shelf.querySelector('.toolkit-grid');
+        if (!grid) continue;
+        const mode = modeOf(grid);
+        if (grid.dataset.toolLayout === mode) continue;
+        grid.dataset.toolLayout = mode;
+        for (const card of grid.querySelectorAll('.tool-card')) {
+          const tool = card._toolData;
+          if (tool) tool.btn.setAttribute('aria-controls', mode === 'inline' ? inlinePanel(card).id : tool.takeover.id);
+        }
       }
     }
     window.addEventListener('orientationchange', checkMode);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkMode);
 
-    if (shelves.length) html.classList.add('toolkit-ready');
+    if (shelves.length) {
+      html.classList.add('toolkit-ready');
+      checkMode();
+    }
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
@@ -1431,7 +1415,7 @@
     const capScope = capDialog.querySelector('[data-cap-dialog-scope]');
     const capContrib = capDialog.querySelector('[data-cap-dialog-contrib]');
     const capEvidence = capDialog.querySelector('[data-cap-dialog-evidence]');
-    const capCloseButtons = $$('[data-cap-close]', capDialog);
+    const capClose = capDialog.querySelector('[data-cap-close]');
     let capTrigger = null;
 
     const closeCapabilityDialog = () => {
@@ -1464,9 +1448,7 @@
       trigger.addEventListener('click', () => openCapabilityDialog(trigger));
     });
 
-    capCloseButtons.forEach(button => {
-      button.addEventListener('click', closeCapabilityDialog);
-    });
+    capClose.addEventListener('click', closeCapabilityDialog);
 
     capDialog.addEventListener('click', event => {
       if (event.target === capDialog) closeCapabilityDialog();

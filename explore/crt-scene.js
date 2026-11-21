@@ -105,7 +105,6 @@ function createQuantizedGradientTexture(THREE) {
 
 export async function createCrtScene({
   canvas,
-  overlayContainer,
   pixelEnv,
   initialQuality,
   initialPixelMode = 'smooth',
@@ -315,7 +314,8 @@ export async function createCrtScene({
   monitorGroup.add(rearMesh);
 
   const bezelShape = makeRoundedRectShape(1.48, 1.12, 0.045);
-  bezelShape.holes.push(makeRoundedRectShape(1.30, 0.96, 0.03));
+  const bezelOpening = { width: 1.30, height: 0.96, frontZ: 0.148 + 0.05 + 0.012 };
+  bezelShape.holes.push(makeRoundedRectShape(bezelOpening.width, bezelOpening.height, 0.03));
   const bezelGeo = new THREE.ExtrudeGeometry(bezelShape, {
     depth: 0.05,
     bevelEnabled: true,
@@ -525,7 +525,7 @@ export async function createCrtScene({
   let frameTimeSamples = [];
   let slowFrameSamples = [];
   let uploadTimestamps = [];
-  let isActive = true;
+  let isActive = false;
   let embedMode = false;
   let onAutoDowngrade = null;
   let onMetrics = null;
@@ -581,8 +581,7 @@ export async function createCrtScene({
 
     camera.aspect = width / height;
     if (!cameraTweening) {
-      const poseSet = getPoseProfile(width, height, isCoarse);
-      const curPose = poseSet[currentPoseName] || poseSet.menu;
+      const curPose = resolvePose(currentPoseName, vp);
       curCamPos.set(...curPose.pos);
       curLookAt.set(...curPose.target);
       curFov = curPose.fov;
@@ -622,8 +621,8 @@ export async function createCrtScene({
   }
 
   function projectBox(tlObj, brObj, minW = 0, minH = 0, pad = 0) {
-    const vw = Math.max(1, (canvas && canvas.clientWidth > 10 ? canvas.clientWidth : lastViewportW));
-    const vh = Math.max(1, (canvas && canvas.clientHeight > 10 ? canvas.clientHeight : lastViewportH));
+    const vw = lastViewportW;
+    const vh = lastViewportH;
     const midY = (tlObj.position.y + brObj.position.y) * 0.5;
     const midZ = (tlObj.position.z + brObj.position.z) * 0.5;
     const pMidL = new THREE.Vector3(tlObj.position.x, midY, midZ);
@@ -647,37 +646,24 @@ export async function createCrtScene({
 
     const cx = (x1 + x2) * 0.5;
     const cy = (y1 + y2) * 0.5;
-    const w = Math.max(minW, Math.round(Math.abs(x2 - x1) + pad));
-    const h = Math.max(minH, Math.round(Math.abs(y2 - y1) + pad));
+    const w = Math.max(minW, Math.abs(x2 - x1) + pad);
+    const h = Math.max(minH, Math.abs(y2 - y1) + pad);
     return {
-      x: Math.round(cx - w / 2),
-      y: Math.round(cy - h / 2),
+      x: cx - w / 2,
+      y: cy - h / 2,
       w,
       h,
     };
   }
 
   function updateAllProjections() {
-    if (!overlayContainer || !isActive || quality === 'low') return;
-    const scr = projectBox(cornerTL, cornerBR, 0, 0, 0);
-    overlayContainer.style.setProperty('--screen-x', `${scr.x}px`);
-    overlayContainer.style.setProperty('--screen-y', `${scr.y}px`);
-    overlayContainer.style.setProperty('--screen-w', `${scr.w}px`);
-    overlayContainer.style.setProperty('--screen-h', `${scr.h}px`);
-
-    const pwr = projectBox(powerTL, powerBR, 44, 44, 14);
-    overlayContainer.style.setProperty('--power-hit-x', `${pwr.x}px`);
-    overlayContainer.style.setProperty('--power-hit-y', `${pwr.y}px`);
-    overlayContainer.style.setProperty('--power-hit-w', `${pwr.w}px`);
-    overlayContainer.style.setProperty('--power-hit-h', `${pwr.h}px`);
-
-    const disk = projectBox(diskTL, diskBR, 44, 44, 10);
-    overlayContainer.style.setProperty('--disk-hit-x', `${disk.x}px`);
-    overlayContainer.style.setProperty('--disk-hit-y', `${disk.y}px`);
-    overlayContainer.style.setProperty('--disk-hit-w', `${disk.w}px`);
-    overlayContainer.style.setProperty('--disk-hit-h', `${disk.h}px`);
-
-    if (onProjection) onProjection(scr);
+    if (!onProjection || !isActive || quality === 'low') return;
+    onProjection(
+      projectBox(cornerTL, cornerBR),
+      projectBox(diskTL, diskBR, 44, 44, 10),
+      projectBox(powerTL, powerBR, 44, 44, 14),
+      cameraTweening
+    );
   }
 
   function applyFloppyPose(progress) {
@@ -729,10 +715,25 @@ export async function createCrtScene({
     }
   }
 
+  function resolvePose(name, vp) {
+    const poses = getPoseProfile(vp.w, vp.h, isCoarse);
+    const fit = vp.dossierFit;
+    if (name !== 'dossier' || !fit) return poses[name] || poses.menu;
+
+    // Project the physical front bezel opening head-on. The existing calibrated
+    // semantic corners sit just inside it and use this same camera matrix.
+    const front = monitorGroup.localToWorld(new THREE.Vector3(0, apCenterY, bezelOpening.frontZ));
+    const pixelsPerUnit = Math.min(fit.width / bezelOpening.width, fit.height / bezelOpening.height);
+    const fov = poses.menu.fov;
+    const distance = vp.h / (2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)) * pixelsPerUnit);
+    const x = front.x - (fit.cx - vp.w / 2) / pixelsPerUnit;
+    const y = front.y + (fit.cy - vp.h / 2) / pixelsPerUnit;
+    return { pos: [x, y, front.z + distance], target: [x, y, front.z], fov, durationMs: 450 };
+  }
+
   function setCameraState(poseName, durationOverrideMs = null) {
     const vp = readVp();
-    const poseSet = getPoseProfile(vp.w, vp.h, isCoarse);
-    const pose = poseSet[poseName] || poseSet.menu;
+    const pose = resolvePose(poseName, vp);
     currentPoseName = poseName;
     metrics.cameraPose = `${vp.w < vp.h || vp.w <= 639 || vp.h <= 560 || isCoarse ? 'mobile-' : ''}${poseName}`;
     goalCamPos.set(...pose.pos);
@@ -994,9 +995,10 @@ export async function createCrtScene({
     setQuality(nextQ) {
       applyQualitySettings(nextQ);
     },
-    resizeViewport(w, h) {
-      applyQualitySettings(quality, w, h);
-      if (isActive && quality !== 'low') renderSingleFrame();
+    resizeViewport(w, h, nextQuality = quality) {
+      cameraTweening = false;
+      applyQualitySettings(nextQuality, w, h);
+      if (!isReduced && isActive && quality !== 'low') renderSingleFrame();
     },
     setCoarsePointer(val) {
       isCoarse = Boolean(val);

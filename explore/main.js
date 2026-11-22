@@ -1866,7 +1866,7 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
 
   function frameSource(pathname) {
     const compact = state.presentation === 'crt-compact';
-    return pathname + (compact ? '?embed=1&mode=crt-compact#profile' : '?embed=1');
+    return pathname + (compact ? '?embed=1&mode=crt-compact' : '?embed=1');
   }
 
   function attachFrame(pathname = '/') {
@@ -1949,7 +1949,9 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
     if (changed) showSurface();
     else updateEmbedPanState();
   };
-  state.observer = new ResizeObserver(updateEmbedViewportMode);
+  state.observer = new ResizeObserver(() => {
+    if (activeEmbedState === state && embedProjection !== 'pending') state.fit();
+  });
   state.observer.observe(stageEl);
   retryBtn.addEventListener('click', () => {
     if (state.presentation === 'small') return;

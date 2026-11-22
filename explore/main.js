@@ -1697,6 +1697,7 @@ function bindEmbeddedDocumentBridges(state) {
 }
 
 function renderProfessionalEmbed({ updateHistory = true, immediatePose = false } = {}) {
+  const fromCatalog = currentView === 'menu' && initComplete;
   clearActiveTimers();
   teardownDossierPreview();
   teardownProfessionalEmbed();
@@ -1928,12 +1929,12 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
     viewportEl.append(frame);
   }
 
-  state.fit = () => {
+  state.fit = (approaching = embedProjection === 'moving') => {
     const { clientWidth: width, clientHeight: height } = stageEl;
     const next = embedPresentation(width, height, state.presentation);
     // During the approach, start loading once this measured aperture can host
     // the intended layout. Reclassify an existing frame only at rest.
-    if (embedProjection === 'moving' && (state.presentation || next === 'small' || (!coarsePointer && next !== 'desktop'))) return;
+    if (approaching && (state.presentation || next === 'small' || (!coarsePointer && next !== 'desktop'))) return;
     const changed = next !== state.presentation;
     state.presentation = next;
     rootEl.dataset.presentation = next;
@@ -1959,6 +1960,9 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
     focusSafely(returnBtn);
     attachFrame();
   });
+  // The existing Catalog aperture may already fit the child before the
+  // first camera frame. Begin its request in the selection event in that case.
+  if (fromCatalog && !immediatePose && !reducedMotion) state.fit(true);
   updateEmbedViewportMode();
   focusSafely(returnBtn);
   renderDebugHud();

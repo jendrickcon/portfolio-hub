@@ -1996,11 +1996,41 @@ html[data-embed-mode="crt-compact"] {
   & .theme-opt { min-width: 44px; min-height: 44px; }
   & .theme-text { display: inline; }
   & .profile-resume-block, & .profile-main, & .toolkit-wrap { gap: 12px; }
-  & .feature-head, & .feature-body, & .cap-grid, & .toolkit-ready .toolkit-grid, & .toolkit-grid {
+  & .feature-head, & .feature-body, & .cap-grid, & .toolkit-grid {
     grid-template-columns: minmax(0, 1fr);
   }
   & .about h1, & .feature-title, & .profile-head h2, & .sec h2 { font-size: clamp(24px, 6vw, 36px); overflow-wrap: anywhere; }
   & .feature-layout, & .feature-body, & .feature-head { gap: 12px; min-width: 0; }
   & .profile-intro, & .feature-intro { font-size: 16px; }
   & .contact .links, & .acts { gap: 6px 12px; }
+}
+
+html[data-embed-mode="crt-compact"] {
+  & :is(.tool-toggle, .cap-card, .case-toggle, .case-back, .act, .contact-link, .demo-tabs button, .demo-nav button, .btn, .media-lightbox-bar button) {
+    min-height: 44px; min-width: 44px;
+  }
+  & :is(.resume-dialog, .cap-dialog, .media-lightbox) {
+    box-sizing: border-box; width: calc(100% - 8px); max-width: 680px; margin: auto;
+    max-height: calc(100dvh - 8px); max-block-size: calc(100dvh - 8px);
+  }
+  & .cap-dialog-panel { max-height: calc(100dvh - 10px); max-block-size: calc(100dvh - 10px); }
+  & :is(.cap-dialog-bar, .resume-dialog-bar) { padding: 3px 8px; gap: 6px; flex: none; }
+  & .cap-dialog-icon { display: none; }
+  & .cap-dialog-body { padding: 8px 10px; }
+  & .resume-dialog { height: auto; }
+  & .resume-dialog-panel { height: auto; max-height: calc(100dvh - 10px); }
+  & .resume-toolbar, & .resume-dialog-scroll { display: none; }
+  & .resume-dialog-actions { flex-flow: row wrap; overflow-y: auto; padding: 4px 8px; gap: 4px; }
+  & .resume-dialog-actions a { flex: 1 1 auto; text-align: center; }
+  & .media-lightbox { padding: 4px 8px; overflow: auto; }
+  & .media-lightbox-bar { gap: 6px; }
+  & .media-lightbox img { max-height: calc(100dvh - 74px); object-fit: contain; margin-block: 4px; }
+  & .chapter-preview, & .demo-main, & .case, & .rail, & .feature-body > *, & .ov-main > * { min-width: 0; }
+  & .rail, & .rail-l, & .demo-topbar { flex-wrap: wrap; }
+  & .demo-shell { grid-template-columns: minmax(0, 1fr); }
+  & .demo-sidebar, & .demo-nav { flex-direction: row; flex-wrap: wrap; }
+  & .demo-sidebar .demo-logo { width: 36px; height: 36px; }
+  & .demo-nav button, & .demo-tabs button { font-size: 12px; }
+  & .demo-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 72px), 1fr)); }
+  & .rail a, & .links a, & .case, & .demo-main, & .cap-dialog-heading { overflow-wrap: anywhere; }
 }

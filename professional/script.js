@@ -906,6 +906,7 @@
       }
     }
     window.addEventListener('orientationchange', checkMode);
+    if (managedEmbed) window.addEventListener('professional-embed-modechange', checkMode);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkMode);
 
     if (shelves.length) {
@@ -1261,6 +1262,10 @@
       const pageScroll = scrollY, pageScrollX = scrollX;
       const wasOpen = resumeDialog.open;
       resumeDialog.showModal();
+      if (isCompactEmbed()) {
+        resumeClose.focus({ preventScroll: true });
+        return;
+      }
       fitResume();
       // A freshly opened dialog has no layout yet; measure again once it does.
       // Focus the sheet, not Close: the page behind cannot scroll, and Enter does
@@ -1304,7 +1309,7 @@
 
     // Keyboard zoom, but only while the viewer is what the visitor is using.
     resumeDialog.addEventListener('keydown', event => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isCompactEmbed() || event.ctrlKey || event.metaKey || event.altKey) return;
       const key = event.key;
       if (key === '+' || key === '=') { event.preventDefault(); zoomStep(1); }
       else if (key === '-' || key === '_') { event.preventDefault(); zoomStep(-1); }
@@ -1315,7 +1320,7 @@
     // a window resize. A zoomed sheet keeps its zoom and just re-centres.
     let resumeResizeFrame = 0;
     addEventListener('resize', () => {
-      if (!resumeDialog.open) return;
+      if (!resumeDialog.open || isCompactEmbed()) return;
       cancelAnimationFrame(resumeResizeFrame);
       resumeResizeFrame = requestAnimationFrame(() => {
         if (resumeZoomReset) { fitResume(); return; }
@@ -1774,7 +1779,11 @@
 
     // Top global navigation progress
     let a = 0;
-    secs.forEach((s, i) => { if (top(s) <= line) a = i; });
+    let nearestTop = -Infinity;
+    secs.forEach((s, i) => {
+      const y = top(s);
+      if (y <= line && y > nearestTop) { a = i; nearestTop = y; }
+    });
     if (atEnd || (footerVisible && contact.getBoundingClientRect().top < innerHeight - hh)) a = secs.length - 1;
     if (html.dataset.activeSection !== secs[a].id) html.dataset.activeSection = secs[a].id;
     if (isCompactEmbed() && compactSelect.value !== secs[a].id) compactSelect.value = secs[a].id;
@@ -1932,37 +1941,58 @@
   });
 
   if (managedEmbed) {
-    for (const link of links) compactSelect.add(new Option(link.textContent.trim(), link.dataset.sec));
+    const [intro, profile] = secs;
+    const introHeading = intro.querySelector('h1');
+    const profileName = profile.querySelector('.profile-fact-value strong');
+    const brand = hdr.querySelector('.brand');
+    for (const link of [links[1], links[0], ...links.slice(2)]) compactSelect.add(new Option(link.textContent.trim(), link.dataset.sec));
     compactSelect.addEventListener('change', () => go(compactSelect.value, { focus: true }));
     const theme = hdr.querySelector('.theme-control');
     const themeSlot = document.querySelector('.crt-theme-slot');
     const home = theme.parentElement;
     const next = theme.nextElementSibling;
 
-    function applyPresentation(mode) {
+    function applyPresentation(mode, initial = false) {
       if (mode !== 'crt-compact' && mode !== 'desktop') return false;
       const compact = mode === 'crt-compact';
       const focused = document.activeElement;
+      const reading = initial ? null : document.elementFromPoint(innerWidth / 2, hdr.offsetHeight + 8);
+      const oldTop = reading?.getBoundingClientRect().top;
       const movingTheme = theme.contains(focused);
       compactSelect.closest('nav').hidden = !compact;
       if (compact) {
         html.dataset.embedMode = mode;
+        profile.after(intro);
+        profileName.setAttribute('role', 'heading');
+        profileName.setAttribute('aria-level', '1');
+        introHeading.setAttribute('aria-level', '2');
+        brand.setAttribute('href', '#profile');
         themeSlot.hidden = false;
         themeSlot.append(theme);
       } else {
         delete html.dataset.embedMode;
+        if (profile.previousElementSibling !== intro) profile.before(intro);
+        profileName.removeAttribute('role');
+        profileName.removeAttribute('aria-level');
+        introHeading.removeAttribute('aria-level');
+        brand.setAttribute('href', '#about');
         home.insertBefore(theme, next);
         themeSlot.hidden = true;
       }
-      layout();
-      if (movingTheme) focused.focus({ preventScroll: true });
+      if (!initial) {
+        window.dispatchEvent(new Event('professional-embed-modechange'));
+        layout();
+      }
+      if (reading?.isConnected && reading.getClientRects().length) {
+        scrollBy({ top: reading.getBoundingClientRect().top - oldTop, behavior: 'instant' });
+      }
+      if (movingTheme || intro.contains(focused)) focused.focus({ preventScroll: true });
       else if (!compact && focused === compactSelect) links.find(link => link.dataset.sec === compactSelect.value)?.focus({ preventScroll: true });
       else if (compact && hdr.contains(focused) && !focused.getClientRects().length) compactSelect.focus({ preventScroll: true });
-      window.dispatchEvent(new Event('resize'));
       return true;
     }
 
-    applyPresentation(isCompactEmbed() ? 'crt-compact' : 'desktop');
+    applyPresentation(isCompactEmbed() ? 'crt-compact' : 'desktop', true);
     // The owning same-origin iframe host can change presentation without navigating.
     window.setProfessionalEmbedMode = mode => {
       if (mode === (isCompactEmbed() ? 'crt-compact' : 'desktop')) return true;
@@ -1974,5 +2004,8 @@
   mq.addEventListener('change', layout);
   layout();
   if (location.hash) requestAnimationFrame(() => go(decodeURIComponent(location.hash.slice(1))));
-  if (managedEmbed) html.dataset.embedReady = 'true';
+  if (managedEmbed) {
+    html.dataset.embedReady = 'true';
+    window.frameElement?.dispatchEvent(new Event('professional-embed-ready'));
+  }
 })();

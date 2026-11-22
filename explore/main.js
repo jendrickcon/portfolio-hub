@@ -22,8 +22,10 @@ const INITIAL_PIXEL_MODE = ['smooth', 'quantized', 'lowres75', 'lowres50'].inclu
 
 const EMBED_CONFIG = {
   virtualDesktopWidth: 980,
-  minApertureW: 600,
-  minApertureH: 380,
+  compactMinW: 268,
+  compactMinH: 148,
+  desktopMinW: 600,
+  desktopMinH: 326,
   loadTimeoutMs: 8000,
   allowUrlOverride: true,
 };
@@ -319,6 +321,7 @@ let bootDone = false;
 let isRestarting = false;
 let modeSwitchTimer = null;
 let activeEmbedState = null;
+let embedProjection = 'pending';
 let lastEmbedReloadCount = 0;
 let activeDossierPreview = null;
 let cancelDossierShellAnim = null;
@@ -419,7 +422,11 @@ function publishProjection(screen, disk, power, moving = false) {
   if (focused === hwPowerBtn && hwPowerBtn.hidden && !toolbarPower.hidden) focusSafely(toolbarPower);
   if (focused === toolbarPower && toolbarPower.hidden && !hwPowerBtn.hidden) focusSafely(hwPowerBtn);
   if (focused === hwDiskBtn && hwDiskBtn.hidden) focusSafely(document.querySelector('.ctrl-btn--return'));
-  if (currentView === 'embed' && activeEmbedState) updateEmbedViewportMode(screen);
+  if (currentView === 'embed') {
+    const previous = embedProjection;
+    embedProjection = moving ? 'moving' : 'settled';
+    if (previous !== embedProjection) updateEmbedViewportMode();
+  }
 }
 
 function applyPixelSceneProjection(frame, moving = false) {
@@ -1541,18 +1548,8 @@ function renderMenu({ shouldFocus = false, focusAppId = null, updateHistory = fa
   renderDebugHud();
 }
 
-function readCurrentScreenApertureRect() {
-  const w = parseFloat(chassisEl.style.getPropertyValue('--screen-w'));
-  const h = parseFloat(chassisEl.style.getPropertyValue('--screen-h'));
-  if (Number.isFinite(w) && Number.isFinite(h) && w > 10 && h > 10) {
-    return { w, h };
-  }
-  const r = overlayEl.getBoundingClientRect();
-  return { w: r.width, h: r.height };
-}
-
 function updateEmbedPanState() {
-  if (currentView !== 'embed' || !activeEmbedState || activeEmbedState.failed) return;
+  if (currentView !== 'embed' || !activeEmbedState?.loaded || activeEmbedState.presentation === 'small') return;
   const { viewportEl, stageEl, statusLabelEl, srHintEl, loaded } = activeEmbedState;
   const horizRange = Math.max(0, viewportEl.scrollWidth - viewportEl.clientWidth);
   const hasPan = loaded && horizRange > 2;
@@ -1570,28 +1567,24 @@ function updateEmbedPanState() {
   }
 }
 
-function updateEmbedViewportMode(knownScreenRect = null) {
-  if (currentView !== 'embed' || !activeEmbedState) return;
-  const screenRect = knownScreenRect || readCurrentScreenApertureRect();
-  let docWidth;
-  if (EMBED_WIDTH_OVERRIDE === '980') {
-    docWidth = `${Math.max(Math.round(screenRect.w), EMBED_CONFIG.virtualDesktopWidth)}px`;
-  } else if (EMBED_WIDTH_OVERRIDE === '100%') {
-    docWidth = '100%';
-  } else {
-    const useDesktopVirtualWidth =
-      !coarsePointer &&
-      screenRect.w >= EMBED_CONFIG.minApertureW &&
-      screenRect.h >= EMBED_CONFIG.minApertureH;
-    docWidth = useDesktopVirtualWidth
-      ? `${Math.max(Math.round(screenRect.w), EMBED_CONFIG.virtualDesktopWidth)}px`
-      : '100%';
-  }
-  if (activeEmbedState.docWidthSetting !== docWidth) {
-    activeEmbedState.docWidthSetting = docWidth;
-    activeEmbedState.rootEl.style.setProperty('--embed-doc-w', docWidth);
-  }
-  requestAnimationFrame(() => updateEmbedPanState());
+function updateEmbedViewportMode() {
+  const state = activeEmbedState;
+  if (!state || embedProjection === 'pending' || state.sizeFrame) return;
+  state.sizeFrame = requestAnimationFrame(() => {
+    state.sizeFrame = 0;
+    if (activeEmbedState === state) state.fit();
+  });
+}
+
+function embedPresentation(width, height, previous) {
+  // Resume from a small-screen fallback with a little clearance. Desktop
+  // needs a wider exit band so toolbar and scrollbar rounding cannot flap.
+  const clearance = previous === 'small' ? 4 : 0;
+  if (width < EMBED_CONFIG.compactMinW + clearance || height < EMBED_CONFIG.compactMinH + clearance) return 'small';
+  if (EMBED_WIDTH_OVERRIDE === '980') return 'desktop';
+  const band = previous === 'crt-compact' ? 20 : 0;
+  if (!coarsePointer && width >= EMBED_CONFIG.desktopMinW + band && height >= EMBED_CONFIG.desktopMinH + band) return 'desktop';
+  return 'crt-compact';
 }
 
 function teardownProfessionalEmbed() {
@@ -1599,6 +1592,8 @@ function teardownProfessionalEmbed() {
   const state = activeEmbedState;
   lastEmbedReloadCount = state.reloadCount;
   activeEmbedState = null;
+  state.observer.disconnect();
+  cancelAnimationFrame(state.sizeFrame);
   if (state.timeoutId) {
     clearTimeout(state.timeoutId);
     state.timeoutId = null;
@@ -1707,6 +1702,7 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
   teardownProfessionalEmbed();
   lastTriggerAppId = 'professional';
   currentView = 'embed';
+  embedProjection = 'pending';
   isRestarting = false;
   hwPowerBtn.disabled = false;
   closeFloppyTray(true);
@@ -1730,6 +1726,7 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
         <button type="button" id="embed-return-btn" class="embed-ctrl-btn embed-ctrl-btn--return" aria-label="Return to Catalog">
           <span class="lbl-full">◂ RETURN TO CATALOG</span>
           <span class="lbl-compact" aria-hidden="true">◂ CATALOG</span>
+          <span class="embed-narrow-label" aria-hidden="true">Catalog</span>
         </button>
 
         <span id="embed-status-label" class="professional-embed__status" aria-live="polite">LIVE PREVIEW</span>
@@ -1737,6 +1734,7 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
         <a id="embed-open-full-link" class="embed-ctrl-btn embed-ctrl-btn--open" href="/" target="_top" aria-label="Open full Professional Portfolio">
           <span class="lbl-full">OPEN FULL SITE ↗</span>
           <span class="lbl-compact" aria-hidden="true">FULL SITE ↗</span>
+          <span class="embed-narrow-label" aria-hidden="true">Site ↗</span>
         </a>
       </div>
 
@@ -1750,12 +1748,8 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
           <p class="professional-embed__loading-text">LOADING PROFESSIONAL PORTFOLIO ...</p>
         </div>
         <div id="embed-fallback" class="professional-embed__fallback" hidden>
-          <p class="professional-embed__fallback-title">Professional Portfolio preview is unavailable.</p>
-          <div class="professional-embed__fallback-actions">
-            <button type="button" id="embed-retry-btn" class="embed-ctrl-btn embed-ctrl-btn--return">RETRY</button>
-            <a id="embed-fallback-open-link" class="embed-ctrl-btn embed-ctrl-btn--open" href="/" target="_top" aria-label="Open full Professional Portfolio">OPEN FULL SITE ↗</a>
-            <button type="button" id="embed-fallback-return-btn" class="embed-ctrl-btn embed-ctrl-btn--return">RETURN TO CATALOG</button>
-          </div>
+          <p class="professional-embed__fallback-title"></p>
+          <button type="button" id="embed-retry-btn" class="embed-ctrl-btn embed-ctrl-btn--return">RETRY</button>
         </div>
       </div>
     </div>
@@ -1771,7 +1765,7 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
   const returnBtn = document.getElementById('embed-return-btn');
   const openFullLink = document.getElementById('embed-open-full-link');
   const retryBtn = document.getElementById('embed-retry-btn');
-  const fallbackReturnBtn = document.getElementById('embed-fallback-return-btn');
+  const fallbackText = fallbackEl.querySelector('p');
 
   const state = {
     rootEl,
@@ -1784,7 +1778,9 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
     returnBtn,
     openFullLink,
     frame: null,
-    currentSrc: '/',
+    currentSrc: null,
+    presentation: null,
+    sizeFrame: 0,
     fallbackTried: false,
     loaded: false,
     failed: false,
@@ -1801,7 +1797,6 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
   state.onViewportScroll = () => updateEmbedPanState();
   viewportEl.addEventListener('scroll', state.onViewportScroll, { passive: true });
 
-  const fallbackOpenLink = document.getElementById('embed-fallback-open-link');
   const bindFullSiteLaunch = (linkEl) => {
     if (!linkEl) return;
     linkEl.addEventListener('click', (e) => {
@@ -1811,10 +1806,8 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
     });
   };
   bindFullSiteLaunch(openFullLink);
-  bindFullSiteLaunch(fallbackOpenLink);
 
   returnBtn.addEventListener('click', returnFromEmbedToCatalog);
-  fallbackReturnBtn.addEventListener('click', returnFromEmbedToCatalog);
   rootEl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -1822,125 +1815,149 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
     }
   });
 
-  const showFailure = () => {
-    if (activeEmbedState !== state) return;
-    if (state.timeoutId) {
-      clearTimeout(state.timeoutId);
-      state.timeoutId = null;
+  function showSurface() {
+    const small = state.presentation === 'small';
+    const unavailable = small || state.failed;
+    if ((unavailable || !state.loaded) && (document.activeElement === state.frame || document.activeElement === retryBtn)) {
+      focusSafely(returnBtn);
     }
+    viewportEl.inert = unavailable || !state.loaded;
+    loadingEl.hidden = unavailable || state.loaded;
+    fallbackEl.hidden = !unavailable;
+    retryBtn.hidden = small;
+    fallbackText.textContent = small
+      ? 'The live portfolio needs more space. Open the full site or return to Catalog.'
+      : 'Professional Portfolio preview is unavailable.';
+    if (unavailable) {
+      statusLabelEl.textContent = small ? 'COMPACT DISPLAY' : 'UNAVAILABLE';
+      stageEl.classList.remove('has-pan', 'is-pan-end');
+    } else if (state.loaded) updateEmbedPanState();
+    else statusLabelEl.textContent = 'LOADING';
+  }
+
+  function showFailure() {
+    if (activeEmbedState !== state) return;
+    clearTimeout(state.timeoutId);
     state.failed = true;
     state.loaded = false;
-    loadingEl.hidden = true;
-    fallbackEl.hidden = false;
-    statusLabelEl.textContent = 'UNAVAILABLE';
+    showSurface();
+    state.cleanupDocListeners?.();
+    state.cleanupDocListeners = null;
+    state.frame?.remove();
+    state.frame = null;
     announce('Professional Portfolio preview is unavailable.');
     renderDebugHud();
-  };
+  }
 
-  const armTimeout = () => {
-    if (state.timeoutId) clearTimeout(state.timeoutId);
-    state.timeoutId = setTimeout(() => {
-      if (activeEmbedState === state && !state.loaded) {
-        showFailure();
-      }
-    }, EMBED_CONFIG.loadTimeoutMs);
-  };
+  function applyChildMode() {
+    const frame = state.frame;
+    if (state.presentation === 'small') return true;
+    try {
+      const win = frame.contentWindow;
+      const doc = frame.contentDocument;
+      if (win.location.origin !== location.origin || doc.documentElement.dataset.embedReady !== 'true'
+          || !win.setProfessionalEmbedMode(state.presentation)) return false;
+      return state.presentation !== 'crt-compact' || (doc.documentElement.dataset.embedMode === 'crt-compact'
+        && win.getComputedStyle(doc.documentElement).getPropertyValue('--crt-compact-css').trim() === 'ready');
+    } catch {
+      return false;
+    }
+  }
 
-  const attachFrame = (initialSrc) => {
-    if (state.frame) {
-      try { state.frame.src = 'about:blank'; } catch {}
-      state.frame.remove();
-    }
-    if (typeof state.cleanupDocListeners === 'function') {
-      state.cleanupDocListeners();
-      state.cleanupDocListeners = null;
-    }
+  function frameSource(pathname) {
+    const compact = state.presentation === 'crt-compact';
+    return pathname + (compact ? '?embed=1&mode=crt-compact#profile' : '?embed=1');
+  }
+
+  function attachFrame(pathname = '/') {
+    clearTimeout(state.timeoutId);
+    state.cleanupDocListeners?.();
+    state.cleanupDocListeners = null;
+    state.frame?.remove();
     state.loaded = false;
     state.failed = false;
-    state.currentSrc = initialSrc;
-    loadingEl.hidden = false;
-    fallbackEl.hidden = true;
-    announce('Loading Professional Portfolio preview.');
-
     const frame = document.createElement('iframe');
     frame.id = 'professional-embed-frame';
     frame.className = 'professional-embed__frame';
     frame.title = 'Professional Portfolio preview';
-    frame.src = initialSrc;
     state.frame = frame;
-
-    frame.addEventListener('load', () => {
-      if (activeEmbedState !== state || state.frame !== frame) return;
-      state.reloadCount += 1;
-      lastEmbedReloadCount = state.reloadCount;
-
-      let doc = null;
-      let locPath = '';
+    state.currentSrc = frameSource(pathname);
+    frame.src = state.currentSrc;
+    const current = () => activeEmbedState === state && state.frame === frame;
+    function failedLoad() {
+      if (!current()) return;
+      // Keep the static file-server fallback for installations without root rewrites.
+      if (pathname === '/' && !state.fallbackTried && state.presentation !== 'small') {
+        state.fallbackTried = true;
+        attachFrame('/professional/index.html');
+      } else showFailure();
+    }
+    let readyDocument = null;
+    function acceptDocument() {
+      if (!current()) return;
+      let doc;
       try {
+        if (frame.contentWindow.location.origin !== location.origin) return showFailure();
+        if (/^\/explore(\/|$)/i.test(frame.contentWindow.location.pathname)) return returnFromEmbedToCatalog();
         doc = frame.contentDocument;
-        locPath = frame.contentWindow?.location?.pathname || '';
-      } catch {
-        showFailure();
-        return;
-      }
-
-      if (locPath && /^\/explore(\/|$)/i.test(locPath)) {
-        returnFromEmbedToCatalog();
-        return;
-      }
-
-      const isValidPortfolio = Boolean(doc && doc.getElementById('main') && doc.getElementById('hdr'));
-      if (!isValidPortfolio) {
-        if (!state.fallbackTried && (locPath === '/' || locPath === '/index.html' || state.currentSrc === '/')) {
-          state.fallbackTried = true;
-          state.currentSrc = '/professional/index.html';
-          armTimeout();
-          frame.src = '/professional/index.html';
-          return;
-        }
-        showFailure();
-        return;
-      }
-
-      if (state.timeoutId) {
-        clearTimeout(state.timeoutId);
-        state.timeoutId = null;
-      }
+      } catch { return showFailure(); }
+      if (doc && doc === readyDocument) return;
+      if (!doc?.getElementById('main') || !doc.getElementById('hdr')) return failedLoad();
+      if (doc.documentElement.dataset.embedReady !== 'true' || !applyChildMode()) return showFailure();
+      clearTimeout(state.timeoutId);
+      readyDocument = doc;
       state.loaded = true;
-      state.failed = false;
-      loadingEl.hidden = true;
-      fallbackEl.hidden = true;
       bindEmbeddedDocumentBridges(state);
-      viewportEl.scrollLeft = 0;
-      updateEmbedViewportMode();
-      announce('Professional Portfolio preview loaded.');
+      showSurface();
+      if (state.presentation !== 'small') announce('Professional Portfolio preview loaded.');
+      renderDebugHud();
+    }
+    // The child can be usable before images finish loading. The native load
+    // event also validates error documents and installations with older HTML.
+    frame.addEventListener('professional-embed-ready', acceptDocument);
+    frame.addEventListener('load', () => {
+      if (!current()) return;
+      state.reloadCount++;
+      lastEmbedReloadCount = state.reloadCount;
+      acceptDocument();
       renderDebugHud();
     });
+    frame.addEventListener('error', failedLoad);
+    state.timeoutId = setTimeout(() => { if (current() && !state.loaded) showFailure(); }, EMBED_CONFIG.loadTimeoutMs);
+    showSurface();
+    viewportEl.append(frame);
+  }
 
-    frame.addEventListener('error', () => {
-      if (activeEmbedState !== state || state.frame !== frame) return;
-      if (!state.fallbackTried && state.currentSrc === '/') {
-        state.fallbackTried = true;
-        state.currentSrc = '/professional/index.html';
-        armTimeout();
-        frame.src = '/professional/index.html';
-        return;
-      }
-      showFailure();
-    });
-
-    armTimeout();
-    viewportEl.appendChild(frame);
+  state.fit = () => {
+    const { clientWidth: width, clientHeight: height } = stageEl;
+    const next = embedPresentation(width, height, state.presentation);
+    // During the approach, start loading once this measured aperture can host
+    // the intended layout. Reclassify an existing frame only at rest.
+    if (embedProjection === 'moving' && (state.presentation || next === 'small' || (!coarsePointer && next !== 'desktop'))) return;
+    const changed = next !== state.presentation;
+    state.presentation = next;
+    rootEl.dataset.presentation = next;
+    const docWidth = next === 'desktop' && EMBED_WIDTH_OVERRIDE !== '100%'
+      ? Math.max(width, EMBED_CONFIG.virtualDesktopWidth) + 'px' : '100%';
+    if (docWidth !== state.docWidthSetting) {
+      rootEl.style.setProperty('--embed-doc-w', docWidth);
+      state.docWidthSetting = docWidth;
+    }
+    if (changed && next !== 'desktop') viewportEl.scrollLeft = 0;
+    if (next !== 'small' && !state.frame && !state.failed) return attachFrame();
+    if (changed && state.loaded && !applyChildMode()) return showFailure();
+    if (changed) showSurface();
+    else updateEmbedPanState();
   };
-
+  state.observer = new ResizeObserver(updateEmbedViewportMode);
+  state.observer.observe(stageEl);
   retryBtn.addEventListener('click', () => {
+    if (state.presentation === 'small') return;
     state.fallbackTried = false;
-    attachFrame('/');
     focusSafely(returnBtn);
+    attachFrame();
   });
-
   updateEmbedViewportMode();
-  attachFrame('/');
   focusSafely(returnBtn);
   renderDebugHud();
 }

@@ -11,6 +11,9 @@
 (() => {
   const root = document.documentElement;
   const query = new URLSearchParams(location.search);
+  if (window.parent !== window && query.get('embed') === '1' && !root.dataset.embedProject && query.get('mode') === 'crt-compact') {
+    root.dataset.embedMode = 'crt-compact';
+  }
   const bypass = window.self !== window.top || location.hash.length > 1 ||
     ['1', 'project'].includes(query.get('embed')) || query.get('entry') === '0';
   let seen = true;
@@ -225,6 +228,9 @@
   <a class="nl mono" data-sec="journey" href="#journey">Journey<span class="rule" aria-hidden="true"><i></i></span></a>
   <a class="nl mono" data-sec="contact" href="#contact">Contact<span class="rule" aria-hidden="true"><i></i></span></a>
  </nav>
+ <nav class="crt-nav" aria-label="Portfolio sections" hidden>
+  <label>Sections <select id="crt-section" aria-label="Go to portfolio section"></select></label>
+ </nav>
  <div class="hdr-right">
   <a class="hdr-explore" href="/explore/" aria-label="Explore CRT Hub"><svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="m9.5 8.5 2 1.5-2 1.5M13 11.5h2.5"/></svg><span>Explore CRT Hub</span></a>
   <div class="theme-control" role="group" aria-label="Theme preference">
@@ -304,6 +310,7 @@
      <dd class="profile-fact-value"><span class="fact-avail-dot" aria-hidden="true"></span> 486-hour OJT beginning December 2026</dd>
     </div>
    </dl>
+   <div class="crt-theme-slot" hidden></div>
    <aside class="profile-resume-block" id="profile-resume" aria-label="Résumé information">
     <div class="resume-meta">
      <span class="resume-tag mono">RÉSUMÉ</span>

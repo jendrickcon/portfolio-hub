@@ -1958,3 +1958,49 @@ html[data-embed-project] .demo-tabs{
     flex-wrap:wrap;
   }
 }
+
+/* The same document also runs inside Explore. Only its explicit compact
+   presentation uses this header and profile composition. */
+.crt-nav { display: none; }
+
+html[data-embed-mode="crt-compact"] {
+  --crt-compact-css: ready;
+  scroll-behavior: auto;
+
+  & .wrap { width: calc(100% - 20px); }
+  & .hdr { height: auto; min-height: 0; padding: 0; }
+  & .hdr .wrap { min-height: 46px; display: flex; gap: 6px; }
+  & .hdr .brand { min-height: 44px; display: inline-flex; align-items: center; padding: 0; font-size: 15px; }
+  & .brand span, & .hdr .nav, & .hdr-right, & #page-field { display: none; }
+  & .crt-nav { display: block; min-width: 0; }
+  & .crt-nav label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); }
+  & .crt-nav select {
+    font: 600 14px var(--sans); color: var(--text); background: var(--surface);
+    border: 1px solid var(--control-border); border-radius: var(--radius-control);
+    min-height: 44px; padding-inline: 6px; max-width: 100%;
+  }
+  & .crt-nav select:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
+  & .sec, & .panel, & .about { min-height: 0; padding-block: 20px; }
+  & .profile-sec { padding-top: 6px; }
+  & .profile-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  & .profile-sidebar { display: block; }
+  & .profile-portrait-wrap { float: inline-start; width: clamp(56px, 19vw, 88px); margin: 3px 10px 4px 0; }
+  & .profile-facts { display: block; background: transparent; border: 0; padding: 0; }
+  & .profile-fact-row { grid-template-columns: 5.75em minmax(0, 1fr); gap: 6px; padding: 5px 0; }
+  & .profile-fact-row:nth-child(-n+2) { display: block; border: 0; padding: 0; }
+  & .profile-fact-row:nth-child(-n+2) dt { position: absolute; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; }
+  & .profile-fact-row:first-child strong { font: 600 18px/1.2 var(--serif); }
+  & .profile-fact-row:nth-child(2) { margin-block: 3px 8px; }
+  & .profile-fact-row:nth-child(3) { clear: both; border-top: 1px solid var(--line); }
+  & .crt-theme-slot { margin-block: 10px; }
+  & .theme-opt { min-width: 44px; min-height: 44px; }
+  & .theme-text { display: inline; }
+  & .profile-resume-block, & .profile-main, & .toolkit-wrap { gap: 12px; }
+  & .feature-head, & .feature-body, & .cap-grid, & .toolkit-ready .toolkit-grid, & .toolkit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  & .about h1, & .feature-title, & .profile-head h2, & .sec h2 { font-size: clamp(24px, 6vw, 36px); overflow-wrap: anywhere; }
+  & .feature-layout, & .feature-body, & .feature-head { gap: 12px; min-width: 0; }
+  & .profile-intro, & .feature-intro { font-size: 16px; }
+  & .contact .links, & .acts { gap: 6px 12px; }
+}

@@ -324,6 +324,10 @@
   const panels = $$('[data-panel]'), marks = $$('[data-mk]'), links = $$('[data-sec]');
   const secs = ['about','profile','work','capabilities','journey','contact'].map(id => document.getElementById(id));
 
+  const compactSelect = document.getElementById('crt-section');
+  const isCompactEmbed = () => html.dataset.embedMode === 'crt-compact';
+  const managedEmbed = window.parent !== window && new URLSearchParams(location.search).get('embed') === '1';
+
   /* Theme Controller: Light, Dark only */
   const themeKey = 'portfolio-theme';
   const themeOpts = [...document.querySelectorAll('.theme-opt')];
@@ -1697,7 +1701,7 @@
   function layout() {
     const hh = hdr.offsetHeight;
     html.style.setProperty('--hh', hh + 'px');
-    enh = mq.matches;
+    enh = mq.matches && !isCompactEmbed();
     html.classList.toggle('enh', enh);
     if (enh) updateWorkNavigationSpace();
     const caseOverflow = measureCases();
@@ -1773,6 +1777,7 @@
     secs.forEach((s, i) => { if (top(s) <= line) a = i; });
     if (atEnd || (footerVisible && contact.getBoundingClientRect().top < innerHeight - hh)) a = secs.length - 1;
     if (html.dataset.activeSection !== secs[a].id) html.dataset.activeSection = secs[a].id;
+    if (isCompactEmbed() && compactSelect.value !== secs[a].id) compactSelect.value = secs[a].id;
     links.forEach((l, i) => {
       const s = secs[i];
       const p = i === secs.length - 1 && atEnd ? 1 :
@@ -1926,9 +1931,48 @@
     }
   });
 
+  if (managedEmbed) {
+    for (const link of links) compactSelect.add(new Option(link.textContent.trim(), link.dataset.sec));
+    compactSelect.addEventListener('change', () => go(compactSelect.value, { focus: true }));
+    const theme = hdr.querySelector('.theme-control');
+    const themeSlot = document.querySelector('.crt-theme-slot');
+    const home = theme.parentElement;
+    const next = theme.nextElementSibling;
+
+    function applyPresentation(mode) {
+      if (mode !== 'crt-compact' && mode !== 'desktop') return false;
+      const compact = mode === 'crt-compact';
+      const focused = document.activeElement;
+      const movingTheme = theme.contains(focused);
+      compactSelect.closest('nav').hidden = !compact;
+      if (compact) {
+        html.dataset.embedMode = mode;
+        themeSlot.hidden = false;
+        themeSlot.append(theme);
+      } else {
+        delete html.dataset.embedMode;
+        home.insertBefore(theme, next);
+        themeSlot.hidden = true;
+      }
+      layout();
+      if (movingTheme) focused.focus({ preventScroll: true });
+      else if (!compact && focused === compactSelect) links.find(link => link.dataset.sec === compactSelect.value)?.focus({ preventScroll: true });
+      else if (compact && hdr.contains(focused) && !focused.getClientRects().length) compactSelect.focus({ preventScroll: true });
+      window.dispatchEvent(new Event('resize'));
+      return true;
+    }
+
+    applyPresentation(isCompactEmbed() ? 'crt-compact' : 'desktop');
+    // The owning same-origin iframe host can change presentation without navigating.
+    window.setProfessionalEmbedMode = mode => {
+      if (mode === (isCompactEmbed() ? 'crt-compact' : 'desktop')) return true;
+      return applyPresentation(mode);
+    };
+  }
   addEventListener('scroll', sched, { passive: true });
   addEventListener('resize', layout);
   mq.addEventListener('change', layout);
   layout();
   if (location.hash) requestAnimationFrame(() => go(decodeURIComponent(location.hash.slice(1))));
+  if (managedEmbed) html.dataset.embedReady = 'true';
 })();

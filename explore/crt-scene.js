@@ -190,19 +190,19 @@ export async function createCrtScene({
   const toonGrad = createQuantizedGradientTexture(THREE);
 
   const deskStdMat = new THREE.MeshStandardMaterial({ color: 0x171a20, roughness: 0.68, metalness: 0.08 });
-  const deskToonMat = new THREE.MeshToonMaterial({ color: 0x1f242c, gradientMap: toonGrad, flatShading: true });
+  const deskToonMat = new THREE.MeshToonMaterial({ color: 0x1f242c, gradientMap: toonGrad });
 
   const beigeStdMat = new THREE.MeshStandardMaterial({ color: 0xc8bfb0, roughness: 0.72, metalness: 0.04 });
-  const beigeToonMat = new THREE.MeshToonMaterial({ color: 0xc8bfb0, gradientMap: toonGrad, flatShading: true });
+  const beigeToonMat = new THREE.MeshToonMaterial({ color: 0xc8bfb0, gradientMap: toonGrad });
 
   const bezelStdMat = new THREE.MeshStandardMaterial({ color: 0x26282b, roughness: 0.8, metalness: 0.08 });
-  const bezelToonMat = new THREE.MeshToonMaterial({ color: 0x2c2f34, gradientMap: toonGrad, flatShading: true });
+  const bezelToonMat = new THREE.MeshToonMaterial({ color: 0x2c2f34, gradientMap: toonGrad });
 
   const slotStdMat = new THREE.MeshStandardMaterial({ color: 0x151618, roughness: 0.88 });
-  const slotToonMat = new THREE.MeshToonMaterial({ color: 0x181a1d, gradientMap: toonGrad, flatShading: true });
+  const slotToonMat = new THREE.MeshToonMaterial({ color: 0x181a1d, gradientMap: toonGrad });
 
   const keyStdMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.04 });
-  const keyToonMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGrad, flatShading: true });
+  const keyToonMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGrad });
 
   const floppyTex = new THREE.CanvasTexture(createFloppyDiskCanvas());
   floppyTex.colorSpace = THREE.SRGBColorSpace;
@@ -211,7 +211,7 @@ export async function createCrtScene({
   floppyTex.generateMipmaps = false;
 
   const floppyStdMat = new THREE.MeshStandardMaterial({ map: floppyTex, roughness: 0.55, metalness: 0.12 });
-  const floppyToonMat = new THREE.MeshToonMaterial({ map: floppyTex, gradientMap: toonGrad, flatShading: true });
+  const floppyToonMat = new THREE.MeshToonMaterial({ map: floppyTex, gradientMap: toonGrad });
 
   // Glass stays smooth across all visual modes
   const glassMat = new THREE.MeshStandardMaterial({

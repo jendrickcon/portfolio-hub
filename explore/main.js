@@ -1858,8 +1858,10 @@ function renderProfessionalEmbed({ updateHistory = true, immediatePose = false }
       const doc = frame.contentDocument;
       if (win.location.origin !== location.origin || doc.documentElement.dataset.embedReady !== 'true'
           || !win.setProfessionalEmbedMode(state.presentation)) return false;
+      const styles = win.getComputedStyle(doc.documentElement);
+      if (styles.getPropertyValue('--professional-embed-css').trim() !== 'ready') return false;
       return state.presentation !== 'crt-compact' || (doc.documentElement.dataset.embedMode === 'crt-compact'
-        && win.getComputedStyle(doc.documentElement).getPropertyValue('--crt-compact-css').trim() === 'ready');
+        && styles.getPropertyValue('--crt-compact-css').trim() === 'ready');
     } catch {
       return false;
     }

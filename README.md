@@ -29,7 +29,7 @@ This is a student portfolio built through iterative, AI-assisted development. It
 | Root deployment (`vercel.json`)    | Implemented (Live)    | Deploys from repository root: `/` to Professional, `/explore/` to CRT Workstation, `/professional/` & `/portfolio/` -> `308 /` |
 | Legacy HCI portfolio (`portfolio/`) | Retired (Archived)    | Externally archived and removed from active repository; `/portfolio/` redirects (`308`) to `/` |
 
-Pull requests #1–#16 are merged on `main`, and repository-root deployment via [vercel.json](vercel.json) is live on `https://www.jendrick.dev` serving `/`, `/explore/`, `/art-gallery/`, `/cyberdefender/`, `/sandbox/`, and `/devpath/`.
+The integrated production baseline includes [Explore integration (#19)](https://github.com/jendrickcon/portfolio-hub/pull/19), [startup recovery (#20)](https://github.com/jendrickcon/portfolio-hub/pull/20), [mobile dossier framing and detail controls (#21)](https://github.com/jendrickcon/portfolio-hub/pull/21), and [Professional CRT Compact (#22)](https://github.com/jendrickcon/portfolio-hub/pull/22). Repository-root deployment uses [vercel.json](vercel.json) at [www.jendrick.dev](https://www.jendrick.dev/).
 
 Status labels used here: **Implemented** — supported by code and runtime checks; **Partial / Experimental** — incomplete or not fully verified; **Planned** — agreed but not built; **Paused** — development intentionally stopped; **Deferred** — waiting on evidence or media; **Legacy** — retired or retained older work.
 
@@ -46,11 +46,16 @@ Résumé behaviour:
 
 The public résumé PDF is available at [Jendrick_Coniconde_Resume.pdf](professional/assets/resume/Jendrick_Coniconde_Resume.pdf) and is phone-free.
 
-The Toolkit describes capabilities with project references rather than a bare skills list, and the Quality & Direction shelf reflects work from a junior QA practical assessment.
+The Toolkit links capabilities to project evidence. Close an expanded Toolkit detail from its heading or with Escape. The Capability dialog has its own header close button and returns focus to the card. Other Projects includes Gallery and Sandbox captures in the supporting-media lightbox. The Gallery card uses a 1280×635 WebP from the recorded exhibition and links to the live Gallery for interaction.
 
 ## Explore
 
 The [explore/](explore/index.html) route (`/explore/`) hosts the dual-mode **Explore Workstation**: a procedural Three.js r170 **3D** desk workstation paired with an intentionally authored fixed-aspect **Pixel 2D** workstation mode, both sharing one projected semantic CRT interface and a deterministic `320×180` animated cityscape window (`pixel-env.js`). It features a Standby/Boot flow, a persistent `◂ Professional Portfolio` return control (`/`), URL-hash navigation (`#menu`, `#app=<id>`), a six-slot application catalog (`01 Professional Portfolio` [live same-origin CRT embed], `02 UDM-RADAR`, `03 StudyQuest`, `04 Enuhri Art Gallery`, `05 CyberDefender`, and `06 DevPath` [`PAUSED PROTOTYPE`]), a centered physical 3.5" `SANDBOX.SYS` floppy bay launching `/sandbox/`, and a working physical CRT Power button. It remains an experimental secondary surface alongside the canonical hiring presentation.
+
+- **Startup and recovery.** The Professional entry chooser bypasses automatically if its controller cannot initialize. Explore holds the scene until the CRT and interaction targets align. If its controller cannot start, the loading surface offers Reload and Return to Portfolio. Slow or unavailable WebGL can fall back to Pixel 2D.
+- **Dossiers and previews.** On phones, ordinary dossiers and interactive previews move closer to the screen while keeping the 3D or Pixel 2D overlay and visible hardware targets aligned. UDM-RADAR and StudyQuest open on a poster. An explicit Play action loads the same-origin interactive reconstruction on demand. Close Preview returns to the poster and returning to Catalog disposes of the preview. The action bar provides the applicable case study, source, or launch actions. External launches use the CRT transition where configured. GitHub source links use the GitHub mark and have accessible names.
+- **Professional Embed.** The same Professional page adapts within the iframe. Compact opens with Profile and a native section selector. Large fine-pointer apertures retain desktop panning. An undersized aperture offers Catalog and Full Site. A failed iframe offers Retry. Ordinary 3D/2D switching reuses the loaded document.
+- **Gallery and Sandbox.** Gallery launches as its own route. Its built-in exhibits and drawing studio work while online artwork, likes, comments, and submissions are unavailable. An inline notice explains the limited state and offers reload guidance. The physical Sandbox floppy opens the simulation, and the Professional portfolio includes a separate Sandbox screenshot and link.
 
 ## Projects
 
@@ -64,7 +69,7 @@ The [explore/](explore/index.html) route (`/explore/`) hosts the dual-mode **Exp
 | LAYA                                      | Android prerelease                      | Supporting project              | AR garden and balance-puzzle prototype; device verification pending                                |
 | Waffle's Nine Lives                       | Android MVP                             | Supporting project              | Top-down action roguelike with rooms, enemies and nine lives                                       |
 | [Art Gallery](art-gallery/index.html)     | Experiment, work remains                | Explore application             | Interactive gallery with Firebase/Firestore features; Firestore rules still require console review; Cloud Firestore is used separately from Portfolio Hub hosting |
-| [CyberDefender](cyberdefender/index.html) | Web reimagining                         | Explore application             | Web reimagining of the original Godot prototype                                                    |
+| [CyberDefender](cyberdefender/index.html) | Educational game with browser adaptation | Explore application            | Original Android-focused educational cybersecurity game built in Godot 4 with GDScript. The portfolio adaptation exposes selected gameplay in the browser. |
 | [Sandbox](sandbox/index.html)             | Experiment                              | Hidden floppy bay (`SANDBOX.SYS`) | Falling-sand and cellular-automata simulation launched from the CRT floppy bay with return link to `/explore/#menu` |
 | [DevPath](devpath/index.html)             | Development paused                      | Slot 06 catalog entry           | Architecture and decision-graph prototype (`PAUSED PROTOTYPE`, `#app=devpath`); Game Architecture is available while broader domains remain incomplete |
 
@@ -88,7 +93,7 @@ These are separate facts and should not be combined into one claim.
 professional/      Professional View + session-scoped experience entry selector (served at / via vercel.json rewrites)
 explore/           Dual-mode 3D & Pixel 2D Explore workstation (`main.js`, `crt-scene.js`, `pixel-env.js`, local fonts, vendored Three.js)
 art-gallery/       Enuhri Art Gallery (Firebase Authentication / Firestore)
-cyberdefender/     CyberDefender web reimagining
+cyberdefender/     Browser adaptation of selected CyberDefender gameplay
 sandbox/           Falling-sand simulation experiment
 devpath/           DevPath decision-graph prototype (paused)
 assets/projects/   Active project dossier preview screenshots for /explore/ (retired PNG shell sprites removed)
@@ -100,33 +105,34 @@ docs/              Documentation and handoff notes
 
 ## Local development
 
-Serve files over HTTP — not `file://` — so that PDF download and dialog behaviour match a real host.
+Run the [Vercel CLI](https://vercel.com/docs/cli/dev) from the repository root with access to the existing Portfolio Hub Vercel project. Select that project if the CLI prompts you to link the directory.
 
-```text
-cd professional
-py -m http.server 8848 --bind 127.0.0.1
+```sh
+vercel dev --listen 8848
 ```
 
-If `py` is unavailable, use `python -m http.server 8848 --bind 127.0.0.1`.
+Open `http://localhost:8848/`. For a routing smoke test, visit each of these paths on the same server:
 
-Then open `http://127.0.0.1:8848/index.html`.
+| Route | Expected behavior |
+| --- | --- |
+| `/`, `/#profile`, `/#other-projects` | Professional, with direct hashes bypassing the entry chooser |
+| `/explore/`, `/explore/#menu`, `/explore/#app=professional`, `/explore/#app=udm-radar` | Standby, Catalog, Professional Embed, and project dossier |
+| `/professional/`, `/portfolio/` | HTTP 308 redirect to `/` |
+| `/art-gallery/`, `/cyberdefender/`, `/sandbox/`, `/devpath/` | Standalone project routes |
+| `/style.css`, `/script.js`, `/assets/evidence/supporting/art-gallery-exhibition.webp` | Root rewrites to Professional assets |
 
-Keep the terminal open while testing and press `Ctrl+C` to stop. This is a local development address, not a production URL. There is no build step and no dependency install for the static frontend.
+A plain static file server can open individual files for isolated checks. The integrated flow requires the redirects and rewrites in `vercel.json`. Testing Gallery locally can reach the configured Firebase project. Use intercepted requests or an authorized disposable project for cloud-write tests.
 
-To view the Explore hub locally, serve from the repository root (note that plain `http.server` serves `explore/` at `/explore/` without `vercel.json` root rewrites for `/`):
+### DevPath verification boundary
 
-```text
-py -m http.server 8080 --bind 127.0.0.1
-```
+DevPath remains a paused prototype. The active registry imports `gameSeeds.js` and registers ten Game Architecture roots under the synthetic `__root__`: Roguelike, Survival, FPS, RPG, Platformer, Puzzle, Strategy, Horror, Sandbox, and Simulation. Run these Node.js commands from the repository root:
 
-Then open `http://127.0.0.1:8080/explore/`.
-
-DevPath keeps its own data and engine checks, which require Node.js:
-
-```bash
+```sh
 node devpath/tests/validate_graph.mjs
 node devpath/tests/test_graph_engine.mjs
 ```
+
+The active validation checks 283 declared and reachable nodes and reports zero validation errors. The graph engine suite runs 24 assertions. Software & Systems and Website & Web App are incomplete. The inactive `devpath/js/data/softwareSeeds.js` is unregistered and contains unfinished syntax. The legacy Python browser runner targets older behavior. The two Node commands above define the current verification boundary.
 
 ## Privacy and evidence boundaries
 
@@ -154,7 +160,7 @@ Ignore patterns are not a security boundary. Firestore rules and cloud configura
 
 Created by **Jendrick / Enuhri**, a BSIT student at Universidad de Manila. The work reflects continuing learning in UI/UX, front-end development, systems integration, and testing, using iterative prototyping and substantial AI assistance. Implemented work should be credited accurately without implying senior engineering expertise or wholly independent implementation.
 
-Existing projects and assets remain preserved. For earlier audit and handoff material, see [docs/README_UPDATE_HANDOFF.md](docs/README_UPDATE_HANDOFF.md) and [docs/README_UPDATE_OUTPUT_REPORT.md](docs/README_UPDATE_OUTPUT_REPORT.md).
+For historical README audit and handoff material, see [docs/README_UPDATE_HANDOFF.md](docs/README_UPDATE_HANDOFF.md) and [docs/README_UPDATE_OUTPUT_REPORT.md](docs/README_UPDATE_OUTPUT_REPORT.md).
 
 ## License or usage note
 

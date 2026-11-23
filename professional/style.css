@@ -1961,6 +1961,7 @@ html[data-embed-project] .demo-tabs{
 
 /* The same document also runs inside Explore. Only its explicit compact
    presentation uses this header and profile composition. */
+:root { --professional-embed-css: ready; }
 .crt-nav { display: none; }
 
 html[data-embed-mode="crt-compact"] {

@@ -900,11 +900,20 @@
     }
 
     #feedback-status {
-      min-height: 1em;
-      margin-top: 6px;
+      margin: 0 0 6px;
       color: var(--ink-soft);
-      font-size: 0.75rem;
-      font-style: italic;
+      font-size: 0.82rem;
+    }
+    #feedback-status:empty { margin: 0; }
+
+    #heart-btn:disabled,
+    #feedback-input:disabled,
+    #feedback-submit-btn:disabled,
+    #submit-artwork-btn:disabled {
+      color: #625748;
+      background: #e5dbcb;
+      border-color: #a59681;
+      cursor: not-allowed;
     }
 
     #feedback-list {
@@ -1281,6 +1290,24 @@
       background: transparent;
     }
 
+    #gallery-cloud-status {
+      position: fixed;
+      z-index: 25;
+      inset-inline-start: 50%;
+      inset-block-end: .6rem;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: calc(100% - 1.2rem);
+      margin: 0;
+      padding: .45rem .7rem;
+      background: #fff9e8;
+      border: 1px solid #8b7043;
+      color: #373017;
+      font: 600 .875rem/1.4 system-ui, sans-serif;
+      pointer-events: none;
+    }
+    #gallery-cloud-status:empty { padding: 0; border: 0; }
+
     #studio-status {
       min-height: 40px;
       margin-top: 14px;
@@ -1492,6 +1519,8 @@
 </head>
 <body>
 
+  <p id="gallery-cloud-status" role="status"></p>
+
   <!-- ============================================= -->
   <!-- ROOM 1: ENTRANCE HALL                          -->
   <!-- ============================================= -->
@@ -1507,7 +1536,7 @@
 
       <div class="museum-instructions">
         <p>Explore the gallery by dragging left and right, or using your arrow keys.</p>
-        <p>Every piece on display was submitted by a visitor, just like you.</p>
+        <p>Explore built-in artworks and pieces shared by visitors.</p>
       </div>
 
       <button id="enter-gallery-btn" type="button">Enter Gallery</button>
@@ -1627,7 +1656,7 @@
         </div>
         <div class="studio-actions">
           <button id="preview-artwork-btn" type="button">Preview</button>
-          <button id="submit-artwork-btn" type="button">Hang it on the wall</button>
+          <button id="submit-artwork-btn" type="button" aria-describedby="gallery-cloud-status" disabled>Hang it on the wall</button>
           <button id="discard-draft-btn" type="button">Discard</button>
         </div>
         <div id="wall-preview" aria-label="Artwork wall preview">
@@ -1644,7 +1673,7 @@
   <!-- ============================================= -->
   <div id="artwork-modal" class="modal hidden-room">
     <div class="modal-content">
-      <button id="modal-close-btn" class="modal-close" type="button">&times;</button>
+      <button id="modal-close-btn" class="modal-close" type="button" aria-label="Close artwork details">&times;</button>
       <div class="modal-columns">
         <div id="modal-image-wrap">
           <img id="modal-image" alt="" />
@@ -1655,7 +1684,7 @@
         <div class="modal-details">
           <div class="modal-title-row">
             <h2 id="modal-title"></h2>
-            <button id="heart-btn" type="button" aria-pressed="false">♡ <span id="heart-count">0</span></button>
+            <button id="heart-btn" type="button" aria-pressed="false" aria-describedby="feedback-status" disabled>♡ <span id="heart-count">0</span></button>
           </div>
           <p id="modal-artist"></p>
           <p id="modal-description"></p>
@@ -1664,12 +1693,12 @@
           </div>
           <section class="modal-feedback" aria-labelledby="feedback-heading">
             <h3 id="feedback-heading">Leave a short note</h3>
+            <p id="feedback-status" role="status"></p>
             <div class="feedback-compose">
-              <input id="feedback-input" maxlength="25" placeholder="Your note" autocomplete="off">
-              <button id="feedback-submit-btn" type="button">Save</button>
+              <input id="feedback-input" maxlength="25" placeholder="Your note" autocomplete="off" aria-describedby="feedback-status" disabled>
+              <button id="feedback-submit-btn" type="button" aria-describedby="feedback-status" disabled>Save</button>
             </div>
             <span id="feedback-counter">0/25</span>
-            <p id="feedback-status" role="status"></p>
             <div id="feedback-list" aria-live="polite"></div>
           </section>
         </div>
@@ -1678,32 +1707,6 @@
   </div>
 
 <script type="module">
-
-  // FIREBASE
-  import { initializeApp } 
-    from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-
-  import {
-    getAuth,
-    signInAnonymously,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-
-import {
-  getFirestore,
-  doc,
-  collection,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
-  serverTimestamp,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-
 
   // Your Firebase configuration
   const firebaseConfig = {
@@ -1716,19 +1719,6 @@ import {
     measurementId: "G-F0G0M4X6XK"
   };
 
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-
-  // Firebase Authentication
-  const auth = getAuth(app);
-
-  // Cloud Firestore
-  const db = getFirestore(app);
-
-  // =========================
-  // YOUR EXISTING MUSEUM CODE
-  // =========================
 
   // Automatically strip 'index.html' from browser address bar
   if (window.location.pathname.endsWith('/index.html') || window.location.pathname === '/index.html') {
@@ -1772,63 +1762,156 @@ import {
     const feedbackList = document.getElementById('feedback-list');
     const feedbackStatus = document.getElementById('feedback-status');
     let activeArtwork = null;
+    let activeArtworkTrigger = null;
 
-let visitorId = null;
+let cloudState = 'connecting';
+let auth, db, doc, collection, getDoc, setDoc, deleteDoc, onSnapshot;
+let query, orderBy, limit, serverTimestamp, stopCloudNetwork;
 let visitorName = 'Visitor';
+let savingArtwork = false;
+const cloudStatus = document.getElementById('gallery-cloud-status');
+const submitArtworkButton = document.getElementById('submit-artwork-btn');
 
-const authReady = new Promise((resolve, reject) => {
-  onAuthStateChanged(auth, (user) => {
-    if (!user) return;
+function updateCloudControls() {
+  const available = cloudState === 'available';
+  heartButton.disabled = !available;
+  feedbackInput.disabled = !available;
+  feedbackSubmitButton.disabled = !available;
+  feedbackStatus.setAttribute('aria-live', available ? 'polite' : 'off');
+  submitArtworkButton.disabled = !available || savingArtwork;
+}
 
-    visitorId = user.uid;
+function setCloudState(state) {
+  if (state === cloudState) return;
+  cloudState = state;
+  updateCloudControls();
+  if (state === 'available') {
+    cloudStatus.textContent = '';
+    return;
+  }
+  stopArtworkSubscriptions();
+  stopCloudNetwork?.();
+  stopCloudNetwork = null;
+  cloudStatus.textContent = state === 'offline'
+    ? 'You are offline. Built-in artworks and the studio are available. Reload after reconnecting to use online features.'
+    : 'Online Gallery features are unavailable. You can browse built-in artworks and use the studio. Reload to try again.';
+  if (activeArtwork) feedbackStatus.textContent = 'Likes and notes are currently unavailable.';
+}
 
-    const adjectives = [
-      'Quiet',
-      'Amber',
-      'Pale',
-      'Patient',
-      'Gentle',
-      'Wandering',
-      'Still',
-      'Soft',
-      'Distant',
-      'Warm'
-    ];
+function deadline(work, ms = 8000) {
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      reject(Object.assign(new Error('Gallery connection timed out'), { code: 'deadline-exceeded' }));
+    }, ms);
+  });
+  return Promise.race([work, limit]).finally(() => clearTimeout(timer));
+}
 
-    const nouns = [
-      'Observer',
-      'Wanderer',
-      'Onlooker',
-      'Visitor',
-      'Keeper',
-      'Walker'
-    ];
+function requireCloudUser() {
+  const user = auth?.currentUser;
+  if (cloudState !== 'available' || !navigator.onLine || !user) {
+    throw new Error('Gallery cloud unavailable');
+  }
+  return user;
+}
 
-    const savedNameKey = `museumVisitorName_${user.uid}`;
-    let name = localStorage.getItem(savedNameKey);
+function cloudActionMessage(error, fallback) {
+  if (!navigator.onLine) setCloudState('offline');
+  else if (['unavailable', 'deadline-exceeded', 'unauthenticated'].includes(error?.code)) {
+    setCloudState('limited');
+  }
+  if (error?.code === 'permission-denied') return 'The Gallery did not allow this action.';
+  return fallback;
+}
 
-    if (!name) {
-      const index = Math.abs(
-        [...user.uid].reduce(
-          (sum, char) => sum + char.charCodeAt(0),
-          0
-        )
-      );
+function setVisitorName(user) {
+  const adjectives = [
+    'Quiet',
+    'Amber',
+    'Pale',
+    'Patient',
+    'Gentle',
+    'Wandering',
+    'Still',
+    'Soft',
+    'Distant',
+    'Warm'
+  ];
 
-      name = `${adjectives[index % adjectives.length]} ${nouns[index % nouns.length]}`;
+  const nouns = [
+    'Observer',
+    'Wanderer',
+    'Onlooker',
+    'Visitor',
+    'Keeper',
+    'Walker'
+  ];
 
-      localStorage.setItem(savedNameKey, name);
+  const savedNameKey = `museumVisitorName_${user.uid}`;
+  let name;
+  try { name = localStorage.getItem(savedNameKey); } catch {}
+
+  if (!name) {
+    const index = Math.abs(
+      [...user.uid].reduce(
+        (sum, char) => sum + char.charCodeAt(0),
+        0
+      )
+    );
+
+    name = `${adjectives[index % adjectives.length]} ${nouns[index % nouns.length]}`;
+
+    try { localStorage.setItem(savedNameKey, name); } catch {}
+  }
+
+  visitorName = name;
+
+}
+
+async function connectGallery() {
+  if (!navigator.onLine) {
+    setCloudState('offline');
+    return;
+  }
+
+  try {
+    const [appSdk, authSdk, firestore] = await deadline(Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js')
+    ]));
+    if (cloudState !== 'connecting') return;
+    const app = appSdk.initializeApp(firebaseConfig);
+    auth = authSdk.getAuth(app);
+    await deadline(auth.authStateReady());
+    if (cloudState !== 'connecting') return;
+    const user = auth.currentUser || (await deadline(authSdk.signInAnonymously(auth))).user;
+    if (cloudState !== 'connecting') return;
+    setVisitorName(user);
+
+    db = firestore.getFirestore(app);
+    stopCloudNetwork = () => { firestore.terminate(db).catch(() => {}); };
+    ({ doc, collection, getDoc, setDoc, deleteDoc, onSnapshot, query, orderBy, limit, serverTimestamp } = firestore);
+    const artworkQuery = query(collection(db, 'artworks'), orderBy('createdAt', 'desc'));
+    const snapshot = await deadline(firestore.getDocsFromServer(artworkQuery));
+    if (cloudState !== 'connecting') return;
+    const sharedArtworks = snapshot.docs.map(entry => entry.data());
+    if (sharedArtworks.length) {
+      artworks = sharedArtworks.concat(artworks);
+      buildMuseumWall();
+      calculateBounds();
     }
+    setCloudState('available');
+    if (activeArtwork) subscribeToArtworkData(activeArtwork);
+  } catch {
+    if (cloudState === 'connecting') setCloudState(navigator.onLine ? 'limited' : 'offline');
+  }
+}
 
-    visitorName = name;
-
-    resolve(user);
-  });
-
-  signInAnonymously(auth).catch((error) => {
-    console.error('Firebase authentication failed:', error);
-    reject(error);
-  });
+window.addEventListener('offline', () => setCloudState('offline'));
+window.addEventListener('online', () => {
+  if (cloudState === 'offline') setCloudState('limited');
 });
 
 const TRUSTED_BUILTIN_SVG_SOURCES = new Set();
@@ -1953,9 +2036,7 @@ function renderFeedbackNotes(notes) {
 
 const ArtworkStore = {
   async toggleHeart(artworkId) {
-    const user = await authReady; // Wait for initial load
-    const activeUid = auth.currentUser?.uid || user?.uid;
-    if (!activeUid) throw new Error('Authentication required.');
+    const activeUid = requireCloudUser().uid;
 
     const likeRef = doc(
       db,
@@ -1965,22 +2046,21 @@ const ArtworkStore = {
       activeUid
     );
 
-    const existing = await getDoc(likeRef);
+    const existing = await deadline(getDoc(likeRef));
+    if (requireCloudUser().uid !== activeUid) throw new Error('Gallery session changed');
 
     if (existing.exists()) {
-      await deleteDoc(likeRef);
+      await deadline(deleteDoc(likeRef));
     } else {
-      await setDoc(likeRef, {
+      await deadline(setDoc(likeRef, {
         uid: activeUid,
         createdAt: serverTimestamp()
-      });
+      }));
     }
   },
 
   async submitFeedback(artworkId, text) {
-    const user = await authReady; // Wait for initial load
-    const activeUid = auth.currentUser?.uid || user?.uid;
-    if (!activeUid) throw new Error('Authentication required.');
+    const activeUid = requireCloudUser().uid;
 
     const cleanText = [...text.trim()]
       .slice(0, 25)
@@ -1995,14 +2075,15 @@ const ArtworkStore = {
     );
 
     if (!cleanText) {
-      await deleteDoc(commentRef);
+      await deadline(deleteDoc(commentRef));
       return;
     }
 
-    const existing = await getDoc(commentRef);
+    const existing = await deadline(getDoc(commentRef));
+    if (requireCloudUser().uid !== activeUid) throw new Error('Gallery session changed');
 
     if (existing.exists()) {
-      await setDoc(
+      await deadline(setDoc(
         commentRef,
         {
           uid: activeUid,
@@ -2011,35 +2092,18 @@ const ArtworkStore = {
           updatedAt: serverTimestamp()
         },
         { merge: true }
-      );
+      ));
     } else {
-      await setDoc(commentRef, {
+      await deadline(setDoc(commentRef, {
         uid: activeUid,
         text: cleanText,
         displayName: visitorName,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      }));
     }
   }
 };
-
-    function renderArtworkFeedback(artwork) {
-      const notes = ArtworkStore.getFeedback(artwork.id).slice(0, 5);
-      const mine = ArtworkStore.getMyFeedback(artwork.id);
-      feedbackInput.value = mine?.text || '';
-      feedbackCounter.textContent = `${[...feedbackInput.value].length}/25`;
-      feedbackCounter.classList.toggle('near-limit', [...feedbackInput.value].length >= 20);
-      renderFeedbackNotes(notes);
-    }
-
-    function renderArtworkReaction(artwork) {
-      const hearted = ArtworkStore.isHearted(artwork.id);
-      heartButton.classList.toggle('is-hearted', hearted);
-      heartButton.setAttribute('aria-pressed', String(hearted));
-      heartButton.firstChild.textContent = hearted ? '♥ ' : '♡ ';
-      heartCount.textContent = ArtworkStore.getHeartCount(artwork.id);
-    }
 
     // ---- Room switching ----
     function showGallery() {
@@ -2076,7 +2140,7 @@ const ArtworkStore = {
 let unsubscribeLikes = null;
 let unsubscribeComments = null;
 
-function subscribeToArtworkData(artwork) {
+function stopArtworkSubscriptions() {
   if (unsubscribeLikes) {
     unsubscribeLikes();
     unsubscribeLikes = null;
@@ -2087,6 +2151,13 @@ function subscribeToArtworkData(artwork) {
     unsubscribeComments = null;
   }
 
+}
+
+function subscribeToArtworkData(artwork) {
+  stopArtworkSubscriptions();
+  if (cloudState !== 'available') return;
+  modalVisitorName.textContent = visitorName;
+  feedbackStatus.textContent = '';
   const artworkId = String(artwork.id);
 
   // -------------------------
@@ -2103,10 +2174,10 @@ function subscribeToArtworkData(artwork) {
   unsubscribeLikes = onSnapshot(
     likesRef,
     (snapshot) => {
+      if (activeArtwork !== artwork || cloudState !== 'available') return;
       const likedByCurrentUser =
-        visitorId &&
         snapshot.docs.some(
-          (document) => document.id === visitorId
+          (entry) => entry.id === auth.currentUser?.uid
         );
 
       heartButton.classList.toggle(
@@ -2125,7 +2196,9 @@ function subscribeToArtworkData(artwork) {
       heartCount.textContent = snapshot.size;
     },
     (error) => {
-      console.error('Could not load likes:', error);
+      if (activeArtwork !== artwork || cloudState !== 'available') return;
+      heartButton.disabled = true;
+      feedbackStatus.textContent = cloudActionMessage(error, 'Likes are currently unavailable.');
     }
   );
 
@@ -2150,14 +2223,14 @@ function subscribeToArtworkData(artwork) {
   unsubscribeComments = onSnapshot(
     commentsQuery,
     (snapshot) => {
-
+      if (activeArtwork !== artwork || cloudState !== 'available') return;
       const notes = snapshot.docs.map((document) => ({
         id: document.id,
         ...document.data()
       }));
 
       const mine = notes.find(
-        (note) => note.uid === visitorId
+        (note) => note.uid === auth.currentUser?.uid
       );
 
       feedbackInput.value = mine?.text || '';
@@ -2173,7 +2246,10 @@ function subscribeToArtworkData(artwork) {
       renderFeedbackNotes(notes);
     },
     (error) => {
-      console.error('Could not load comments:', error);
+      if (activeArtwork !== artwork || cloudState !== 'available') return;
+      feedbackInput.disabled = true;
+      feedbackSubmitButton.disabled = true;
+      feedbackStatus.textContent = cloudActionMessage(error, 'Notes are currently unavailable.');
     }
   );
 }
@@ -2189,8 +2265,9 @@ function subscribeToArtworkData(artwork) {
       if (modalImageFallback) modalImageFallback.hidden = false;
     }
 
-    function openArtworkModal(artwork) {
+    function openArtworkModal(artwork, trigger) {
       activeArtwork = artwork;
+      activeArtworkTrigger = trigger;
       const safeImage = sanitizeImageSrc(artwork.image);
       if (safeImage) {
         if (modalImageFallback) modalImageFallback.hidden = true;
@@ -2209,14 +2286,30 @@ function subscribeToArtworkData(artwork) {
       modalDescription.textContent = artwork.description || '';
       modalVisitorName.textContent = visitorName;
      
+      feedbackInput.value = '';
+      feedbackCounter.textContent = '0/25';
+      feedbackCounter.classList.remove('near-limit');
+      feedbackList.replaceChildren();
+      heartButton.classList.remove('is-hearted');
+      heartButton.setAttribute('aria-pressed', 'false');
+      heartButton.firstChild.textContent = '♡ ';
+      heartCount.textContent = '0';
+      updateCloudControls();
+      feedbackStatus.textContent = cloudState === 'connecting'
+        ? 'Connecting to online features…'
+        : 'Likes and notes are currently unavailable.';
       subscribeToArtworkData(artwork);
-      
-      feedbackStatus.textContent = '';
       modal.classList.remove('hidden-room');
+      modalCloseBtn.focus();
     }
 
     function closeArtworkModal() {
       modal.classList.add('hidden-room');
+      const trigger = activeArtworkTrigger?.isConnected ? activeArtworkTrigger : returnBtn;
+      activeArtwork = null;
+      activeArtworkTrigger = null;
+      stopArtworkSubscriptions();
+      trigger.focus({ preventScroll: true });
       modalImage.onerror = null;
       modalImage.removeAttribute('src');
       modalImage.hidden = false;
@@ -2231,7 +2324,7 @@ function subscribeToArtworkData(artwork) {
       try {
         await ArtworkStore.toggleHeart(activeArtwork.id);
       } catch (error) {
-        console.error('Like failed:', error);
+        feedbackStatus.textContent = cloudActionMessage(error, 'Could not save your like.');
       }
     });
 
@@ -2256,9 +2349,7 @@ function subscribeToArtworkData(artwork) {
       text ? 'Note saved.' : 'Note removed.';
 
   } catch (error) {
-    console.error('Comment failed:', error);
-    feedbackStatus.textContent =
-      'Could not save your note.';
+    feedbackStatus.textContent = cloudActionMessage(error, 'Could not save your note.');
   }
 });
 
@@ -2652,32 +2743,6 @@ function subscribeToArtworkData(artwork) {
       art.image = registerTrustedBuiltinSvg(svgToDataUri(generator(art.colors)));
     });
 
-    async function loadSharedArtworks() {
-  try {
-    const artworksRef = collection(db, 'artworks');
-    // Fetch artworks ordered by newest first
-    const q = query(artworksRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-
-    const fetchedArtworks = [];
-    snapshot.forEach((document) => {
-      fetchedArtworks.push(document.data());
-    });
-
-    if (fetchedArtworks.length > 0) {
-      // Preserve the built-in numeric artworks and prepend the database ones
-      const builtInArtworks = artworks.filter(art => typeof art.id === 'number');
-      artworks = fetchedArtworks.concat(builtInArtworks);
-      
-      // Rebuild the wall now that the shared artworks have arrived
-      buildMuseumWall();
-      calculateBounds();
-    }
-  } catch (error) {
-    console.warn('Shared artworks could not be loaded from Firestore.', error);
-  }
-}
-
     function createArtworkFallbackEl() {
       const fallback = document.createElement('div');
       fallback.className = 'artwork-fallback';
@@ -2710,7 +2775,12 @@ function subscribeToArtworkData(artwork) {
         frame.appendChild(createArtworkFallbackEl());
       }
 
-      frame.addEventListener('click', () => openArtworkModal(art));
+      frame.addEventListener('click', () => openArtworkModal(art, frame));
+      frame.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        frame.click();
+      });
       frame.addEventListener('mouseenter', () => setArtworkAttention(frame, true));
       frame.addEventListener('mouseleave', () => {
         if (!frame.matches(':focus')) setArtworkAttention(frame, false);
@@ -2945,9 +3015,6 @@ function subscribeToArtworkData(artwork) {
     // Render the default 14 artworks immediately
     buildMuseumWall();
     calculateCamera();
-
-    // Fetch shared user artworks asynchronously
-    loadSharedArtworks();
 
     enterBtn.addEventListener('click', () => {
       requestAnimationFrame(calculateCamera);
@@ -3235,7 +3302,7 @@ function subscribeToArtworkData(artwork) {
 
     document.getElementById('discard-draft-btn').addEventListener('click', resetStudioDraft);
 
-document.getElementById('submit-artwork-btn').addEventListener('click', async () => {
+submitArtworkButton.addEventListener('click', async () => {
   const title = titleInput.value.trim();
   if (!title) {
     studioStatus.textContent = 'Please give your artwork a title before submitting.';
@@ -3244,14 +3311,13 @@ document.getElementById('submit-artwork-btn').addEventListener('click', async ()
   }
 
   // Prevent multiple clicks while saving
-  const submitBtn = document.getElementById('submit-artwork-btn');
-  submitBtn.disabled = true;
+  if (savingArtwork || cloudState !== 'available') return;
+  savingArtwork = true;
+  updateCloudControls();
   studioStatus.textContent = 'Hanging on the gallery wall...';
 
   try {
-    // 1 & 2. Wait for Firebase auth and get user UID
-    const user = await authReady;
-    const uid = user.uid;
+    const uid = requireCloudUser().uid;
 
     // 3. Generate a unique artwork ID
     const artworkId = `user-${Date.now()}`;
@@ -3271,7 +3337,7 @@ document.getElementById('submit-artwork-btn').addEventListener('click', async ()
       status: 'approved',
     };
 
-    await setDoc(doc(db, 'artworks', artworkId), newArtwork);
+    await deadline(setDoc(doc(db, 'artworks', artworkId), newArtwork));
 
     // 6. Add the new artwork to the local array for immediate rendering
     const localArtwork = { ...newArtwork, createdAt: new Date().toISOString() };
@@ -3284,10 +3350,10 @@ document.getElementById('submit-artwork-btn').addEventListener('click', async ()
     showGallery();
 
   } catch (error) {
-    studioStatus.textContent = 'The artwork could not be saved to the gallery.';
-    console.error('Artwork save failed.', error);
+    studioStatus.textContent = cloudActionMessage(error, 'The artwork could not be saved to the gallery.');
   } finally {
-    submitBtn.disabled = false;
+    savingArtwork = false;
+    updateCloudControls();
   }
 });
 
@@ -3297,6 +3363,7 @@ document.getElementById('submit-artwork-btn').addEventListener('click', async ()
     saveDrawingState();
     renderPalette();
     window.addEventListener('resize', resizeDrawingCanvas);
+    connectGallery();
   </script>
 
 </body>

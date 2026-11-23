@@ -248,7 +248,8 @@
       position: relative;
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      /* The camera owns panning, including when a distant frame receives focus. */
+      overflow: clip;
       cursor: grab;
       touch-action: none;
       background: linear-gradient(180deg, rgba(214, 196, 160, 0.9), rgba(210, 189, 146, 0.88));
@@ -292,7 +293,8 @@
       transition: none;
     }
 
-    #gallery-viewport.is-keyboard-moving .parallax-layer {
+    #gallery-viewport.is-keyboard-moving .parallax-layer,
+    #gallery-viewport:has(.artwork-frame:focus-visible) .parallax-layer {
       transition: none;
     }
 
@@ -750,10 +752,26 @@
       position: fixed;
       inset: 0;
       z-index: 100;
-      display: flex;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      color: inherit;
       align-items: center;
       justify-content: center;
       background: rgba(30, 24, 14, 0.6);
+    }
+
+    .modal[open] { display: flex; }
+    .modal::backdrop { background: transparent; }
+
+    .modal :focus-visible, .artwork-frame:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 6px var(--marble-cream);
     }
 
     .modal-content {
@@ -938,9 +956,10 @@
     }
 
     .modal-close {
-      position: absolute;
-      top: 10px;
-      right: 14px;
+      display: block;
+      margin: 0 0 6px auto;
+      min-width: 44px;
+      min-height: 44px;
       font-size: 1.6rem;
       color: var(--gold-dark);
       line-height: 1;
@@ -1671,9 +1690,9 @@
   <!-- ============================================= -->
   <!-- ARTWORK DETAIL MODAL (shared by all artworks)  -->
   <!-- ============================================= -->
-  <div id="artwork-modal" class="modal hidden-room">
+  <dialog id="artwork-modal" class="modal" aria-labelledby="modal-title">
     <div class="modal-content">
-      <button id="modal-close-btn" class="modal-close" type="button" aria-label="Close artwork details">&times;</button>
+      <button id="modal-close-btn" class="modal-close" type="button" aria-label="Close artwork details" autofocus>&times;</button>
       <div class="modal-columns">
         <div id="modal-image-wrap">
           <img id="modal-image" alt="" />
@@ -1683,7 +1702,7 @@
         </div>
         <div class="modal-details">
           <div class="modal-title-row">
-            <h2 id="modal-title"></h2>
+            <h2 id="modal-title" tabindex="-1"></h2>
             <button id="heart-btn" type="button" aria-pressed="false" aria-describedby="feedback-status" disabled>♡ <span id="heart-count">0</span></button>
           </div>
           <p id="modal-artist"></p>
@@ -1704,7 +1723,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 
 <script type="module">
 
@@ -2128,6 +2147,7 @@ const ArtworkStore = {
       entranceHall.classList.add('hidden-room');
       galleryHall.classList.add('hidden-room');
       studioRoom.classList.remove('hidden-room');
+      backToGalleryBtn.focus({ preventScroll: true });
       resizeDrawingCanvas();
       resetStudioDraft();
     }
@@ -2135,7 +2155,10 @@ const ArtworkStore = {
     enterBtn.addEventListener('click', showGallery);
     returnBtn.addEventListener('click', showEntrance);
     createArtworkBtn.addEventListener('click', showStudio);
-    backToGalleryBtn.addEventListener('click', showGallery);
+    backToGalleryBtn.addEventListener('click', () => {
+      showGallery();
+      createArtworkBtn.focus({ preventScroll: true });
+    });
 
 let unsubscribeLikes = null;
 let unsubscribeComments = null;
@@ -2266,6 +2289,8 @@ function subscribeToArtworkData(artwork) {
     }
 
     function openArtworkModal(artwork, trigger) {
+      if (modal.open) return;
+      stopGalleryInteraction();
       activeArtwork = artwork;
       activeArtworkTrigger = trigger;
       const safeImage = sanitizeImageSrc(artwork.image);
@@ -2281,7 +2306,7 @@ function subscribeToArtworkData(artwork) {
         showModalFallback();
       }
       modalImage.alt = artwork.title || '';
-      modalTitle.textContent = artwork.title || '';
+      modalTitle.textContent = artwork.title || 'Untitled artwork';
       modalArtist.textContent = artwork.artist ? `by ${artwork.artist}` : '';
       modalDescription.textContent = artwork.description || '';
       modalVisitorName.textContent = visitorName;
@@ -2299,17 +2324,19 @@ function subscribeToArtworkData(artwork) {
         ? 'Connecting to online features…'
         : 'Likes and notes are currently unavailable.';
       subscribeToArtworkData(artwork);
-      modal.classList.remove('hidden-room');
-      modalCloseBtn.focus();
+      modal.showModal();
+      modalCloseBtn.focus({ preventScroll: true });
     }
 
     function closeArtworkModal() {
-      modal.classList.add('hidden-room');
+      if (!modal.open) return;
+      modal.close();
       const trigger = activeArtworkTrigger?.isConnected ? activeArtworkTrigger : returnBtn;
       activeArtwork = null;
       activeArtworkTrigger = null;
       stopArtworkSubscriptions();
       trigger.focus({ preventScroll: true });
+      if (trigger !== returnBtn) revealArtwork(trigger);
       modalImage.onerror = null;
       modalImage.removeAttribute('src');
       modalImage.hidden = false;
@@ -2367,10 +2394,21 @@ function subscribeToArtworkData(artwork) {
       }
     });
 
-    // Escape key closes the modal
+    modal.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closeArtworkModal();
+    });
+
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !modal.classList.contains('hidden-room')) {
-        closeArtworkModal();
+      if (!modal.open || event.key !== 'Tab') return;
+      const controls = [...modal.querySelectorAll('button:enabled, input:enabled')]
+        .filter(control => control.getClientRects().length);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (!controls.includes(document.activeElement) ||
+          document.activeElement === (event.shiftKey ? first : last)) {
+        event.preventDefault();
+        ((event.shiftKey ? last : first) || modalTitle).focus();
       }
     });
 
@@ -2596,7 +2634,7 @@ function subscribeToArtworkData(artwork) {
     }
 
     document.addEventListener('keydown', (event) => {
-      if (galleryHall.classList.contains('hidden-room')) return;
+      if (modal.open || galleryHall.classList.contains('hidden-room')) return;
       
       // Ignore keystrokes if the user is typing in an input box
       if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
@@ -2754,6 +2792,21 @@ function subscribeToArtworkData(artwork) {
       return fallback;
     }
 
+    function revealArtwork(frame) {
+      const viewport = galleryViewport.getBoundingClientRect();
+      const bounds = frame.getBoundingClientRect();
+      const margin = 6;
+      // Measure in wall coordinates so an unfinished pan does not skew the target.
+      const wallLeft = document.getElementById('layer-artwork').getBoundingClientRect().left;
+      const left = bounds.left - wallLeft + scrollOffset * cameraScale;
+      const right = left + bounds.width;
+      const shift = left < margin ? margin - left : Math.min(0, viewport.width - margin - right);
+      if (shift) {
+        scrollOffset = clampOffset(scrollOffset + shift / cameraScale);
+        renderGalleryPosition();
+      }
+    }
+
     function createArtworkFrame(art) {
       const frame = document.createElement('div');
       frame.className = 'artwork-frame';
@@ -2785,7 +2838,10 @@ function subscribeToArtworkData(artwork) {
       frame.addEventListener('mouseleave', () => {
         if (!frame.matches(':focus')) setArtworkAttention(frame, false);
       });
-      frame.addEventListener('focusin', () => setArtworkAttention(frame, true));
+      frame.addEventListener('focusin', () => {
+        if (frame.matches(':focus-visible')) revealArtwork(frame);
+        setArtworkAttention(frame, true);
+      });
       frame.addEventListener('focusout', (event) => {
         if (!frame.contains(event.relatedTarget)) setArtworkAttention(frame, false);
       });
